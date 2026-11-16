@@ -210,10 +210,4 @@ O frontend segue especificações modernas de usabilidade e acessibilidade (WCAG
 - **Componentes:** Carrinho lateral (Drawer) em CSS puro, modais acessíveis com foco visível, toasts de notificação assíncronos e badges de status.
 - **Tokens CSS:** Variáveis customizáveis centralizadas no topo de `frontend/style.css`.
 
----
 
-##  Próximos Passos Sugeridos
-
-- Integração direta com gateway de pagamento Pix dinâmico (Mercado Pago / Efí / Asaas).
-- Notificações automáticas para produtores e clientes (WhatsApp / Push / E-mail via SendGrid).
-- Cálculo automatizado de taxa de frete por quilometragem ou CEP (ViaCEP).

@@ -1,10 +1,10 @@
-# 🌱 Feira Virtual — Plataforma de Venda Direta
+#  Feira Virtual — Plataforma de Venda Direta
 
 Plataforma completa (Backend API + Frontend integrado) para conexão direta entre **produtores rurais da agricultura familiar**, **entregadores parceiros** e **compradores finais**, eliminando atravessadores e garantindo alimentos frescos com preço justo.
 
 ---
 
-## 📌 Sumário
+##  Sumário
 
 - [Visão Geral e Arquitetura](#-visão-geral-e-arquitetura)
 - [Histórico de Atualizações Recentes](#-histórico-de-atualizações-recentes)
@@ -21,7 +21,7 @@ Plataforma completa (Backend API + Frontend integrado) para conexão direta entr
 
 ---
 
-## 🏗 Visão Geral e Arquitetura
+##  Visão Geral e Arquitetura
 
 O sistema é composto por:
 - **Backend:** Python + Django 6.x + Django REST Framework + SimpleJWT.
@@ -31,7 +31,7 @@ O sistema é composto por:
 
 ---
 
-## 🚀 Histórico de Atualizações Recentes
+##  Histórico de Atualizações Recentes
 
 Abaixo estão as principais melhorias implementadas no projeto:
 
@@ -59,7 +59,7 @@ Abaixo estão as principais melhorias implementadas no projeto:
 
 ---
 
-## 💻 Como Rodar o Projeto
+##  Como Rodar o Projeto
 
 ### Opção 1: Inicialização Rápida (Recomendada)
 
@@ -138,7 +138,7 @@ Para acessar a Feira Virtual pelo celular ou compartilhar com outras pessoas sem
 
 ---
 
-## 👥 Contas de Teste Pré-Configuradas
+##  Contas de Teste Pré-Configuradas
 
 Para facilitar a experimentação das funcionalidades, o banco já inclui contas de demonstração:
 
@@ -152,7 +152,7 @@ Para facilitar a experimentação das funcionalidades, o banco já inclui contas
 
 ---
 
-## 📦 Estrutura dos Módulos (Apps)
+##  Estrutura dos Módulos (Apps)
 
 ```
 feira_virtual/
@@ -167,7 +167,7 @@ feira_virtual/
 
 ---
 
-## 🔌 Principais Endpoints da API
+##  Principais Endpoints da API
 
 ### Autenticação & Perfil
 - `POST /api/auth/login/` — Retorna tokens JWT (`access` e `refresh`).
@@ -203,7 +203,7 @@ feira_virtual/
 
 ---
 
-## 🎨 Design System & Frontend
+##  Design System & Frontend
 
 O frontend segue especificações modernas de usabilidade e acessibilidade (WCAG 2.1 AA):
 - **Tipografia:** `Inter` para legibilidade de dados e interface; `Fraunces` (serif) para títulos e destaques acolhedores.
@@ -212,7 +212,7 @@ O frontend segue especificações modernas de usabilidade e acessibilidade (WCAG
 
 ---
 
-## 🔮 Próximos Passos Sugeridos
+##  Próximos Passos Sugeridos
 
 - Integração direta com gateway de pagamento Pix dinâmico (Mercado Pago / Efí / Asaas).
 - Notificações automáticas para produtores e clientes (WhatsApp / Push / E-mail via SendGrid).

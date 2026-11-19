@@ -11,6 +11,9 @@ class Categoria(models.Model):
 
     class Meta:
         ordering = ["nome"]
+        indexes = [
+            models.Index(fields=["ativa", "nome"]),
+        ]
 
     def __str__(self):
         return self.nome
@@ -46,6 +49,11 @@ class Produto(models.Model):
 
     class Meta:
         ordering = ["nome"]
+        indexes = [
+            models.Index(fields=["ativo", "categoria"]),
+            models.Index(fields=["produtor", "ativo"]),
+            models.Index(fields=["tipo_producao", "ativo"]),
+        ]
 
     def __str__(self):
         return f"{self.nome} ({self.produtor})"

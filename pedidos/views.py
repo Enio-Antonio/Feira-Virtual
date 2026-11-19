@@ -5,6 +5,7 @@ from django.db.models import Count, Q, Sum
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -86,14 +87,30 @@ class PedidoClienteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixin
         ser = CheckoutSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
-        pedidos = services.finalizar_carrinho(request.user, d["modalidade"], d["endereco"],
-                                              d["forma_pagamento"], d.get("observacao", ""))
-        return Response(PedidoSerializer(pedidos, many=True).data, status=status.HTTP_201_CREATED)
+        pedidos = services.finalizar_carrinho(
+            request.user,
+            d["modalidade"],
+            d["endereco"],
+            d["forma_pagamento"],
+            d.get("observacao", ""),
+            taxa_entrega=d.get("taxa_entrega", Decimal("0.00")),
+        )
+        return Response(PedidoSerializer(pedidos, many=True, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
     def cancelar(self, request, pk=None):
-        pedido = services.mudar_status(self.get_object(), S.CANCELADO, request.user)
-        return Response(PedidoSerializer(pedido).data)
+        motivo = request.data.get("motivo", "")
+        pedido = services.mudar_status(self.get_object(), S.CANCELADO, request.user, motivo=motivo)
+        return Response(PedidoSerializer(pedido, context={"request": request}).data)
+
+    @action(detail=True, methods=["get"])
+    def pix(self, request, pk=None):
+        pedido = self.get_object()
+        if pedido.forma_pagamento != Pedido.FormaPagamento.PIX:
+            return Response({"erro": "Este pedido não utiliza Pix como forma de pagamento."}, status=status.HTTP_400_BAD_REQUEST)
+        from .pix import obter_gateway_pix
+        dados_pix = obter_gateway_pix().gerar_cobranca(pedido)
+        return Response(dados_pix)
 
 
 class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -109,13 +126,19 @@ class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
             return Pedido.objects.none()
         return _pedidos_qs.filter(produtor=self.request.user.perfil_produtor)
 
-    def _mudar(self, novo):
-        pedido = services.mudar_status(self.get_object(), novo, self.request.user)
-        return Response(PedidoSerializer(pedido).data)
+    def _mudar(self, novo, motivo="", previsao_entrega=""):
+        pedido = services.mudar_status(self.get_object(), novo, self.request.user, motivo=motivo, previsao_entrega=previsao_entrega)
+        return Response(PedidoSerializer(pedido, context={"request": self.request}).data)
 
     @action(detail=True, methods=["post"])
     def aceitar(self, request, pk=None):
-        return self._mudar(S.ACEITO)
+        previsao = request.data.get("previsao_entrega", "")
+        return self._mudar(S.ACEITO, previsao_entrega=previsao)
+
+    @action(detail=True, methods=["post"])
+    def recusar(self, request, pk=None):
+        motivo = request.data.get("motivo", "")
+        return self._mudar(S.RECUSADO, motivo=motivo)
 
     @action(detail=True, methods=["post"])
     def recusar(self, request, pk=None):
@@ -155,6 +178,52 @@ class EntregaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.
                 return base.filter(entregador=u)
             return base.filter(entregador__isnull=True, status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO])
         return base.filter(Q(entregador=u) | Q(entregador__isnull=True, status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO]))
+
+    @action(detail=True, methods=["post"])
+    def aceitar(self, request, pk=None):
+        """Atribui a entrega ao entregador (primeiro que aceitar leva)."""
+        with transaction.atomic():
+            ok = Pedido.objects.filter(pk=pk, modalidade=Pedido.Modalidade.ENTREGA, entregador__isnull=True,
+                                       status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO]
+                                       ).update(entregador=request.user)
+        if not ok:
+            raise ValidationError("Entrega indisponível ou já atribuída a outro entregador.")
+        return Response(PedidoSerializer(_pedidos_qs.get(pk=pk)).data)
+
+    @action(detail=True, methods=["post"], url_path="saiu-para-entrega")
+    def saiu_para_entrega(self, request, pk=None):
+        pedido = services.mudar_status(self.get_object(), S.EM_ENTREGA, request.user)
+        return Response(PedidoSerializer(pedido).data)
+
+    @action(detail=True, methods=["post"])
+    def confirmar(self, request, pk=None):
+        pedido = services.mudar_status(self.get_object(), S.CONCLUIDO, request.user)
+        return Response(PedidoSerializer(pedido).data)
+
+
+class PixWebhookView(APIView):
+    """Webhook do gateway Pix com validação de assinatura HMAC."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        assinatura = request.headers.get("X-Signature", "")
+        payload = request.body
+        from .pix import obter_gateway_pix
+        gateway = obter_gateway_pix()
+        if not gateway.validar_assinatura_webhook(payload, assinatura):
+            return Response({"erro": "Assinatura do webhook inválida."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        import json
+        try:
+            dados = json.loads(payload.decode("utf-8"))
+            txid = dados.get("txid", "")
+            pedido = Pedido.objects.filter(numero_publico=f"PED-{txid}").first()
+            if pedido and dados.get("evento") == "PAGAMENTO_CONFIRMADO":
+                if pedido.status == Pedido.Status.PENDENTE:
+                    services.mudar_status(pedido, Pedido.Status.ACEITO, pedido.produtor.usuario)
+            return Response({"status": "processado"})
+        except Exception as e:
+            return Response({"erro": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["post"])
     def aceitar(self, request, pk=None):

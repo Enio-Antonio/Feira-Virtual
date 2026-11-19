@@ -12,11 +12,26 @@ from avaliacoes.models import Reclamacao
 from avaliacoes.serializers import ReclamacaoAdminSerializer
 from catalogo.models import Produto
 from catalogo.serializers import ProdutoProdutorSerializer
+from painel.models import LogAuditoria
 from pedidos.models import Pedido
 from pedidos.serializers import PedidoSerializer
 from usuarios.models import PerfilProdutor, Usuario
 from usuarios.permissions import EhAdmin
 from usuarios.serializers import PerfilProdutorSerializer, UsuarioAdminSerializer
+
+
+def registrar_auditoria(request, acao, descricao):
+    ip = request.META.get("HTTP_X_FORWARDED_FOR")
+    if ip:
+        ip = ip.split(",")[0].strip()
+    else:
+        ip = request.META.get("REMOTE_ADDR")
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao=acao,
+        descricao=descricao,
+        ip=ip,
+    )
 
 
 class UsuarioAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -32,6 +47,8 @@ class UsuarioAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
             raise ValidationError("Você não pode bloquear a própria conta.")
         user.is_active = ativo
         user.save(update_fields=["is_active"])
+        acao = LogAuditoria.Acao.REATIVAR_USUARIO if ativo else LogAuditoria.Acao.BLOQUEAR_USUARIO
+        registrar_auditoria(request, acao, f"{'Reativado' if ativo else 'Bloqueado'} usuário {user.username} (ID: {user.pk})")
         return Response(UsuarioAdminSerializer(user).data)
 
     @action(detail=True, methods=["post"])
@@ -50,19 +67,21 @@ class ProdutorAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vie
     filterset_fields = ["status"]
     search_fields = ["nome_propriedade", "usuario__username"]
 
-    def _status(self, novo):
+    def _status(self, request, novo):
         perfil = self.get_object()
         perfil.status = novo
         perfil.save(update_fields=["status"])
+        acao = LogAuditoria.Acao.APROVAR_PRODUTOR if novo == PerfilProdutor.Status.APROVADO else LogAuditoria.Acao.SUSPENDER_PRODUTOR
+        registrar_auditoria(request, acao, f"Produtor {perfil.nome_propriedade} alterado para {novo}")
         return Response(PerfilProdutorSerializer(perfil).data)
 
     @action(detail=True, methods=["post"])
     def aprovar(self, request, pk=None):
-        return self._status(PerfilProdutor.Status.APROVADO)
+        return self._status(request, PerfilProdutor.Status.APROVADO)
 
     @action(detail=True, methods=["post"])
     def suspender(self, request, pk=None):
-        return self._status(PerfilProdutor.Status.SUSPENSO)
+        return self._status(request, PerfilProdutor.Status.SUSPENSO)
 
 
 class ProdutoAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -78,6 +97,7 @@ class ProdutoAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
         p = self.get_object()
         p.ativo = False
         p.save(update_fields=["ativo"])
+        registrar_auditoria(request, LogAuditoria.Acao.OCULTAR_PRODUTO, f"Produto '{p.nome}' ocultado pelo admin")
         return Response(ProdutoProdutorSerializer(p).data)
 
     @action(detail=True, methods=["post"])
@@ -85,6 +105,7 @@ class ProdutoAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
         p = self.get_object()
         p.ativo = True
         p.save(update_fields=["ativo"])
+        registrar_auditoria(request, LogAuditoria.Acao.REEXIBIR_PRODUTO, f"Produto '{p.nome}' reexibido pelo admin")
         return Response(ProdutoProdutorSerializer(p).data)
 
 

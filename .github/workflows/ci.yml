@@ -1,0 +1,43 @@
+name: CI Feira Virtual
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+        cache: "pip"
+
+    - name: Instalar Dependências
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Lint com Ruff
+      run: |
+        ruff check .
+
+    - name: Checagem do Django
+      run: |
+        DB_ENGINE=sqlite python manage.py check
+
+    - name: Checagem de Deploy
+      run: |
+        DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-secret-key-1234567890-test-deploy DB_ENGINE=sqlite python manage.py check --deploy
+
+    - name: Executar Testes com Cobertura
+      run: |
+        DB_ENGINE=sqlite coverage run manage.py test
+        coverage report

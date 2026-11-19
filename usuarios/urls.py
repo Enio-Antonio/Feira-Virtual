@@ -17,6 +17,8 @@ urlpatterns = [
     path("auth/recuperar-senha/", views.RecuperarSenhaView.as_view()),
     path("auth/redefinir-senha/", views.RedefinirSenhaView.as_view()),
     path("perfil/", views.MeuPerfilView.as_view()),
+    path("perfil/exportar-dados/", views.ExportarDadosLGPDView.as_view(), name="exportar-dados-lgpd"),
+    path("perfil/excluir-conta/", views.ExcluirContaLGPDView.as_view(), name="excluir-conta-lgpd"),
     path("perfil/produtor/", views.PerfilProdutorView.as_view()),
     path("perfil/entregador/", views.PerfilEntregadorView.as_view()),
     path("", include(router.urls)),

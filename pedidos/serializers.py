@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from usuarios.models import Endereco
@@ -58,19 +60,37 @@ class PedidoSerializer(serializers.ModelSerializer):
     historico = HistoricoSerializer(many=True, read_only=True)
     produtor_nome = serializers.CharField(source="produtor.nome_propriedade", read_only=True)
     cliente_nome = serializers.CharField(source="cliente.get_full_name", read_only=True)
+    total_com_frete = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    chave_pix = serializers.SerializerMethodField()
 
     class Meta:
         model = Pedido
-        fields = ["id", "status", "modalidade", "forma_pagamento", "endereco_entrega", "observacao", "total",
-                  "produtor", "produtor_nome", "cliente", "cliente_nome", "entregador",
-                  "itens", "historico", "criado_em", "atualizado_em"]
+        fields = [
+            "id", "numero_publico", "status", "modalidade", "forma_pagamento",
+            "endereco_entrega", "observacao", "total", "taxa_entrega", "total_com_frete",
+            "previsao_entrega", "motivo_cancelamento", "produtor", "produtor_nome",
+            "cliente", "cliente_nome", "entregador", "chave_pix",
+            "itens", "historico", "criado_em", "atualizado_em"
+        ]
         read_only_fields = fields
+
+    def get_chave_pix(self, obj):
+        request = self.context.get("request")
+        if not request or not getattr(request.user, "is_authenticated", False):
+            return None
+        # Proteção LGPD: Chave Pix só é visível ao cliente com pedido ativo ou ao produtor/admin
+        u = request.user
+        if u.id == obj.cliente_id or u.tipo in ("ADMIN", "PRODUTOR"):
+            if obj.status not in (Pedido.Status.CANCELADO, Pedido.Status.RECUSADO):
+                return obj.produtor.chave_pix
+        return None
 
 
 class CheckoutSerializer(serializers.Serializer):
     modalidade = serializers.ChoiceField(choices=Pedido.Modalidade.choices)
     forma_pagamento = serializers.ChoiceField(choices=Pedido.FormaPagamento.choices)
     endereco_id = serializers.IntegerField(required=False)
+    taxa_entrega = serializers.DecimalField(max_digits=8, decimal_places=2, required=False, default=Decimal("0.00"))
     observacao = serializers.CharField(required=False, allow_blank=True, max_length=255)
 
     def validate(self, attrs):
@@ -88,3 +108,5 @@ class CheckoutSerializer(serializers.Serializer):
 
 class StatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=Pedido.Status.choices)
+    motivo = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    previsao_entrega = serializers.CharField(required=False, allow_blank=True, max_length=120)

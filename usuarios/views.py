@@ -147,3 +147,48 @@ class EnderecoViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
+
+
+class ExportarDadosLGPDView(APIView):
+    """LGPD: Exportação completa dos dados do titular em formato JSON estruturado."""
+    def get(self, request):
+        user = request.user
+        enderecos = list(user.enderecos.values("rotulo", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "estado"))
+        pedidos_cliente = list(user.pedidos.values("numero_publico", "status", "modalidade", "forma_pagamento", "total", "criado_em"))
+
+        dados = {
+            "titular": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "nome_completo": user.get_full_name(),
+                "telefone": user.telefone,
+                "tipo": user.tipo,
+                "data_cadastro": user.date_joined.isoformat(),
+            },
+            "enderecos": enderecos,
+            "pedidos": pedidos_cliente,
+        }
+        if hasattr(user, "perfil_produtor"):
+            prod = user.perfil_produtor
+            dados["perfil_produtor"] = {
+                "nome_propriedade": prod.nome_propriedade,
+                "descricao": prod.descricao,
+                "cidade": prod.cidade,
+                "estado": prod.estado,
+            }
+        return Response(dados)
+
+
+class ExcluirContaLGPDView(APIView):
+    """LGPD: Direito ao esquecimento — anonimiza os dados pessoais e desativa a conta."""
+    def delete(self, request):
+        user = request.user
+        user.first_name = "Titular"
+        user.last_name = "Anonimizado"
+        user.email = f"anonimo_{user.id}@excluido.local"
+        user.telefone = ""
+        user.is_active = False
+        user.save()
+        user.enderecos.all().delete()
+        return Response({"mensagem": "Conta desativada e dados pessoais anonimizados com sucesso conforme LGPD."})

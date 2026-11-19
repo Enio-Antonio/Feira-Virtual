@@ -142,3 +142,68 @@ class FluxoCompletoTest(APITestCase):
         r = self.client.post("/api/auth/redefinir-senha/", {"uid": uid, "token": token, "nova_senha": "OutraSenha-987"},
                              format="json")
         self.assertEqual(r.status_code, 200, r.data)
+
+    def test_multiplos_produtores_geram_pedidos_separados(self):
+        # Cria segundo produtor
+        self.registrar("produtor", "pedro", nome_propriedade="Sítio do Pedro", chave_pix="pedro@pix")
+        p2_user = Usuario.objects.get(username="pedro")
+        p2_user.perfil_produtor.status = "APROVADO"
+        p2_user.perfil_produtor.save()
+
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "APROVADO"
+        p1_user.perfil_produtor.save()
+
+        prod1 = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Batata",
+                                       preco="4.00", estoque="10", unidade_medida="KG")
+        prod2 = Produto.objects.create(produtor=p2_user.perfil_produtor, categoria=self.cat, nome="Abóbora",
+                                       preco="6.00", estoque="10", unidade_medida="KG")
+
+        self.login("joao")
+        self.client.post("/api/carrinho/itens/", {"produto": prod1.id, "quantidade": "2"}, format="json")
+        self.client.post("/api/carrinho/itens/", {"produto": prod2.id, "quantidade": "1"}, format="json")
+
+        # Checkout deve gerar 2 pedidos distintos
+        res = self.client.post("/api/pedidos/", {"modalidade": "RETIRADA", "forma_pagamento": "PIX"}, format="json")
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(len(res.data), 2)
+        produtores_dos_pedidos = {p["produtor"] for p in res.data}
+        self.assertEqual(len(produtores_dos_pedidos), 2)
+
+    def test_pix_cobranca_e_webhook(self):
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "APROVADO"
+        p1_user.perfil_produtor.save()
+        prod = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Morango",
+                                      preco="12.00", estoque="10", unidade_medida="CAIXA")
+        self.login("joao")
+        self.client.post("/api/carrinho/itens/", {"produto": prod.id, "quantidade": "1"}, format="json")
+        res = self.client.post("/api/pedidos/", {"modalidade": "RETIRADA", "forma_pagamento": "PIX"}, format="json")
+        pedido_id = res.data[0]["id"]
+        numero_publico = res.data[0]["numero_publico"]
+
+        # Consulta dados Pix
+        r_pix = self.client.get(f"/api/pedidos/{pedido_id}/pix/")
+        self.assertEqual(r_pix.status_code, 200)
+        self.assertIn("copia_e_cola", r_pix.data)
+
+        # Simula Webhook com assinatura HMAC válida
+        import hashlib
+        import hmac
+        import json
+        txid = numero_publico.replace("PED-", "")
+        payload = json.dumps({"txid": txid, "evento": "PAGAMENTO_CONFIRMADO"}).encode("utf-8")
+        from .pix import MockPixGateway
+        sig = hmac.new(MockPixGateway.SECRET.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+
+        self.client.credentials()  # webhook é anônimo
+        r_wh = self.client.post(
+            "/api/pedidos/pix/webhook/",
+            data=payload,
+            content_type="application/json",
+            HTTP_X_SIGNATURE=sig,
+        )
+        self.assertEqual(r_wh.status_code, 200)
+        from .models import Pedido
+        p_db = Pedido.objects.get(pk=pedido_id)
+        self.assertEqual(p_db.status, Pedido.Status.ACEITO)

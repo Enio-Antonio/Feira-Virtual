@@ -9,4 +9,7 @@ router.register("pedidos", views.PedidoClienteViewSet, basename="pedido")
 router.register("produtor/pedidos", views.PedidoProdutorViewSet, basename="produtor-pedido")
 router.register("entregas", views.EntregaViewSet, basename="entrega")
 
-urlpatterns = [path("carrinho/", views.CarrinhoView.as_view())] + router.urls
+urlpatterns = [
+    path("carrinho/", views.CarrinhoView.as_view()),
+    path("pedidos/pix/webhook/", views.PixWebhookView.as_view(), name="pix-webhook"),
+] + router.urls

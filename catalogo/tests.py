@@ -1,0 +1,103 @@
+from decimal import Decimal
+from rest_framework import status
+from rest_framework.test import APITestCase
+from catalogo.models import Categoria, Produto
+from usuarios.models import PerfilProdutor, Usuario
+
+PW = "Senha-Forte-123!"
+
+
+class CatalogoTests(APITestCase):
+    def setUp(self):
+        self.admin = Usuario.objects.create_superuser("admin_cat", "admin_cat@ex.com", PW)
+        self.cliente = Usuario.objects.create_user("cliente_cat", "cli@ex.com", PW, tipo=Usuario.Tipo.CLIENTE)
+
+        # Produtor 1
+        self.user_prod1 = Usuario.objects.create_user("produtor1", "prod1@ex.com", PW, tipo=Usuario.Tipo.PRODUTOR)
+        self.perfil1 = PerfilProdutor.objects.create(
+            usuario=self.user_prod1,
+            nome_propriedade="Sítio Verde",
+            cidade="Campinas",
+            estado="SP",
+            status=PerfilProdutor.Status.APROVADO,
+        )
+
+        # Produtor 2
+        self.user_prod2 = Usuario.objects.create_user("produtor2", "prod2@ex.com", PW, tipo=Usuario.Tipo.PRODUTOR)
+        self.perfil2 = PerfilProdutor.objects.create(
+            usuario=self.user_prod2,
+            nome_propriedade="Fazenda Sol",
+            cidade="Valinhos",
+            estado="SP",
+            status=PerfilProdutor.Status.APROVADO,
+        )
+
+        self.categoria = Categoria.objects.create(nome="Hortaliças", ativa=True)
+        self.produto1 = Produto.objects.create(
+            produtor=self.perfil1,
+            categoria=self.categoria,
+            nome="Couve Orgânica",
+            preco=Decimal("3.00"),
+            estoque=Decimal("20"),
+            unidade_medida=Produto.Unidade.MACO,
+            tipo_producao=Produto.TipoProducao.ORGANICO_CERTIFICADO,
+            ativo=True,
+        )
+
+    def login(self, username):
+        r = self.client.post("/api/auth/login/", {"username": username, "password": PW}, format="json")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {r.data['access']}")
+
+    def test_categoria_permissoes(self):
+        # Visitante/Cliente não pode criar categoria
+        self.login("cliente_cat")
+        r = self.client.post("/api/categorias/", {"nome": "Frutas", "ativa": True}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Admin pode criar
+        self.login("admin_cat")
+        r_admin = self.client.post("/api/categorias/", {"nome": "Frutas", "ativa": True}, format="json")
+        self.assertEqual(r_admin.status_code, status.HTTP_201_CREATED)
+
+    def test_filtros_e_busca_de_produtos(self):
+        self.client.credentials()  # anônimo
+        # Busca por texto
+        r = self.client.get("/api/produtos/?search=couve")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["count"], 1)
+
+        # Busca inexistente
+        r_inex = self.client.get("/api/produtos/?search=morangos")
+        self.assertEqual(r_inex.data["count"], 0)
+
+        # Filtro por tipo de produção
+        r_tipo = self.client.get("/api/produtos/?tipo_producao=ORGANICO_CERTIFICADO")
+        self.assertEqual(r_tipo.data["count"], 1)
+
+    def test_produtor_so_edita_proprio_produto(self):
+        # Produtor 2 tenta alterar produto do Produtor 1
+        self.login("produtor2")
+        r_edit = self.client.patch(
+            f"/api/produtor/produtos/{self.produto1.id}/",
+            {"nome": "Couve Invadida", "preco": "9.99"},
+            format="json",
+        )
+        self.assertEqual(r_edit.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Produtor 1 edita com sucesso
+        self.login("produtor1")
+        r_ok = self.client.patch(
+            f"/api/produtor/produtos/{self.produto1.id}/",
+            {"preco": "3.50"},
+            format="json",
+        )
+        self.assertEqual(r_ok.status_code, status.HTTP_200_OK)
+        self.produto1.refresh_from_db()
+        self.assertEqual(self.produto1.preco, Decimal("3.50"))
+
+    def test_estatisticas_publicas(self):
+        self.client.credentials()
+        r = self.client.get("/api/estatisticas/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertIn("total_produtos", r.data)
+        self.assertIn("total_produtores", r.data)

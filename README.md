@@ -138,15 +138,26 @@ Para acessar a Feira Virtual pelo celular ou compartilhar com outras pessoas sem
 
 ---
 
-## 👥 Contas de Teste Pré-Configuradas
+## 👥 Contas de Teste e Demonstração (`seed_demo`)
 
-Para facilitar a experimentação das funcionalidades, o banco já inclui contas de demonstração:
+Para popular o banco com dados de teste em ambiente de desenvolvimento (`DEBUG=True`), execute:
 
-| Perfil | Usuário | Senha | O que pode fazer |
+```bash
+python manage.py seed_demo
+# ou para recriar do zero:
+python manage.py seed_demo --reset
+```
+
+> **Atenção:** Por segurança, este comando só roda com `DEBUG=True`. Credenciais reais nunca devem ser armazenadas em arquivos ou documentação pública.
+
+Contas criadas pelo comando de demonstração:
+
+| Perfil | Usuário / E-mail | Senha de Teste | O que pode fazer |
 |---|---|---|---|
-| **Cliente** | `cliente_teste` | `Cliente123!` | Adicionar itens ao carrinho, simular checkout e fazer avaliações |
-| **Produtor** | `sitio_esperanca` | `Produtor123!` | Gerenciar produtos, aceitar/recusar pedidos e ver vendas |
-| **Administrador** | `paulo` | `Senha-Forte-123` | Acesso completo ao painel Django Admin (`/admin/`) e moderação |
+| **Cliente** | `cliente@demo.com` (`cliente_demo`) | `cliente-demo-2024` | Adicionar itens ao carrinho, simular checkout e fazer avaliações |
+| **Produtor** | `produtor@demo.com` (`produtor_demo`) | `produtor-demo-2024` | Gerenciar produtos, aceitar/recusar pedidos e ver vendas |
+| **Entregador** | `entregador@demo.com` (`entregador_demo`) | `entregador-demo-2024` | Ver entregas disponíveis, aceitar e confirmar entregas |
+| **Administrador** | `admin` | `admin-demo-2024` | Acesso completo ao painel Django Admin (`/admin/`) e moderação |
 
 > *Dica: No modal de login do frontend, existem atalhos de preenchimento em 1 clique para essas contas.*
 

@@ -7,27 +7,51 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from . import serializers as s
-from .models import Usuario
+from .models import Endereco, Usuario
 from .permissions import EhEntregador, EhProdutor
+
+
+# ── Throttles dedicados por escopo ──────────────────────────────────────────
+class LoginRateThrottle(AnonRateThrottle):
+    scope = 'login'
+
+
+class RegistroRateThrottle(AnonRateThrottle):
+    scope = 'registro'
+
+
+class RecuperarSenhaRateThrottle(AnonRateThrottle):
+    scope = 'recuperar_senha'
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """Login com JWT e throttle dedicado contra força bruta."""
+    throttle_classes = [LoginRateThrottle]
 
 
 class RegistroClienteView(generics.CreateAPIView):
     serializer_class = s.RegistroClienteSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegistroRateThrottle]
 
 
 class RegistroProdutorView(generics.CreateAPIView):
     serializer_class = s.RegistroProdutorSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegistroRateThrottle]
 
 
 class RegistroEntregadorView(generics.CreateAPIView):
     serializer_class = s.RegistroEntregadorSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [RegistroRateThrottle]
     permission_classes = [AllowAny]
 
 
@@ -47,6 +71,7 @@ class LogoutView(APIView):
 
 class RecuperarSenhaView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [RecuperarSenhaRateThrottle]
     serializer_class = s.RecuperarSenhaSerializer
 
     def post(self, request):
@@ -113,8 +138,11 @@ class PerfilEntregadorView(generics.RetrieveUpdateAPIView):
 class EnderecoViewSet(viewsets.ModelViewSet):
     serializer_class = s.EnderecoSerializer
     pagination_class = None
+    queryset = Endereco.objects.none()
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return Endereco.objects.none()
         return self.request.user.enderecos.all()
 
     def perform_create(self, serializer):

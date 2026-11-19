@@ -41,8 +41,11 @@ class ItemCarrinhoViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixi
     serializer_class = ItemCarrinhoSerializer
     permission_classes = [EhCliente]
     http_method_names = ["post", "patch", "delete", "head", "options"]
+    queryset = ItemCarrinho.objects.none()
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return ItemCarrinho.objects.none()
         return ItemCarrinho.objects.filter(carrinho__cliente=self.request.user).select_related("produto__produtor")
 
     def get_serializer_context(self):
@@ -72,8 +75,11 @@ class PedidoClienteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixin
     serializer_class = PedidoSerializer
     filterset_fields = ["status", "produtor"]
     ordering_fields = ["criado_em", "total"]
+    queryset = Pedido.objects.none()
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return Pedido.objects.none()
         return _pedidos_qs.filter(cliente=self.request.user)
 
     def create(self, request, *args, **kwargs):
@@ -96,8 +102,11 @@ class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
     serializer_class = PedidoSerializer
     filterset_fields = ["status", "modalidade"]
     ordering_fields = ["criado_em", "total"]
+    queryset = Pedido.objects.none()
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return Pedido.objects.none()
         return _pedidos_qs.filter(produtor=self.request.user.perfil_produtor)
 
     def _mudar(self, novo):
@@ -133,8 +142,11 @@ class EntregaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.
     permission_classes = [EhEntregador]
     serializer_class = PedidoSerializer
     filterset_fields = ["status"]
+    queryset = Pedido.objects.none()
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return Pedido.objects.none()
         base = _pedidos_qs.filter(modalidade=Pedido.Modalidade.ENTREGA)
         u = self.request.user
         if self.action in ("list",):

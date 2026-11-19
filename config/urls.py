@@ -69,6 +69,26 @@ def health_view(request):
     )
 
 
+def media_serve_view(request, path):
+    """Serve arquivos de mídia enviados por upload com proteção traversal e cache."""
+    media_file = (settings.MEDIA_ROOT / path).resolve()
+    try:
+        media_file.relative_to(settings.MEDIA_ROOT.resolve())
+    except ValueError:
+        from django.http import Http404
+        raise Http404("Caminho inválido.")
+
+    if not media_file.exists() or not media_file.is_file():
+        from django.http import Http404
+        raise Http404("Arquivo não encontrado.")
+
+    import mimetypes
+    ct, _ = mimetypes.guess_type(str(media_file))
+    response = FileResponse(open(media_file, "rb"), content_type=ct or "application/octet-stream")
+    response["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
 swagger_perms = [AllowAny] if getattr(settings, "ENABLE_SWAGGER", False) else [IsAdminUser]
 
 urlpatterns = [
@@ -76,6 +96,7 @@ urlpatterns = [
     path("style.css", frontend_asset("style.css", "text/css")),
     path("main.js", frontend_asset("main.js", "application/javascript")),
     path("assets/<path:filename>", frontend_assets_view, name="frontend-asset"),
+    path("media/<path:path>", media_serve_view, name="media-serve"),
     path("admin/", admin.site.urls),
     path("api/", include("usuarios.urls")),
     path("api/", include("catalogo.urls")),
@@ -86,6 +107,3 @@ urlpatterns = [
     path("api/schema/", SpectacularAPIView.as_view(permission_classes=swagger_perms), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema", permission_classes=swagger_perms), name="docs"),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

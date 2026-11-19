@@ -1,3 +1,5 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from usuarios.models import PerfilProdutor
@@ -25,9 +27,18 @@ class ProdutorPublicoSerializer(serializers.ModelSerializer):
             "total_produtos",
         ]
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_cidade_uf(self, obj):
         partes = [p for p in (obj.cidade, obj.estado) if p]
         return " / ".join(partes) if partes else ""
+
+
+class EstatisticasPublicasSerializer(serializers.Serializer):
+    familias_atendidas_semana = serializers.IntegerField()
+    total_clientes = serializers.IntegerField()
+    total_produtores = serializers.IntegerField()
+    total_produtos = serializers.IntegerField()
+    total_pedidos_concluidos = serializers.IntegerField()
 
 
 class CategoriaSerializer(serializers.ModelSerializer):

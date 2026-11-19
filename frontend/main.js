@@ -919,12 +919,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Preenchimento de demo
   document.getElementById('btnFillDemoClient')?.addEventListener('click', () => {
-    document.getElementById('loginUsername').value = 'cliente_teste';
-    document.getElementById('loginPassword').value = 'Cliente123!';
+    document.getElementById('loginUsername').value = 'cliente_demo';
+    document.getElementById('loginPassword').value = 'cliente-demo-2024';
   });
   document.getElementById('btnFillDemoAdmin')?.addEventListener('click', () => {
-    document.getElementById('loginUsername').value = 'paulo';
-    document.getElementById('loginPassword').value = 'Senha-Forte-123';
+    document.getElementById('loginUsername').value = 'admin';
+    document.getElementById('loginPassword').value = 'admin-demo-2024';
   });
 
   // Submit Login

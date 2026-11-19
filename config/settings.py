@@ -1,5 +1,6 @@
 import os
 import secrets
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -139,7 +140,7 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -173,6 +174,7 @@ USE_X_FORWARDED_PORT = True
 # Segurança em produção
 # ---------------------------------------------------------------------------
 if not DEBUG:
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "1").lower() in ("1", "true", "yes")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -229,6 +231,15 @@ REST_FRAMEWORK = {
     },
 }
 
+if "test" in sys.argv:
+    REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
+        "anon": "10000/minute",
+        "user": "10000/minute",
+        "login": "10000/minute",
+        "registro": "10000/minute",
+        "recuperar_senha": "10000/minute",
+    }
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -240,8 +251,10 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Plataforma de venda direta de produtores rurais (agricultura familiar).",
     "VERSION": "1.0.0",
     "ENUM_NAME_OVERRIDES": {
+        "PerfilProdutorStatusEnum": "usuarios.models.PerfilProdutor.Status",
         "PedidoStatusEnum": "pedidos.models.Pedido.Status",
         "PedidoModalidadeEnum": "pedidos.models.Pedido.Modalidade",
         "PedidoFormaPagamentoEnum": "pedidos.models.Pedido.FormaPagamento",
+        "ReclamacaoStatusEnum": "avaliacoes.models.Reclamacao.Status",
     },
 }

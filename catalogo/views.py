@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -12,8 +13,9 @@ from usuarios.models import PerfilProdutor, Usuario
 from usuarios.permissions import AdminEscreveTodosLeem, EhProdutor
 
 from .models import Categoria, Produto
-from .serializers import (CategoriaSerializer, ProdutoProdutorSerializer,
-                          ProdutoPublicoSerializer, ProdutorPublicoSerializer)
+from .serializers import (CategoriaSerializer, EstatisticasPublicasSerializer,
+                          ProdutoProdutorSerializer, ProdutoPublicoSerializer,
+                          ProdutorPublicoSerializer)
 
 
 class ProdutorPublicoViewSet(viewsets.ReadOnlyModelViewSet):
@@ -36,7 +38,9 @@ class ProdutorPublicoViewSet(viewsets.ReadOnlyModelViewSet):
 class EstatisticasPublicasView(APIView):
     """Estatísticas agregadas reais do banco de dados para a página inicial."""
     permission_classes = [AllowAny]
+    serializer_class = EstatisticasPublicasSerializer
 
+    @extend_schema(responses={200: EstatisticasPublicasSerializer})
     def get(self, request):
         agora = timezone.now()
         sete_dias_atras = agora - timedelta(days=7)
@@ -93,9 +97,15 @@ class ProdutoProdutorViewSet(viewsets.ModelViewSet):
     permission_classes = [EhProdutor]
     filterset_fields = ["categoria", "ativo", "tipo_producao"]
     search_fields = ["nome"]
+    queryset = Produto.objects.none()
 
     def get_queryset(self):
-        return Produto.objects.filter(produtor=self.request.user.perfil_produtor)
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return Produto.objects.none()
+        perfil = getattr(self.request.user, "perfil_produtor", None)
+        if not perfil:
+            return Produto.objects.none()
+        return Produto.objects.filter(produtor=perfil)
 
     def perform_create(self, serializer):
         serializer.save(produtor=self.request.user.perfil_produtor)

@@ -11,7 +11,7 @@ urlpatterns = [
     path("auth/registro/cliente/", views.RegistroClienteView.as_view()),
     path("auth/registro/produtor/", views.RegistroProdutorView.as_view()),
     path("auth/registro/entregador/", views.RegistroEntregadorView.as_view()),
-    path("auth/login/", TokenObtainPairView.as_view()),
+    path("auth/login/", views.CustomTokenObtainPairView.as_view()),
     path("auth/refresh/", TokenRefreshView.as_view()),
     path("auth/logout/", views.LogoutView.as_view()),
     path("auth/recuperar-senha/", views.RecuperarSenhaView.as_view()),

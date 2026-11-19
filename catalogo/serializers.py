@@ -1,6 +1,33 @@
 from rest_framework import serializers
 
+from usuarios.models import PerfilProdutor
+
 from .models import Categoria, Produto
+
+
+class ProdutorPublicoSerializer(serializers.ModelSerializer):
+    """Vitrine pública de produtores: não expõe dados sensíveis como chave Pix ou telefones."""
+    total_produtos = serializers.IntegerField(read_only=True, default=0)
+    cidade_uf = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PerfilProdutor
+        fields = [
+            "id",
+            "nome_propriedade",
+            "descricao",
+            "cidade",
+            "estado",
+            "cidade_uf",
+            "foto_propriedade",
+            "possui_maquininha",
+            "aceita_dinheiro",
+            "total_produtos",
+        ]
+
+    def get_cidade_uf(self, obj):
+        partes = [p for p in (obj.cidade, obj.estado) if p]
+        return " / ".join(partes) if partes else ""
 
 
 class CategoriaSerializer(serializers.ModelSerializer):

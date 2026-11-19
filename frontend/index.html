@@ -4,6 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Feira Virtual — Do Campo à sua Mesa</title>
+
+  <!-- SEO & Open Graph -->
+  <meta name="description" content="Plataforma de venda direta da agricultura familiar. Produtos frescos direto de quem planta, sem atravessadores." />
+  <meta name="theme-color" content="#246F11" />
+  <meta property="og:title" content="Feira Virtual — Venda Direta da Agricultura Familiar" />
+  <meta property="og:description" content="Produtos frescos diretamente dos produtores rurais da sua região. Sem intermediários, preço justo." />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Feira Virtual — Venda Direta" />
+  <meta name="twitter:description" content="Produtos frescos direto de quem planta, sem atravessadores." />
+  <meta name="twitter:image" content="/assets/og-image.png" />
+
+  <!-- Favicons & PWA -->
+  <link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/manifest.webmanifest" />
+
+  <!-- Estilos -->
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,20 +40,18 @@
 
       <!-- Logo -->
       <a href="#" class="navbar__logo" aria-label="Feira Virtual - Página inicial">
-        <div class="navbar__logo-icon" aria-hidden="true">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="16" fill="var(--color-primary)"/>
-            <path d="M16 6 C16 6, 24 11, 24 18 C24 23 20.4 26 16 26 C11.6 26 8 23 8 18 C8 11 16 6 16 6Z" fill="white" opacity="0.25"/>
-            <path d="M16 8 C16 8, 22 13 22 19 C22 22.3 19.3 25 16 25 C12.7 25 10 22.3 10 19 C10 13 16 8 16 8Z" fill="white" opacity="0.4"/>
-            <path d="M16 10 L16 24" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M16 15 C16 15 19 13 21 14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M16 19 C16 19 13 17 11 18" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="navbar__logo-text">
-          <span class="navbar__logo-name">Feira Virtual</span>
-          <span class="navbar__logo-tagline">Do campo à sua mesa</span>
-        </div>
+        <img
+          src="/assets/logo-horizontal.png"
+          alt="Feira Virtual — Venda Direta"
+          class="navbar__logo-img navbar__logo-img--light"
+          width="160" height="70"
+        />
+        <img
+          src="/assets/logo-horizontal-white.png"
+          alt="Feira Virtual — Venda Direta"
+          class="navbar__logo-img navbar__logo-img--dark"
+          width="160" height="70"
+        />
       </a>
 
       <!-- Nav Links (desktop) -->
@@ -39,7 +60,6 @@
           <li><a href="#produtos" class="navbar__link">Produtos</a></li>
           <li><a href="#produtores" class="navbar__link">Produtores</a></li>
           <li><a href="#como-funciona" class="navbar__link">Como funciona</a></li>
-          <li><a href="/api/docs/" target="_blank" class="navbar__link navbar__link--api" title="Documentação Swagger">API Swagger ↗</a></li>
         </ul>
       </nav>
 
@@ -90,7 +110,6 @@
           <li><a href="#produtos" class="navbar__link">Produtos</a></li>
           <li><a href="#produtores" class="navbar__link">Produtores</a></li>
           <li><a href="#como-funciona" class="navbar__link">Como funciona</a></li>
-          <li><a href="/api/docs/" target="_blank" class="navbar__link">API Swagger ↗</a></li>
         </ul>
         <div class="navbar__mobile-actions" id="mobileAuthArea">
           <button class="btn btn--outline btn--full" id="btnMobileLogin">Entrar</button>
@@ -136,8 +155,8 @@
               <span class="avatar avatar--3"></span>
               <span class="avatar avatar--4"></span>
             </div>
-            <p class="hero__social-text">
-              <strong>+1.200 famílias</strong> atendidas esta semana
+            <p class="hero__social-text" id="heroSocialText">
+              <strong>Carregando dados...</strong>
             </p>
           </div>
 
@@ -327,22 +346,10 @@
           <p class="section-subtitle">Conheça as famílias e propriedades rurais cadastradas na feira.</p>
         </div>
 
-        <div class="producer-showcase">
-          <div class="producer-card">
-            <div class="producer-card__avatar">🏡</div>
-            <div class="producer-card__info">
-              <div class="producer-card__header">
-                <h3>Sítio Esperança</h3>
-                <span class="badge badge--success">✓ Aprovado</span>
-              </div>
-              <p class="producer-card__location">📍 Natal / RN · Agricultura Agroecológica</p>
-              <p class="producer-card__desc">Produção familiar sustentável sem uso de agrotóxicos. Especialistas em hortaliças hidropônicas e mel de abelha nativa.</p>
-              <div class="producer-card__badges">
-                <span class="payment-badge">⚡ Aceita Pix</span>
-                <span class="payment-badge">💳 Maquininha</span>
-                <span class="payment-badge">💵 Dinheiro</span>
-              </div>
-            </div>
+        <div class="producer-showcase" id="producerShowcase">
+          <div class="empty-state">
+            <span class="empty-state__icon">🚜</span>
+            <p>Carregando produtores cadastrados...</p>
           </div>
         </div>
       </div>
@@ -386,12 +393,14 @@
   <footer class="footer">
     <div class="container footer__inner">
       <div class="footer__brand">
-        <span class="navbar__logo-name">Feira Virtual</span>
+        <img src="/assets/logo-horizontal.png" alt="Feira Virtual"
+             class="footer__logo-img footer__logo-img--light" height="48" loading="lazy" />
+        <img src="/assets/logo-horizontal-white.png" alt="Feira Virtual"
+             class="footer__logo-img footer__logo-img--dark" height="48" loading="lazy" />
         <p>Plataforma de venda direta da agricultura familiar.</p>
       </div>
       <div class="footer__links">
-        <a href="/api/docs/" target="_blank">Documentação da API (Swagger)</a>
-        <a href="/admin/" target="_blank">Painel Administrativo Django</a>
+        <!-- Link administrativo removido do rodapé público -->
       </div>
       <p class="footer__copy">© 2026 Feira Virtual. Todos os direitos reservados.</p>
     </div>

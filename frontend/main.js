@@ -4,9 +4,8 @@
  */
 
 // Auto-detecção da URL base da API
-const API_BASE = window.location.port === '8000' 
-  ? '/api' 
-  : 'http://127.0.0.1:8000/api';
+// API_BASE sempre relativo — funciona em qualquer porta/domínio/produção
+const API_BASE = '/api';
 
 // Estado global da aplicação
 const state = {
@@ -18,10 +17,22 @@ const state = {
   cart: { itens: [], total: '0.00' },
   categories: [],
   selectedCategory: '',
+  selectedProducer: '',
   searchQuery: '',
   tipoProducao: '',
   ordering: 'nome',
 };
+
+// Sanitização de strings para proteção contra Cross-Site Scripting (XSS)
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // ==========================================
 // 1. HELPER DE REQUISIÇÕES (com autenticação)
@@ -180,7 +191,9 @@ function renderAuthArea() {
   const mobileArea = document.getElementById('mobileAuthArea');
 
   if (state.user) {
-    const initials = (state.user.first_name?.[0] || state.user.username[0] || 'U').toUpperCase();
+    const rawName = state.user.first_name || state.user.username || '';
+    const safeName = escapeHtml(rawName);
+    const initials = escapeHtml((state.user.first_name?.[0] || state.user.username[0] || 'U').toUpperCase());
     const roleLabel = {
       'CLIENTE': 'Cliente',
       'PRODUTOR': 'Produtor',
@@ -189,10 +202,10 @@ function renderAuthArea() {
     }[state.user.tipo] || state.user.tipo;
 
     const html = `
-      <div class="user-chip" title="Logado como ${state.user.username}">
+      <div class="user-chip" title="Logado como ${escapeHtml(state.user.username)}">
         <span class="user-chip__avatar">${initials}</span>
-        <span class="user-chip__name">${state.user.first_name || state.user.username}</span>
-        <span class="user-chip__role">(${roleLabel})</span>
+        <span class="user-chip__name">${safeName}</span>
+        <span class="user-chip__role">(${escapeHtml(roleLabel)})</span>
         <button class="user-chip__logout" id="btnLogout" title="Sair da conta" aria-label="Sair">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -203,7 +216,7 @@ function renderAuthArea() {
 
     area.innerHTML = html;
     mobileArea.innerHTML = `
-      <div style="padding: 10px; font-weight: 600;">Olá, ${state.user.first_name || state.user.username} (${roleLabel})</div>
+      <div style="padding: 10px; font-weight: 600;">Olá, ${safeName} (${escapeHtml(roleLabel)})</div>
       <button class="btn btn--outline btn--full" id="btnMobileLogout">Sair da conta</button>
     `;
 
@@ -266,6 +279,7 @@ function renderCategoryPills() {
       container.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.selectedCategory = btn.dataset.category;
+      state.selectedProducer = ''; // Reseta filtro específico de produtor ao trocar de categoria
       loadProducts();
     });
   });
@@ -285,6 +299,7 @@ async function loadProducts() {
   if (state.selectedCategory) params.append('categoria', state.selectedCategory);
   if (state.tipoProducao) params.append('tipo_producao', state.tipoProducao);
   if (state.ordering) params.append('ordering', state.ordering);
+  if (state.selectedProducer) params.append('produtor', state.selectedProducer);
 
   try {
     const res = await apiFetch(`/produtos/?${params.toString()}`);
@@ -342,16 +357,19 @@ function renderProducts(products) {
   };
 
   grid.innerHTML = products.map(p => {
+    const nome = escapeHtml(p.nome);
     const preco = parseFloat(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const unit = getUnitDisplay(p.unidade_medida);
+    const unit = escapeHtml(getUnitDisplay(p.unidade_medida));
     const emoji = getProductEmoji(p.nome);
-    const produtor = p.produtor_nome || 'Produtor Rural';
-    const categoria = p.categoria_nome || '';
+    const produtor = escapeHtml(p.produtor_nome || 'Produtor Rural');
+    const categoria = escapeHtml(p.categoria_nome || '');
+    const descricao = escapeHtml(p.descricao || 'Produto fresco colhido diretamente na propriedade familiar.');
+    const imagem = p.imagem ? escapeHtml(p.imagem) : null;
 
     return `
       <article class="product-card" data-id="${p.id}">
         <div class="product-card__thumb">
-          ${p.imagem ? `<img src="${p.imagem}" alt="${p.nome}" loading="lazy"/>` : `<span>${emoji}</span>`}
+          ${imagem ? `<img src="${imagem}" alt="${nome}" loading="lazy"/>` : `<span>${emoji}</span>`}
           <div class="product-card__badges">
             ${getTipoBadge(p.tipo_producao)}
           </div>
@@ -359,21 +377,21 @@ function renderProducts(products) {
         </div>
 
         <span class="product-card__category">${categoria}</span>
-        <h3 class="product-card__title">${p.nome}</h3>
+        <h3 class="product-card__title">${nome}</h3>
         <p class="product-card__producer">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
           </svg>
           ${produtor}
         </p>
-        <p class="product-card__desc">${p.descricao || 'Produto fresco colhido diretamente na propriedade familiar.'}</p>
+        <p class="product-card__desc">${descricao}</p>
 
         <div class="product-card__action-row">
           <div class="product-card__price-wrap">
             <span class="product-card__price">${preco}</span>
             <span class="product-card__unit">/ ${unit}</span>
           </div>
-          <button class="btn btn--cta btn--sm btn-add-cart" data-id="${p.id}" data-name="${p.nome}">
+          <button class="btn btn--cta btn--sm btn-add-cart" data-id="${p.id}" data-name="${nome}">
             Adicionar
           </button>
         </div>
@@ -388,6 +406,132 @@ function renderProducts(products) {
       handleAddToCart(btn.dataset.id, btn.dataset.name);
     });
   });
+}
+
+// ==========================================
+// 3.1 ESTATÍSTICAS REAIS DO BANCO DE DADOS
+// ==========================================
+async function loadStatistics() {
+  const socialEl = document.getElementById('heroSocialText');
+  if (!socialEl) return;
+
+  try {
+    const res = await apiFetch('/estatisticas/');
+    if (res.ok) {
+      const data = await res.json();
+      const atendidas = data.familias_atendidas_semana || 0;
+      const produtores = data.total_produtores || 0;
+      const clientes = data.total_clientes || 0;
+      const produtos = data.total_produtos || 0;
+
+      if (atendidas > 0) {
+        socialEl.innerHTML = `<strong>+${atendidas.toLocaleString('pt-BR')} ${atendidas === 1 ? 'família atendida' : 'famílias atendidas'}</strong> esta semana`;
+      } else if (clientes > 0) {
+        socialEl.innerHTML = `<strong>${clientes.toLocaleString('pt-BR')} ${clientes === 1 ? 'família' : 'famílias'}</strong> conectadas a <strong>${produtores} ${produtores === 1 ? 'produtor' : 'produtores'}</strong>`;
+      } else {
+        socialEl.innerHTML = `<strong>${produtores} ${produtores === 1 ? 'produtor local' : 'produtores locais'}</strong> com <strong>${produtos} produtos frescos</strong>`;
+      }
+    }
+  } catch (err) {
+    console.warn('Não foi possível carregar estatísticas:', err);
+    socialEl.innerHTML = `<strong>Alimentos frescos</strong> direto da agricultura familiar`;
+  }
+}
+
+// ==========================================
+// 3.2 VITRINE DE PRODUTORES CADASTRADOS
+// ==========================================
+async function loadProducers() {
+  const container = document.getElementById('producerShowcase');
+  if (!container) return;
+
+  try {
+    const res = await apiFetch('/produtores/');
+    if (res.ok) {
+      const data = await res.json();
+      const producers = Array.isArray(data) ? data : (data.results || []);
+
+      if (producers.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state__icon">🚜</span>
+            <p>Nenhum produtor parceiro com produtos ativos no momento.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = producers.map(p => {
+        const nome = escapeHtml(p.nome_propriedade || 'Propriedade Familiar');
+        const local = escapeHtml(p.cidade_uf || (p.cidade && p.estado ? `${p.cidade} / ${p.estado}` : 'Região Local'));
+        const desc = escapeHtml(p.descricao || 'Produção familiar sustentável e livre de atravessadores.');
+        const totalProds = p.total_produtos || 0;
+
+        let badges = '';
+        if (p.possui_maquininha) badges += '<span class="payment-badge">💳 Cartão</span> ';
+        if (p.aceita_dinheiro) badges += '<span class="payment-badge">💵 Dinheiro</span> ';
+        badges += '<span class="payment-badge">⚡ Pix</span>';
+
+        return `
+          <article class="producer-card" data-id="${p.id}">
+            <div class="producer-card__top">
+              <div class="producer-card__avatar">
+                ${p.foto_propriedade ? `<img src="${escapeHtml(p.foto_propriedade)}" alt="${nome}" loading="lazy"/>` : '🏡'}
+              </div>
+              <div class="producer-card__header">
+                <h3>${nome}</h3>
+                <span class="producer-card__location">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  ${local}
+                </span>
+              </div>
+            </div>
+
+            <p class="producer-card__desc">${desc}</p>
+
+            <div class="producer-card__footer">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="badge badge--produtos">${totalProds} ${totalProds === 1 ? 'produto ativo' : 'produtos ativos'}</span>
+                <button class="btn btn--outline btn--sm btn-filter-producer" data-id="${p.id}" data-name="${nome}">
+                  Ver produtos
+                </button>
+              </div>
+              <div class="producer-card__badges">
+                ${badges}
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      // Adiciona listener para filtrar produtos pelo produtor
+      container.querySelectorAll('.btn-filter-producer').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const produtorId = e.currentTarget.dataset.id;
+          const produtorName = e.currentTarget.dataset.name;
+          filtrarPorProdutor(produtorId, produtorName);
+        });
+      });
+    }
+  } catch (err) {
+    console.error('Erro ao carregar produtores:', err);
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state__icon">⚠️</span>
+        <p>Não foi possível carregar os produtores parceiros.</p>
+      </div>
+    `;
+  }
+}
+
+function filtrarPorProdutor(id, nome) {
+  state.selectedProducer = id;
+  loadProducts();
+  const prodSec = document.getElementById('produtos');
+  if (prodSec) prodSec.scrollIntoView({ behavior: 'smooth' });
+  showToast(`Filtrando produtos de ${nome}`, 'info');
 }
 
 // ==========================================
@@ -527,8 +671,8 @@ function renderCartDrawer() {
   container.innerHTML = state.cart.itens.map(it => `
     <div class="cart-item" data-id="${it.id}">
       <div class="cart-item__info">
-        <h4 class="cart-item__name">${it.produto_nome}</h4>
-        <div class="cart-item__price">${formatBRL(it.preco_unitario)} / ${it.unidade_medida || 'un'}</div>
+        <h4 class="cart-item__name">${escapeHtml(it.produto_nome)}</h4>
+        <div class="cart-item__price">${formatBRL(it.preco_unitario)} / ${escapeHtml(it.unidade_medida || 'un')}</div>
         <div class="cart-item__subtotal">${formatBRL(it.subtotal)}</div>
       </div>
 
@@ -600,7 +744,7 @@ async function loadUserAddresses() {
         select.innerHTML = '<option value="">Nenhum endereço cadastrado</option>';
       } else {
         select.innerHTML = enderecos.map(e => `
-          <option value="${e.id}">${e.logradouro}, ${e.numero} - ${e.bairro} (${e.cidade}/${e.estado})</option>
+          <option value="${e.id}">${escapeHtml(e.logradouro)}, ${escapeHtml(e.numero)} - ${escapeHtml(e.bairro)} (${escapeHtml(e.cidade)}/${escapeHtml(e.estado)})</option>
         `).join('');
       }
     }
@@ -722,6 +866,8 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
   loadCategories();
   loadProducts();
+  loadStatistics();
+  loadProducers();
 
   // Dark/Light Theme
   const themeToggle = document.getElementById('themeToggle');

@@ -1,11 +1,13 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.permissions import AllowAny, IsAdminUser
 
 FRONTEND_DIR = settings.BASE_DIR / "frontend"
+ASSETS_DIR = FRONTEND_DIR / "assets"
 
 
 def frontend_view(request):
@@ -18,18 +20,71 @@ def frontend_asset(filename, content_type):
     return view
 
 
+def frontend_assets_view(request, filename):
+    """Serve arquivos da pasta frontend/assets/ com cache headers."""
+    asset_path = ASSETS_DIR / filename
+    if not asset_path.exists() or not asset_path.is_file():
+        from django.http import Http404
+        raise Http404(f"Asset '{filename}' não encontrado.")
+    # Garantia de que o path não escapa da pasta de assets (path traversal)
+    try:
+        asset_path.relative_to(ASSETS_DIR)
+    except ValueError:
+        from django.http import Http404
+        raise Http404("Caminho inválido.")
+    content_types = {
+        ".png": "image/png",
+        ".ico": "image/x-icon",
+        ".svg": "image/svg+xml",
+        ".webmanifest": "application/manifest+json",
+        ".json": "application/json",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+    }
+    ct = content_types.get(asset_path.suffix.lower(), "application/octet-stream")
+    response = FileResponse(open(asset_path, "rb"), content_type=ct)
+    # Cache imutável para assets com hash; mais curto para o manifest
+    if asset_path.suffix in (".webmanifest", ".json"):
+        response["Cache-Control"] = "public, max-age=3600"
+    else:
+        response["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
+def health_view(request):
+    """Endpoint de saúde para load balancers e Docker HEALTHCHECK."""
+    from django.db import connection
+    try:
+        connection.ensure_connection()
+        db_ok = True
+    except Exception:
+        db_ok = False
+    status = 200 if db_ok else 503
+    import json
+    return HttpResponse(
+        json.dumps({"status": "ok" if db_ok else "degraded", "db": db_ok}),
+        content_type="application/json",
+        status=status,
+    )
+
+
+swagger_perms = [AllowAny] if getattr(settings, "ENABLE_SWAGGER", False) else [IsAdminUser]
+
 urlpatterns = [
     path("", frontend_view, name="home"),
     path("style.css", frontend_asset("style.css", "text/css")),
     path("main.js", frontend_asset("main.js", "application/javascript")),
+    path("assets/<path:filename>", frontend_assets_view, name="frontend-asset"),
     path("admin/", admin.site.urls),
     path("api/", include("usuarios.urls")),
     path("api/", include("catalogo.urls")),
     path("api/", include("pedidos.urls")),
     path("api/", include("avaliacoes.urls")),
     path("api/admin/", include("painel.urls")),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
+    path("api/health/", health_view, name="health"),
+    path("api/schema/", SpectacularAPIView.as_view(permission_classes=swagger_perms), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema", permission_classes=swagger_perms), name="docs"),
 ]
 
 if settings.DEBUG:

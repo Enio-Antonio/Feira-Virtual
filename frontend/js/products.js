@@ -99,6 +99,7 @@ export async function loadProducts(page = 1) {
     catalogState.totalPages = Math.ceil(catalogState.totalCount / 20) || 1;
 
     renderProductsGrid(products);
+    updateHeroProductRating(products);
     renderPagination();
   } catch (_) {
     grid.innerHTML = `
@@ -115,6 +116,34 @@ const typeBadges = {
   AGROECOLOGICO: '<span class="badge badge--outline">🍃 Agroecológico</span>',
   CONVENCIONAL: '<span class="badge badge--outline">🌾 Convencional</span>',
 };
+
+function hasValidRating(p) {
+  if (!p) return false;
+  const total = Number(p.total_avaliacoes) || 0;
+  const media = p.nota_media !== null && p.nota_media !== undefined ? Number(p.nota_media) : NaN;
+  return total > 0 && Number.isFinite(media) && media > 0;
+}
+
+function updateHeroProductRating(products) {
+  const header = document.getElementById('heroProductHeader');
+  if (!header) return;
+
+  const existingBadge = header.querySelector('.product-card-hero__badge');
+  if (existingBadge) existingBadge.remove();
+
+  if (!Array.isArray(products) || products.length === 0) return;
+  const heroProd =
+    products.find(p => String(p.nome || '').toLowerCase().includes('alface')) || products[0];
+
+  if (hasValidRating(heroProd)) {
+    const badge = document.createElement('div');
+    badge.className = 'product-card-hero__badge';
+    const span = document.createElement('span');
+    span.textContent = `⭐ ${Number(heroProd.nota_media).toFixed(1)}`;
+    badge.appendChild(span);
+    header.appendChild(badge);
+  }
+}
 
 function renderProductsGrid(products) {
   const grid = document.getElementById('productsGrid');
@@ -134,7 +163,7 @@ function renderProductsGrid(products) {
     const semEstoque = parseFloat(p.estoque) <= 0;
     const produtorNome = p.produtor_nome || 'Produtor Parceiro';
     const imgUrl = safeUrl(p.imagem, '/static/assets/logo-icon.webp');
-    const nota = p.nota_media ? `⭐ ${Number(p.nota_media).toFixed(1)}` : '';
+    const nota = hasValidRating(p) ? `⭐ ${Number(p.nota_media).toFixed(1)}` : '';
 
     return `
       <article class="product-card ${semEstoque ? 'card--out-of-stock' : ''}">

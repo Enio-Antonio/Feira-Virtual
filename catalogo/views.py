@@ -87,7 +87,10 @@ class CatalogoViewSet(viewsets.ReadOnlyModelViewSet):
         return (Produto.objects
                 .filter(ativo=True, categoria__ativa=True, produtor__status=PerfilProdutor.Status.APROVADO)
                 .select_related("produtor", "categoria")
-                .annotate(nota_media=Avg("avaliacoes__nota"))
+                .annotate(
+                    nota_media=Avg("avaliacoes__nota"),
+                    total_avaliacoes=Count("avaliacoes", distinct=True),
+                )
                 .order_by("nome"))
 
 

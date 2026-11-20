@@ -216,14 +216,48 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
   font-size: 0.75rem;
   font-weight: 600;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
+  line-height: 1.2;
 }
-.badge--success { background-color: var(--color-primary-tint); color: var(--color-primary-dark); }
-.badge--outline { background-color: transparent; border: 1.5px solid var(--border); color: var(--text-secondary); }
+.badge--success {
+  background-color: var(--color-primary-tint);
+  color: var(--color-primary-dark);
+  border: 1.5px solid rgba(36, 111, 17, 0.25);
+}
+[data-theme="dark"] .badge--success {
+  background-color: rgba(103, 174, 37, 0.16);
+  color: #C8F5A2;
+  border-color: rgba(103, 174, 37, 0.42);
+}
+.badge--outline {
+  background-color: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+}
+[data-theme="dark"] .badge--outline {
+  color: #D5DDD0;
+  border-color: #4A5442;
+}
+.hero__badge {
+  min-height: 32px;
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background-color: var(--color-primary-tint);
+  color: var(--color-primary-dark);
+  border: 1.5px solid rgba(36, 111, 17, 0.28);
+}
+[data-theme="dark"] .hero__badge {
+  background-color: rgba(103, 174, 37, 0.14);
+  color: #C8F5A2;
+  border-color: rgba(103, 174, 37, 0.42);
+}
 .badge--organico { background-color: #E8F5E9; color: #2E7D32; }
 .badge--agroecologico { background-color: #FFF3E0; color: #E65100; }
 .badge--convencional { background-color: var(--bg-secondary); color: var(--text-secondary); }
@@ -276,19 +310,30 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .navbar__logo-tagline { font-size: 0.6875rem; color: var(--text-disabled); }
 
-/* Logo PNG/WebPno rodapé */
+/* Logo PNG/WebP no rodapé */
 .footer__logo-img {
-  height: 48px;
+  height: 52px;
   width: auto;
   display: block;
   margin-inline: auto;
   object-fit: contain;
-  margin-bottom: var(--space-2);
 }
-.footer__logo-img--light { display: block; margin-inline: auto; }
-.footer__logo-img--dark  { display: none;  margin-inline: auto; }
+.footer__logo-img--light {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-inline: auto;
+}
+.footer__logo-img--dark {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-inline: auto;
+}
 [data-theme="dark"] .footer__logo-img--light { display: none; }
-[data-theme="dark"] .footer__logo-img--dark  { display: block; }
+[data-theme="dark"] .footer__logo-img--dark  { display: flex; }
 
 .navbar__nav { margin-left: auto; }
 .navbar__links { display: flex; align-items: center; gap: var(--space-1); }
@@ -843,21 +888,42 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 .footer__brand {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+.footer__brand p {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  margin: 0;
   text-align: center;
 }
-.footer__brand p { color: var(--text-secondary); font-size: 0.875rem; margin-top: 4px; }
-.footer__links { display: flex; justify-content: center; gap: var(--space-6); flex-wrap: wrap; }
+.footer__links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  width: 100%;
+}
 .footer__links a { color: var(--color-primary); font-weight: 600; font-size: 0.9375rem; }
 [data-theme="dark"] .footer__links a { color: var(--color-primary-light); }
 .footer__links a:hover { text-decoration: underline; }
-.footer__copy { font-size: 0.8125rem; color: var(--text-disabled); }
+.footer__copy {
+  font-size: 0.8125rem;
+  color: var(--text-disabled);
+  text-align: center;
+  margin: 0;
+}
 
 /* DRAWER DO CARRINHO */
 .drawer-overlay {

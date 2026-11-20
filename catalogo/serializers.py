@@ -52,11 +52,12 @@ class ProdutoPublicoSerializer(serializers.ModelSerializer):
     produtor_nome = serializers.CharField(source="produtor.nome_propriedade", read_only=True)
     categoria_nome = serializers.CharField(source="categoria.nome", read_only=True)
     nota_media = serializers.FloatField(read_only=True, default=None)
+    total_avaliacoes = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Produto
         fields = ["id", "nome", "descricao", "preco", "unidade_medida", "estoque", "tipo_producao", "imagem",
-                  "categoria", "categoria_nome", "produtor", "produtor_nome", "nota_media"]
+                  "categoria", "categoria_nome", "produtor", "produtor_nome", "nota_media", "total_avaliacoes"]
 
 
 class ProdutoProdutorSerializer(serializers.ModelSerializer):

@@ -1,15 +1,19 @@
-{% load static %}<!DOCTYPE html>
+{% load static %}
+<!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Feira Virtual — Do Campo à sua Mesa</title>
 
   <!-- SEO & Open Graph -->
-  <meta name="description" content="Plataforma de venda direta da agricultura familiar. Produtos frescos direto de quem planta, sem atravessadores." />
+  <meta name="description"
+    content="Plataforma de venda direta da agricultura familiar. Produtos frescos direto de quem planta, sem atravessadores." />
   <meta name="theme-color" content="#246F11" />
   <meta property="og:title" content="Feira Virtual — Venda Direta da Agricultura Familiar" />
-  <meta property="og:description" content="Produtos frescos diretamente dos produtores rurais da sua região. Sem intermediários, preço justo." />
+  <meta property="og:description"
+    content="Produtos frescos diretamente dos produtores rurais da sua região. Sem intermediários, preço justo." />
   <meta property="og:image" content="{% static 'assets/og-image.png' %}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -27,8 +31,9 @@
   <link rel="manifest" href="{% static 'assets/manifest.webmanifest' %}" />
 
   <!-- Estilos (servido pelo WhiteNoise com cache imutável, sem requisições externas) -->
-  <link rel="stylesheet" href="{% static 'style.css' %}" />
+  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120" />
 </head>
+
 <body>
 
   <!-- Barra de carregamento global -->
@@ -41,12 +46,18 @@
       <!-- Logo responsiva em WebP + fallback PNG + variante Dark Mode -->
       <a href="#" class="navbar__logo" aria-label="Feira Virtual - Página inicial">
         <picture class="navbar__logo-img--light">
-          <source srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x" type="image/webp" />
-          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual — Venda Direta" class="navbar__logo-img" width="160" height="70" />
+          <source
+            srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x"
+            type="image/webp" />
+          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual — Venda Direta"
+            class="navbar__logo-img" width="160" height="70" />
         </picture>
         <picture class="navbar__logo-img--dark">
-          <source srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x" type="image/webp" />
-          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual — Venda Direta" class="navbar__logo-img" width="160" height="70" />
+          <source
+            srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x"
+            type="image/webp" />
+          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual — Venda Direta"
+            class="navbar__logo-img" width="160" height="70" />
         </picture>
       </a>
 
@@ -64,22 +75,31 @@
 
         <!-- Toggle Dark Mode -->
         <button type="button" class="btn-icon" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar tema">
-          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
           </svg>
-          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
           </svg>
         </button>
 
         <!-- Carrinho -->
         <button type="button" class="btn-icon btn-icon--cart" id="btnOpenCart" aria-label="Ver carrinho">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
           </svg>
           <span class="cart-badge" id="cartBadge" aria-hidden="true" style="display: none;">0</span>
         </button>
@@ -91,7 +111,8 @@
         </div>
 
         <!-- Hamburguer (mobile) -->
-        <button type="button" class="navbar__hamburger" id="hamburger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenu">
+        <button type="button" class="navbar__hamburger" id="hamburger" aria-label="Abrir menu" aria-expanded="false"
+          aria-controls="mobileMenu">
           <span></span>
           <span></span>
           <span></span>
@@ -127,13 +148,13 @@
       <div class="hero__inner container">
         <div class="hero__content">
           <div class="hero__eyebrow" aria-label="Destaque">
-            <span class="badge badge--success">🌱 Agricultura familiar</span>
-            <span class="badge badge--outline">Direto do produtor</span>
+            <span class="badge hero__badge">Agricultura Familiar</span>
+            <span class="badge hero__badge">Direto do produtor</span>
           </div>
 
           <h1 class="hero__title" id="hero-title">
-            Produtos frescos,<br/>
-            <em>direto de quem planta</em><br/>
+            Produtos frescos,<br />
+            <em>direto de quem planta</em><br />
             até você.
           </h1>
 
@@ -156,16 +177,20 @@
 
           <div class="hero__ctas">
             <a href="#produtos" class="btn btn--cta btn--lg">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
               Ver produtos disponíveis
             </a>
             <a href="#produtores" class="btn btn--ghost btn--lg">
               Conhecer produtores
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
               </svg>
             </a>
           </div>
@@ -182,19 +207,18 @@
 
         <div class="hero__visual" aria-hidden="true">
           <div class="product-card-hero">
-            <div class="product-card-hero__header">
+            <div class="product-card-hero__header" id="heroProductHeader">
               <div class="product-card-hero__img">
                 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
-                  <circle cx="100" cy="100" r="90" fill="var(--color-primary-tint)"/>
-                  <ellipse cx="100" cy="120" rx="55" ry="30" fill="#67AE25" opacity="0.7"/>
-                  <ellipse cx="80" cy="105" rx="38" ry="22" fill="#246F11"/>
-                  <ellipse cx="120" cy="100" rx="35" ry="20" fill="#1B4312"/>
-                  <ellipse cx="100" cy="95" rx="30" ry="18" fill="#67AE25"/>
-                  <ellipse cx="100" cy="92" rx="22" ry="14" fill="#246F11"/>
-                  <line x1="100" y1="118" x2="100" y2="145" stroke="#1B4312" stroke-width="4" stroke-linecap="round"/>
+                  <circle cx="100" cy="100" r="90" fill="var(--color-primary-tint)" />
+                  <ellipse cx="100" cy="120" rx="55" ry="30" fill="#67AE25" opacity="0.7" />
+                  <ellipse cx="80" cy="105" rx="38" ry="22" fill="#246F11" />
+                  <ellipse cx="120" cy="100" rx="35" ry="20" fill="#1B4312" />
+                  <ellipse cx="100" cy="95" rx="30" ry="18" fill="#67AE25" />
+                  <ellipse cx="100" cy="92" rx="22" ry="14" fill="#246F11" />
+                  <line x1="100" y1="118" x2="100" y2="145" stroke="#1B4312" stroke-width="4" stroke-linecap="round" />
                 </svg>
               </div>
-              <div class="product-card-hero__badge"><span>⭐ 5.0</span></div>
             </div>
             <div class="product-card-hero__body">
               <span class="product-card-hero__category">🌿 Hortaliças · Orgânico</span>
@@ -274,16 +298,21 @@
         <div class="section-header">
           <span class="badge badge--success">Feira Aberta</span>
           <h2 class="section-title">Produtos Frescos da Semana</h2>
-          <p class="section-subtitle">Itens colhidos diretamente pelos produtores parceiros. Clique em qualquer produto para ver avaliações e detalhes.</p>
+          <p class="section-subtitle">Itens colhidos diretamente pelos produtores parceiros. Clique em qualquer produto
+            para ver avaliações e detalhes.</p>
         </div>
 
         <div class="catalog-controls">
           <div class="search-box">
-            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="text" id="searchInput" placeholder="Buscar por alface, tomate, cenoura..." aria-label="Buscar produtos" />
-            <button type="button" id="btnClearSearch" class="btn-clear" style="display: none;" title="Limpar busca" aria-label="Limpar busca">✕</button>
+            <input type="text" id="searchInput" placeholder="Buscar por alface, tomate, cenoura..."
+              aria-label="Buscar produtos" />
+            <button type="button" id="btnClearSearch" class="btn-clear" style="display: none;" title="Limpar busca"
+              aria-label="Limpar busca">✕</button>
           </div>
 
           <div class="select-filters">
@@ -303,7 +332,8 @@
         </div>
 
         <div class="category-pills" id="categoryPills" role="tablist" aria-label="Categorias">
-          <button type="button" class="pill active" data-category="" role="tab" aria-selected="true">Todas as categorias</button>
+          <button type="button" class="pill active" data-category="" role="tab" aria-selected="true">Todas as
+            categorias</button>
         </div>
 
         <div id="activeProducerFilter"></div>
@@ -376,12 +406,18 @@
     <div class="container footer__inner">
       <div class="footer__brand">
         <picture class="footer__logo-img--light">
-          <source srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x" type="image/webp" />
-          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual" class="footer__logo-img" height="48" loading="lazy" />
+          <source
+            srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x"
+            type="image/webp" />
+          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual" class="footer__logo-img" height="48"
+            loading="lazy" />
         </picture>
         <picture class="footer__logo-img--dark">
-          <source srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x" type="image/webp" />
-          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual" class="footer__logo-img" height="48" loading="lazy" />
+          <source
+            srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x"
+            type="image/webp" />
+          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual" class="footer__logo-img"
+            height="48" loading="lazy" />
         </picture>
         <p>Plataforma de venda direta da agricultura familiar.</p>
       </div>
@@ -399,9 +435,11 @@
   <aside class="cart-drawer" id="cartDrawer" aria-hidden="true" role="dialog" aria-labelledby="cartTitle">
     <div class="cart-drawer__header">
       <div class="cart-drawer__title-wrap">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <circle cx="9" cy="21" r="1" />
+          <circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
         </svg>
         <h2 id="cartTitle">Meu Carrinho</h2>
       </div>
@@ -422,7 +460,8 @@
         <strong id="cartTotalVal">R$ 0,00</strong>
       </div>
       <button type="button" class="btn btn--cta btn--full btn--lg" id="btnCheckout">Finalizar Pedido</button>
-      <button type="button" class="btn btn--ghost btn--full btn--sm" id="btnClearCart" style="margin-top: var(--space-2);">Limpar carrinho</button>
+      <button type="button" class="btn btn--ghost btn--full btn--sm" id="btnClearCart"
+        style="margin-top: var(--space-2);">Limpar carrinho</button>
     </div>
   </aside>
 
@@ -434,7 +473,8 @@
       <div class="modal-tabs" role="tablist">
         <button type="button" class="modal-tab active" id="tabLogin" role="tab" aria-selected="true">Entrar</button>
         <button type="button" class="modal-tab" id="tabRegister" role="tab" aria-selected="false">Criar Conta</button>
-        <button type="button" class="modal-tab" id="tabRecover" role="tab" aria-selected="false">Recuperar Senha</button>
+        <button type="button" class="modal-tab" id="tabRecover" role="tab" aria-selected="false">Recuperar
+          Senha</button>
       </div>
 
       <!-- Login -->
@@ -454,12 +494,14 @@
 
         <div class="form-group">
           <label for="loginUsername">Nome de usuário:</label>
-          <input type="text" id="loginUsername" required placeholder="Seu usuário" class="form-input" autocomplete="username" />
+          <input type="text" id="loginUsername" required placeholder="Seu usuário" class="form-input"
+            autocomplete="username" />
         </div>
 
         <div class="form-group">
           <label for="loginPassword">Senha:</label>
-          <input type="password" id="loginPassword" required placeholder="Sua senha" class="form-input" autocomplete="current-password" />
+          <input type="password" id="loginPassword" required placeholder="Sua senha" class="form-input"
+            autocomplete="current-password" />
         </div>
 
         <div class="form-group" style="text-align: right;">
@@ -543,7 +585,8 @@
           </div>
           <div class="form-group">
             <label for="regDescricao">Descrição da produção:</label>
-            <textarea id="regDescricao" rows="2" placeholder="Hortaliças orgânicas, frutas da estação..." class="form-input"></textarea>
+            <textarea id="regDescricao" rows="2" placeholder="Hortaliças orgânicas, frutas da estação..."
+              class="form-input"></textarea>
           </div>
           <div class="form-group">
             <label for="regChavePix">Chave Pix para recebimento:</label>
@@ -590,7 +633,8 @@
             <input type="email" id="recoverEmail" required placeholder="seu@email.com" class="form-input" />
           </div>
           <div id="recoverError" class="auth-error" style="display: none;" role="alert"></div>
-          <button type="submit" class="btn btn--primary btn--full" id="btnRecoverSubmit">Enviar instruções de recuperação</button>
+          <button type="submit" class="btn btn--primary btn--full" id="btnRecoverSubmit">Enviar instruções de
+            recuperação</button>
         </form>
 
         <hr style="margin-block: var(--space-5); border: none; border-top: 1px solid var(--border);" />
@@ -621,7 +665,8 @@
   <!-- ===================== MODAL DE CHECKOUT ===================== -->
   <div class="modal-overlay" id="checkoutModalOverlay" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="checkoutModalTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseCheckoutModal" aria-label="Fechar checkout">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseCheckoutModal"
+        aria-label="Fechar checkout">✕</button>
 
       <h3 id="checkoutModalTitle" class="auth-form__title">Confirmar Pedido</h3>
       <p class="auth-form__subtitle">Revise os detalhes para enviar diretamente ao produtor.</p>
@@ -682,12 +727,14 @@
 
         <div class="form-group">
           <label for="checkoutObs">Observações para o produtor (opcional):</label>
-          <input type="text" id="checkoutObs" placeholder="Ex: Embalar com cuidado, retirar após as 14h..." class="form-input" />
+          <input type="text" id="checkoutObs" placeholder="Ex: Embalar com cuidado, retirar após as 14h..."
+            class="form-input" />
         </div>
 
         <div id="checkoutError" class="auth-error" style="display: none;" role="alert"></div>
 
-        <button type="submit" class="btn btn--cta btn--full btn--lg" id="btnConfirmOrder">Confirmar e Enviar Pedido</button>
+        <button type="submit" class="btn btn--cta btn--full btn--lg" id="btnConfirmOrder">Confirmar e Enviar
+          Pedido</button>
       </form>
     </div>
   </div>
@@ -695,14 +742,16 @@
   <!-- ===================== MODAIS DE DETALHE (PRODUTO / PRODUTOR) ===================== -->
   <div class="modal-overlay" id="productDetailModalOverlay" aria-hidden="true">
     <div class="modal-card modal-card--lg" role="dialog" aria-modal="true" aria-label="Detalhes do Produto">
-      <button type="button" class="btn-close modal-close" id="btnCloseProductDetailModal" aria-label="Fechar detalhes">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseProductDetailModal"
+        aria-label="Fechar detalhes">✕</button>
       <div id="productDetailBody"></div>
     </div>
   </div>
 
   <div class="modal-overlay" id="producerDetailModalOverlay" aria-hidden="true">
     <div class="modal-card modal-card--lg" role="dialog" aria-modal="true" aria-label="Detalhes do Produtor">
-      <button type="button" class="btn-close modal-close" id="btnCloseProducerDetailModal" aria-label="Fechar produtor">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseProducerDetailModal"
+        aria-label="Fechar produtor">✕</button>
       <div id="producerDetailBody"></div>
     </div>
   </div>
@@ -710,7 +759,8 @@
   <!-- ===================== MODAL MEUS PEDIDOS & RECLAMAÇÕES ===================== -->
   <div class="modal-overlay" id="myOrdersModalOverlay" aria-hidden="true">
     <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="myOrdersTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseMyOrdersModal" aria-label="Fechar pedidos">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseMyOrdersModal"
+        aria-label="Fechar pedidos">✕</button>
       <h3 id="myOrdersTitle" class="auth-form__title">📦 Meus Pedidos</h3>
       <div class="panel-tabs">
         <button type="button" class="panel-tab active" id="tabOrdersList">Pedidos Realizados</button>
@@ -726,7 +776,8 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pixModalTitle">
       <button type="button" class="btn-close modal-close" id="btnClosePixModal" aria-label="Fechar Pix">✕</button>
       <h3 id="pixModalTitle" class="auth-form__title">⚡ Pagamento via Pix</h3>
-      <p class="auth-form__subtitle">Escaneie o QR Code ou copie o código Pix abaixo para pagar diretamente ao produtor.</p>
+      <p class="auth-form__subtitle">Escaneie o QR Code ou copie o código Pix abaixo para pagar diretamente ao produtor.
+      </p>
       <div class="pix-box">
         <div id="pixQrContainer" class="pix-qr-wrap"></div>
         <p>Valor: <strong id="pixValorDisplay">R$ 0,00</strong></p>
@@ -743,7 +794,8 @@
   <!-- ===================== MODAL AVALIAÇÃO ===================== -->
   <div class="modal-overlay" id="reviewModalOverlay" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseReviewModal" aria-label="Fechar avaliação">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseReviewModal"
+        aria-label="Fechar avaliação">✕</button>
       <h3 id="reviewModalTitle" class="auth-form__title">⭐ Avaliar Compra</h3>
       <form id="reviewForm">
         <input type="hidden" id="reviewOrderId" />
@@ -763,7 +815,8 @@
         </div>
         <div class="form-group">
           <label for="reviewComment">Comentário (opcional):</label>
-          <textarea id="reviewComment" rows="3" class="form-input" placeholder="Como foi a qualidade e o atendimento?"></textarea>
+          <textarea id="reviewComment" rows="3" class="form-input"
+            placeholder="Como foi a qualidade e o atendimento?"></textarea>
         </div>
         <div id="reviewError" class="auth-error" style="display: none;" role="alert"></div>
         <button type="submit" class="btn btn--primary btn--full">Enviar Avaliação</button>
@@ -774,14 +827,16 @@
   <!-- ===================== MODAL RECLAMAÇÃO ===================== -->
   <div class="modal-overlay" id="complaintModalOverlay" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="complaintModalTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseComplaintModal" aria-label="Fechar reclamação">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseComplaintModal"
+        aria-label="Fechar reclamação">✕</button>
       <h3 id="complaintModalTitle" class="auth-form__title">⚠️ Registrar Reclamação</h3>
       <p id="complaintOrderLabel" class="auth-form__subtitle"></p>
       <form id="complaintForm">
         <input type="hidden" id="complaintOrderId" />
         <div class="form-group">
           <label for="complaintSubject">Assunto:</label>
-          <input type="text" id="complaintSubject" required placeholder="Ex: Produto avariado / Atraso na entrega" class="form-input" />
+          <input type="text" id="complaintSubject" required placeholder="Ex: Produto avariado / Atraso na entrega"
+            class="form-input" />
         </div>
         <div class="form-group">
           <label for="complaintDescription">Descreva o ocorrido:</label>
@@ -796,7 +851,8 @@
   <!-- ===================== MODAL ENDEREÇOS (VIACEP) ===================== -->
   <div class="modal-overlay" id="addressesModalOverlay" aria-hidden="true">
     <div class="modal-card modal-card--lg" role="dialog" aria-modal="true" aria-labelledby="addressesModalTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseAddressesModal" aria-label="Fechar endereços">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseAddressesModal"
+        aria-label="Fechar endereços">✕</button>
       <h3 id="addressesModalTitle" class="auth-form__title">📍 Meus Endereços</h3>
       <div id="addressesList" class="addresses-list"></div>
 
@@ -853,7 +909,8 @@
   <!-- ===================== MODAL EDITAR PERFIL ===================== -->
   <div class="modal-overlay" id="profileModalOverlay" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseProfileModal" aria-label="Fechar perfil">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseProfileModal"
+        aria-label="Fechar perfil">✕</button>
       <h3 id="profileModalTitle" class="auth-form__title">👤 Meu Perfil</h3>
       <form id="profileForm">
         <div class="form-row">
@@ -883,7 +940,8 @@
   <!-- ===================== PAINEL DO PRODUTOR ===================== -->
   <div class="modal-overlay" id="producerPanelModalOverlay" aria-hidden="true">
     <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="producerPanelTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseProducerPanelModal" aria-label="Fechar painel do produtor">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseProducerPanelModal"
+        aria-label="Fechar painel do produtor">✕</button>
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <h3 id="producerPanelTitle" class="auth-form__title">🌾 Painel do Produtor</h3>
         <span id="producerStatusBadge" class="badge badge--outline"></span>
@@ -1029,7 +1087,8 @@
   <!-- ===================== PAINEL DO ENTREGADOR ===================== -->
   <div class="modal-overlay" id="deliveryPanelModalOverlay" aria-hidden="true">
     <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="deliveryPanelTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseDeliveryPanelModal" aria-label="Fechar painel do entregador">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseDeliveryPanelModal"
+        aria-label="Fechar painel do entregador">✕</button>
       <h3 id="deliveryPanelTitle" class="auth-form__title">🛵 Painel do Entregador</h3>
 
       <div class="panel-tabs" id="deliveryPanelTabs">
@@ -1072,7 +1131,8 @@
   <!-- ===================== PAINEL DE MODERAÇÃO ADMIN ===================== -->
   <div class="modal-overlay" id="adminPanelModalOverlay" aria-hidden="true">
     <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="adminPanelTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseAdminPanelModal" aria-label="Fechar painel admin">✕</button>
+      <button type="button" class="btn-close modal-close" id="btnCloseAdminPanelModal"
+        aria-label="Fechar painel admin">✕</button>
       <h3 id="adminPanelTitle" class="auth-form__title">🛡️ Painel de Moderação Administrativa</h3>
 
       <div class="panel-tabs" id="adminPanelTabs">
@@ -1083,17 +1143,28 @@
         <button type="button" class="panel-tab" data-admin-tab="usuarios">Usuários</button>
       </div>
 
-      <div id="adminTabIndicadores"><div id="adminIndicatorsContent"></div></div>
-      <div id="adminTabProdutores" style="display: none;"><div id="adminProducersList" class="panel-list"></div></div>
-      <div id="adminTabProdutos" style="display: none;"><div id="adminProductsList" class="panel-list"></div></div>
-      <div id="adminTabReclamacoes" style="display: none;"><div id="adminComplaintsList" class="orders-list"></div></div>
-      <div id="adminTabUsuarios" style="display: none;"><div id="adminUsersList" class="panel-list"></div></div>
+      <div id="adminTabIndicadores">
+        <div id="adminIndicatorsContent"></div>
+      </div>
+      <div id="adminTabProdutores" style="display: none;">
+        <div id="adminProducersList" class="panel-list"></div>
+      </div>
+      <div id="adminTabProdutos" style="display: none;">
+        <div id="adminProductsList" class="panel-list"></div>
+      </div>
+      <div id="adminTabReclamacoes" style="display: none;">
+        <div id="adminComplaintsList" class="orders-list"></div>
+      </div>
+      <div id="adminTabUsuarios" style="display: none;">
+        <div id="adminUsersList" class="panel-list"></div>
+      </div>
     </div>
   </div>
 
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="{% static 'main.js' %}"></script>
+  <script type="module" src="{% static 'main.js' %}?v=20261120"></script>
 </body>
+
 </html>

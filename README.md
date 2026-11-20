@@ -146,7 +146,7 @@ Para facilitar a experimentação das funcionalidades, o banco já inclui contas
 |---|---|---|---|
 | **Cliente** | `cliente_teste` | `Cliente123!` | Adicionar itens ao carrinho, simular checkout e fazer avaliações |
 | **Produtor** | `sitio_esperanca` | `Produtor123!` | Gerenciar produtos, aceitar/recusar pedidos e ver vendas |
-| **Administrador** | `paulo` | `Senha-Forte-123` | Acesso completo ao painel Django Admin (`/admin/`) e moderação |
+| **Administrador** | `admim` | `Senha-Forte-123` | Acesso completo ao painel Django Admin (`/admin/`) e moderação |
 
 > *Dica: No modal de login do frontend, existem atalhos de preenchimento em 1 clique para essas contas.*
 
@@ -193,7 +193,7 @@ feira_virtual/
 
 ---
 
-## ⚖️ Decisões e Regras de Negócio
+##  Decisões e Regras de Negócio
 
 1. **Separação por Produtor:** O carrinho pode conter itens de produtores distintos; no momento do checkout, o sistema divide automaticamente a compra em um pedido independente para cada produtor rural.
 2. **Controle Estrito de Estoque:** O estoque é validado na inserção ao carrinho e no checkout. A baixa efetiva do estoque ocorre quando o produtor **aceita** o pedido. Se o pedido for cancelado ou recusado, o estoque é estornado automaticamente de forma transacional.
@@ -210,10 +210,4 @@ O frontend segue especificações modernas de usabilidade e acessibilidade (WCAG
 - **Componentes:** Carrinho lateral (Drawer) em CSS puro, modais acessíveis com foco visível, toasts de notificação assíncronos e badges de status.
 - **Tokens CSS:** Variáveis customizáveis centralizadas no topo de `frontend/style.css`.
 
----
 
-##  Próximos Passos Sugeridos
-
-- Integração direta com gateway de pagamento Pix dinâmico (Mercado Pago / Efí / Asaas).
-- Notificações automáticas para produtores e clientes (WhatsApp / Push / E-mail via SendGrid).
-- Cálculo automatizado de taxa de frete por quilometragem ou CEP (ViaCEP).

@@ -31,7 +31,7 @@
   <link rel="manifest" href="{% static 'assets/manifest.webmanifest' %}" />
 
   <!-- Estilos (servido pelo WhiteNoise com cache imutável, sem requisições externas) -->
-  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120b" />
+  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120c" />
 </head>
 
 <body>
@@ -209,15 +209,7 @@
           <div class="product-card-hero">
             <div class="product-card-hero__header" id="heroProductHeader">
               <div class="product-card-hero__img">
-                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
-                  <circle cx="100" cy="100" r="90" fill="var(--color-primary-tint)" />
-                  <ellipse cx="100" cy="120" rx="55" ry="30" fill="#67AE25" opacity="0.7" />
-                  <ellipse cx="80" cy="105" rx="38" ry="22" fill="#246F11" />
-                  <ellipse cx="120" cy="100" rx="35" ry="20" fill="#1B4312" />
-                  <ellipse cx="100" cy="95" rx="30" ry="18" fill="#67AE25" />
-                  <ellipse cx="100" cy="92" rx="22" ry="14" fill="#246F11" />
-                  <line x1="100" y1="118" x2="100" y2="145" stroke="#1B4312" stroke-width="4" stroke-linecap="round" />
-                </svg>
+                <img src="{% static 'assets/logo-icon.webp' %}" alt="Feira Virtual" class="product-card__img--default" width="104" height="104" />
               </div>
             </div>
             <div class="product-card-hero__body">
@@ -235,19 +227,13 @@
           </div>
 
           <div class="stats-card-hero stats-card-hero--top">
-            <div class="stats-card-hero__icon">🚜</div>
-            <div>
-              <strong>Produtores locais</strong>
-              <span>Agricultura 100% familiar</span>
-            </div>
+            <strong>Produtores locais</strong>
+            <span>Agricultura 100% familiar</span>
           </div>
 
           <div class="stats-card-hero stats-card-hero--bottom">
-            <div class="stats-card-hero__icon">⚡</div>
-            <div>
-              <strong>Venda Direta</strong>
-              <span>Sem atravessadores</span>
-            </div>
+            <strong>Venda Direta</strong>
+            <span>Sem atravessadores</span>
           </div>
 
           <div class="hero__deco-circle hero__deco-circle--1"></div>
@@ -264,7 +250,6 @@
             <span class="trust-bar__icon">🌱</span>
             <div>
               <strong>Produto fresco</strong>
-              <span>Colhido e enviado no mesmo dia</span>
             </div>
           </li>
           <li class="trust-bar__item">
@@ -1175,7 +1160,7 @@
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="{% static 'main.js' %}?v=20261120b"></script>
+  <script type="module" src="{% static 'main.js' %}?v=20261120c"></script>
 </body>
 
 </html>

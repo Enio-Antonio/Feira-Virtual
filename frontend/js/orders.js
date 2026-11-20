@@ -99,7 +99,7 @@ function renderOrdersList(container, orders) {
         </div>
 
         <div class="order-card__body">
-          <p><strong>Produtor:</strong> 🏡 ${escapeHtml(o.produtor_nome)}</p>
+          <p><strong>Produtor:</strong> ${escapeHtml(o.produtor_nome)}</p>
           <p><strong>Modalidade:</strong> ${o.modalidade === 'ENTREGA' ? '🚚 Entrega' : '🏪 Retirada'} • <strong>Pagamento:</strong> ${escapeHtml(o.forma_pagamento)}</p>
           ${o.endereco_entrega ? `<p><strong>Endereço:</strong> ${escapeHtml(o.endereco_entrega)}</p>` : ''}
           ${o.previsao_entrega ? `<p><strong>Previsão:</strong> 🕒 ${escapeHtml(o.previsao_entrega)}</p>` : ''}
@@ -230,7 +230,7 @@ export function openReviewModalForOrder(pedidoId) {
 
   const opts = [];
   if (pedido.produtor) {
-    opts.push(`<option value="produtor:${pedido.produtor}">🏡 Produtor: ${escapeHtml(pedido.produtor_nome)}</option>`);
+    opts.push(`<option value="produtor:${pedido.produtor}">Produtor: ${escapeHtml(pedido.produtor_nome)}</option>`);
   }
   (pedido.itens || []).forEach(it => {
     if (it.produto) {

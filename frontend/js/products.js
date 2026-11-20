@@ -174,13 +174,15 @@ function renderProductsGrid(products) {
   grid.innerHTML = products.map(p => {
     const semEstoque = parseFloat(p.estoque) <= 0;
     const produtorNome = p.produtor_nome || 'Produtor Parceiro';
-    const imgUrl = safeUrl(p.imagem, '/static/assets/logo-icon.webp');
+    const customImgUrl = p.imagem ? safeUrl(p.imagem, '') : '';
+    const imgUrl = customImgUrl || '/static/assets/logo-icon.webp';
+    const imgClass = customImgUrl ? 'product-card__img' : 'product-card__img product-card__img--default';
     const nota = hasValidRating(p) ? `⭐ ${Number(p.nota_media).toFixed(1)}` : '';
 
     return `
       <article class="product-card ${semEstoque ? 'card--out-of-stock' : ''}">
         <div class="product-card__thumb btnProductDetail" data-id="${p.id}" role="button" tabindex="0" aria-label="Ver detalhes de ${escapeHtml(p.nome)}">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.nome)}" loading="lazy" />
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.nome)}" class="${imgClass}" loading="lazy" />
           <div class="product-card__badges">
             ${typeBadges[p.tipo_producao] || ''}
             ${nota ? `<span class="badge badge--outline">${nota}</span>` : ''}
@@ -195,9 +197,7 @@ function renderProductsGrid(products) {
           ${escapeHtml(p.nome)}
         </h3>
         <p class="product-card__producer">
-          <button type="button" class="btn-link-inline btnProducerDetail" data-id="${p.produtor}">
-            🏡 ${escapeHtml(produtorNome)}
-          </button>
+          <button type="button" class="btn-link-inline btnProducerDetail" data-id="${p.produtor}">${escapeHtml(produtorNome)}</button>
         </p>
         <p class="product-card__desc">${escapeHtml(p.descricao || 'Produto fresco da agricultura familiar.')}</p>
 
@@ -259,12 +259,14 @@ export async function openProductDetail(productId) {
     const avData = resAv.ok ? await resAv.json() : { results: [] };
     const avaliacoes = avData.results || [];
     const semEstoque = parseFloat(p.estoque) <= 0;
-    const imgUrl = safeUrl(p.imagem, '/static/assets/logo-icon.webp');
+    const customImgUrl = p.imagem ? safeUrl(p.imagem, '') : '';
+    const imgUrl = customImgUrl || '/static/assets/logo-icon.webp';
+    const imgClass = customImgUrl ? '' : 'product-card__img--default';
 
     body.innerHTML = `
       <div class="detail-grid">
         <div class="detail-img-wrap">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.nome)}" />
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.nome)}" class="${imgClass}" />
         </div>
         <div class="detail-info">
           <div class="detail-badges">
@@ -274,9 +276,7 @@ export async function openProductDetail(productId) {
           <h3>${escapeHtml(p.nome)}</h3>
           <p class="text-muted">
             Produzido por:
-            <button type="button" class="btn-link-inline btnProducerDetail" data-id="${p.produtor}">
-              🏡 ${escapeHtml(p.produtor_nome)}
-            </button>
+            <button type="button" class="btn-link-inline btnProducerDetail" data-id="${p.produtor}">${escapeHtml(p.produtor_nome)}</button>
           </p>
           <p class="detail-desc">${escapeHtml(p.descricao || 'Colhido diretamente pelo produtor familiar.')}</p>
           <div class="detail-price-row">
@@ -390,9 +390,11 @@ export async function loadStatistics() {
     if (res.ok) {
       const data = await res.json();
       statsEl.innerHTML = `
-        🌱 <strong>${Number(data.familias_atendidas_semana) || 0}</strong> famílias atendidas esta semana •
-        🏡 <strong>${Number(data.total_produtores) || 0}</strong> produtores cadastrados •
-        🧺 <strong>${Number(data.total_produtos) || 0}</strong> produtos frescos
+        <span class="hero__stat-item"><strong>${Number(data.familias_atendidas_semana) || 0}</strong> famílias atendidas esta semana</span>
+        <span class="hero__stat-sep" aria-hidden="true">•</span>
+        <span class="hero__stat-item"><strong>${Number(data.total_produtores) || 0}</strong> produtores cadastrados</span>
+        <span class="hero__stat-sep" aria-hidden="true">•</span>
+        <span class="hero__stat-item"><strong>${Number(data.total_produtos) || 0}</strong> produtos frescos</span>
       `;
     }
   } catch (_) {}

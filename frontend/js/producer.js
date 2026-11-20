@@ -62,10 +62,12 @@ export async function loadProducerProducts() {
     }
 
     list.innerHTML = producerProductsCache.map(p => {
-      const img = safeUrl(p.imagem, '/static/assets/logo-icon.webp');
+      const customImg = p.imagem ? safeUrl(p.imagem, '') : '';
+      const img = customImg || '/static/assets/logo-icon.webp';
+      const thumbClass = customImg ? 'panel-thumb' : 'panel-thumb product-card__img--default';
       return `
         <div class="panel-list-item">
-          <img src="${escapeHtml(img)}" alt="${escapeHtml(p.nome)}" class="panel-thumb" />
+          <img src="${escapeHtml(img)}" alt="${escapeHtml(p.nome)}" class="${thumbClass}" />
           <div class="panel-list-item__info">
             <strong>${escapeHtml(p.nome)}</strong>
             <span>${formatCurrency(p.preco)} / ${escapeHtml(p.unidade_medida)} • Estoque: ${parseFloat(p.estoque)}</span>

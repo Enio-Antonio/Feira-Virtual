@@ -4,31 +4,64 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+from painel.models import LogAuditoria
 
 from . import serializers as s
-from .models import Usuario
+from .models import Endereco, Usuario
 from .permissions import EhEntregador, EhProdutor
+
+
+def _obter_ip(request):
+    ip = request.META.get("HTTP_X_FORWARDED_FOR")
+    if ip:
+        return ip.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
+# ── Throttles dedicados por escopo ──────────────────────────────────────────
+class LoginRateThrottle(AnonRateThrottle):
+    scope = 'login'
+
+
+class RegistroRateThrottle(AnonRateThrottle):
+    scope = 'registro'
+
+
+class RecuperarSenhaRateThrottle(AnonRateThrottle):
+    scope = 'recuperar_senha'
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """Login com JWT e throttle dedicado contra força bruta."""
+    throttle_classes = [LoginRateThrottle]
 
 
 class RegistroClienteView(generics.CreateAPIView):
     serializer_class = s.RegistroClienteSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegistroRateThrottle]
 
 
 class RegistroProdutorView(generics.CreateAPIView):
     serializer_class = s.RegistroProdutorSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegistroRateThrottle]
 
 
 class RegistroEntregadorView(generics.CreateAPIView):
     serializer_class = s.RegistroEntregadorSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegistroRateThrottle]
 
 
 class LogoutView(APIView):
@@ -47,6 +80,7 @@ class LogoutView(APIView):
 
 class RecuperarSenhaView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [RecuperarSenhaRateThrottle]
     serializer_class = s.RecuperarSenhaSerializer
 
     def post(self, request):
@@ -113,9 +147,72 @@ class PerfilEntregadorView(generics.RetrieveUpdateAPIView):
 class EnderecoViewSet(viewsets.ModelViewSet):
     serializer_class = s.EnderecoSerializer
     pagination_class = None
+    queryset = Endereco.objects.none()
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return Endereco.objects.none()
         return self.request.user.enderecos.all()
 
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
+
+
+class ExportarDadosLGPDView(APIView):
+    """LGPD: Exportação completa dos dados do titular em formato JSON estruturado."""
+    @extend_schema(responses=dict)
+    def get(self, request):
+        user = request.user
+        enderecos = list(user.enderecos.values("rotulo", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "estado"))
+        pedidos_cliente = list(user.pedidos.values("numero_publico", "status", "modalidade", "forma_pagamento", "total", "criado_em"))
+
+        dados = {
+            "titular": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "nome_completo": user.get_full_name(),
+                "telefone": user.telefone,
+                "tipo": user.tipo,
+                "data_cadastro": user.date_joined.isoformat(),
+            },
+            "enderecos": enderecos,
+            "pedidos": pedidos_cliente,
+        }
+        if hasattr(user, "perfil_produtor"):
+            prod = user.perfil_produtor
+            dados["perfil_produtor"] = {
+                "nome_propriedade": prod.nome_propriedade,
+                "descricao": prod.descricao,
+                "cidade": prod.cidade,
+                "estado": prod.estado,
+            }
+        LogAuditoria.objects.create(
+            usuario=user,
+            acao=LogAuditoria.Acao.EXPORTAR_DADOS_LGPD,
+            descricao=f"Titular {user.username} (ID: {user.pk}) exportou dados pessoais (LGPD)",
+            ip=_obter_ip(request),
+        )
+        return Response(dados)
+
+
+class ExcluirContaLGPDView(APIView):
+    """LGPD: Direito ao esquecimento — anonimiza os dados pessoais e desativa a conta."""
+    @extend_schema(responses=dict)
+    def delete(self, request):
+        user = request.user
+        username_original = user.username
+        user.first_name = "Titular"
+        user.last_name = "Anonimizado"
+        user.email = f"anonimo_{user.id}@excluido.local"
+        user.telefone = ""
+        user.is_active = False
+        user.save()
+        user.enderecos.all().delete()
+        LogAuditoria.objects.create(
+            usuario=user,
+            acao=LogAuditoria.Acao.EXCLUIR_CONTA_LGPD,
+            descricao=f"Conta {username_original} (ID: {user.pk}) anonimizada e desativada (LGPD)",
+            ip=_obter_ip(request),
+        )
+        return Response({"mensagem": "Conta desativada e dados pessoais anonimizados com sucesso conforme LGPD."})

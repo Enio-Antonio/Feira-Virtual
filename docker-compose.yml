@@ -4,14 +4,16 @@ services:
     container_name: feira_virtual_mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: feira_virtual
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${DB_NAME:-feira_virtual}
+      MYSQL_USER: ${DB_USER:-feira_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-feira_senha_segura}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_seguro_troque}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER:-feira_user}", "-p${DB_PASSWORD:-feira_senha_segura}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,9 +30,9 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-chave-secreta-de-producao-troque-aqui}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
       DB_ENGINE: mysql
-      DB_NAME: feira_virtual
-      DB_USER: root
-      DB_PASSWORD: root
+      DB_NAME: ${DB_NAME:-feira_virtual}
+      DB_USER: ${DB_USER:-feira_user}
+      DB_PASSWORD: ${DB_PASSWORD:-feira_senha_segura}
       DB_HOST: db
       DB_PORT: "3306"
       CORS_ALLOW_ALL_ORIGINS: "1"

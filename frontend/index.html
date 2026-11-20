@@ -1,36 +1,53 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Feira Virtual — Do Campo à sua Mesa</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
+
+  <!-- SEO & Open Graph -->
+  <meta name="description" content="Plataforma de venda direta da agricultura familiar. Produtos frescos direto de quem planta, sem atravessadores." />
+  <meta name="theme-color" content="#246F11" />
+  <meta property="og:title" content="Feira Virtual — Venda Direta da Agricultura Familiar" />
+  <meta property="og:description" content="Produtos frescos diretamente dos produtores rurais da sua região. Sem intermediários, preço justo." />
+  <meta property="og:image" content="{% static 'assets/og-image.png' %}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Feira Virtual — Venda Direta" />
+  <meta name="twitter:description" content="Produtos frescos direto de quem planta, sem atravessadores." />
+  <meta name="twitter:image" content="{% static 'assets/og-image.png' %}" />
+
+  <!-- Favicons & PWA -->
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/favicon.ico' %}" />
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'assets/favicon-32.png' %}" />
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'assets/apple-touch-icon.png' %}" />
+  <link rel="manifest" href="{% static 'assets/manifest.webmanifest' %}" />
+
+  <!-- Estilos (servido pelo WhiteNoise com cache imutável, sem requisições externas) -->
+  <link rel="stylesheet" href="{% static 'style.css' %}" />
 </head>
 <body>
+
+  <!-- Barra de carregamento global -->
+  <div id="globalLoadingBar" class="loading-bar" aria-hidden="true"></div>
 
   <!-- ===================== NAVBAR ===================== -->
   <header class="navbar" id="navbar">
     <div class="navbar__inner container">
 
-      <!-- Logo -->
+      <!-- Logo responsiva em WebP + fallback PNG + variante Dark Mode -->
       <a href="#" class="navbar__logo" aria-label="Feira Virtual - Página inicial">
-        <div class="navbar__logo-icon" aria-hidden="true">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="16" fill="var(--color-primary)"/>
-            <path d="M16 6 C16 6, 24 11, 24 18 C24 23 20.4 26 16 26 C11.6 26 8 23 8 18 C8 11 16 6 16 6Z" fill="white" opacity="0.25"/>
-            <path d="M16 8 C16 8, 22 13 22 19 C22 22.3 19.3 25 16 25 C12.7 25 10 22.3 10 19 C10 13 16 8 16 8Z" fill="white" opacity="0.4"/>
-            <path d="M16 10 L16 24" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M16 15 C16 15 19 13 21 14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M16 19 C16 19 13 17 11 18" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="navbar__logo-text">
-          <span class="navbar__logo-name">Feira Virtual</span>
-          <span class="navbar__logo-tagline">Do campo à sua mesa</span>
-        </div>
+        <picture class="navbar__logo-img navbar__logo-img--light">
+          <source srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x" type="image/webp" />
+          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual — Venda Direta" class="navbar__logo-img navbar__logo-img--light" width="160" height="70" />
+        </picture>
+        <picture class="navbar__logo-img navbar__logo-img--dark">
+          <source srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x" type="image/webp" />
+          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual — Venda Direta" class="navbar__logo-img navbar__logo-img--dark" width="160" height="70" />
+        </picture>
       </a>
 
       <!-- Nav Links (desktop) -->
@@ -39,7 +56,6 @@
           <li><a href="#produtos" class="navbar__link">Produtos</a></li>
           <li><a href="#produtores" class="navbar__link">Produtores</a></li>
           <li><a href="#como-funciona" class="navbar__link">Como funciona</a></li>
-          <li><a href="/api/docs/" target="_blank" class="navbar__link navbar__link--api" title="Documentação Swagger">API Swagger ↗</a></li>
         </ul>
       </nav>
 
@@ -47,35 +63,35 @@
       <div class="navbar__actions">
 
         <!-- Toggle Dark Mode -->
-        <button class="btn-icon" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar tema">
-          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button type="button" class="btn-icon" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar tema">
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
             <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
             <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
           </svg>
-          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
           </svg>
         </button>
 
         <!-- Carrinho -->
-        <button class="btn-icon btn-icon--cart" id="btnOpenCart" aria-label="Ver carrinho">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button type="button" class="btn-icon btn-icon--cart" id="btnOpenCart" aria-label="Ver carrinho">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
           </svg>
           <span class="cart-badge" id="cartBadge" aria-hidden="true" style="display: none;">0</span>
         </button>
 
-        <!-- Área de Autenticação Dinâmica (Renderizada via JS) -->
+        <!-- Área de Autenticação Dinâmica -->
         <div id="navAuthArea" class="navbar__auth-area">
-          <button class="btn btn--outline btn--sm" id="btnOpenLogin">Entrar</button>
-          <button class="btn btn--primary btn--sm" id="btnOpenRegister">Cadastrar</button>
+          <button type="button" class="btn btn--outline btn--sm" id="btnOpenLogin">Entrar</button>
+          <button type="button" class="btn btn--primary btn--sm" id="btnOpenRegister">Cadastrar</button>
         </div>
 
         <!-- Hamburguer (mobile) -->
-        <button class="navbar__hamburger" id="hamburger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenu">
+        <button type="button" class="navbar__hamburger" id="hamburger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenu">
           <span></span>
           <span></span>
           <span></span>
@@ -90,11 +106,10 @@
           <li><a href="#produtos" class="navbar__link">Produtos</a></li>
           <li><a href="#produtores" class="navbar__link">Produtores</a></li>
           <li><a href="#como-funciona" class="navbar__link">Como funciona</a></li>
-          <li><a href="/api/docs/" target="_blank" class="navbar__link">API Swagger ↗</a></li>
         </ul>
         <div class="navbar__mobile-actions" id="mobileAuthArea">
-          <button class="btn btn--outline btn--full" id="btnMobileLogin">Entrar</button>
-          <button class="btn btn--primary btn--full" id="btnMobileRegister">Cadastrar</button>
+          <button type="button" class="btn btn--outline btn--full" id="btnMobileLogin">Entrar</button>
+          <button type="button" class="btn btn--primary btn--full" id="btnMobileRegister">Cadastrar</button>
         </div>
       </nav>
     </div>
@@ -110,7 +125,6 @@
       </div>
 
       <div class="hero__inner container">
-        <!-- Coluna esquerda -->
         <div class="hero__content">
           <div class="hero__eyebrow" aria-label="Destaque">
             <span class="badge badge--success">🌱 Agricultura familiar</span>
@@ -124,9 +138,8 @@
           </h1>
 
           <p class="hero__subtitle">
-            Conectamos produtores rurais, coletores e compradores em uma
-            feira digital segura, acolhedora e transparente. Sem
-            atravessadores. Sem complicação.
+            Conectamos produtores rurais, entregadores parceiros e compradores em uma
+            feira digital segura, acolhedora e transparente. Sem atravessadores.
           </p>
 
           <div class="hero__social-proof">
@@ -136,8 +149,8 @@
               <span class="avatar avatar--3"></span>
               <span class="avatar avatar--4"></span>
             </div>
-            <p class="hero__social-text">
-              <strong>+1.200 famílias</strong> atendidas esta semana
+            <p class="hero__social-text" id="heroSocialText">
+              <strong>Carregando estatísticas da feira...</strong>
             </p>
           </div>
 
@@ -162,44 +175,34 @@
             <div class="hero__profile-tags">
               <span class="profile-tag profile-tag--buyer">🛒 Comprador</span>
               <span class="profile-tag profile-tag--producer">🌾 Produtor Rural</span>
-              <span class="profile-tag profile-tag--collector">🧺 Entregador</span>
+              <span class="profile-tag profile-tag--collector">🛵 Entregador</span>
             </div>
           </div>
         </div>
 
-        <!-- Coluna direita: card de produto flutuante -->
         <div class="hero__visual" aria-hidden="true">
           <div class="product-card-hero">
             <div class="product-card-hero__header">
               <div class="product-card-hero__img">
                 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
                   <circle cx="100" cy="100" r="90" fill="var(--color-primary-tint)"/>
-                  <ellipse cx="100" cy="120" rx="55" ry="30" fill="#6CBF66" opacity="0.7"/>
-                  <ellipse cx="80" cy="105" rx="38" ry="22" fill="#3D8B37"/>
-                  <ellipse cx="120" cy="100" rx="35" ry="20" fill="#2E6B28"/>
-                  <ellipse cx="100" cy="95" rx="30" ry="18" fill="#6CBF66"/>
-                  <ellipse cx="100" cy="92" rx="22" ry="14" fill="#3D8B37"/>
-                  <line x1="100" y1="118" x2="100" y2="145" stroke="#2E6B28" stroke-width="4" stroke-linecap="round"/>
-                  <ellipse cx="90" cy="88" rx="8" ry="5" fill="white" opacity="0.3" transform="rotate(-20 90 88)"/>
+                  <ellipse cx="100" cy="120" rx="55" ry="30" fill="#67AE25" opacity="0.7"/>
+                  <ellipse cx="80" cy="105" rx="38" ry="22" fill="#246F11"/>
+                  <ellipse cx="120" cy="100" rx="35" ry="20" fill="#1B4312"/>
+                  <ellipse cx="100" cy="95" rx="30" ry="18" fill="#67AE25"/>
+                  <ellipse cx="100" cy="92" rx="22" ry="14" fill="#246F11"/>
+                  <line x1="100" y1="118" x2="100" y2="145" stroke="#1B4312" stroke-width="4" stroke-linecap="round"/>
                 </svg>
               </div>
-              <div class="product-card-hero__badge">
-                <span>⭐ 5.0</span>
-              </div>
+              <div class="product-card-hero__badge"><span>⭐ 5.0</span></div>
             </div>
-
             <div class="product-card-hero__body">
               <span class="product-card-hero__category">🌿 Hortaliças · Orgânico</span>
               <h3 class="product-card-hero__name">Alface Crespa</h3>
-              <p class="product-card-hero__producer">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                </svg>
-                Sítio Esperança (Natal/RN)
-              </p>
+              <p class="product-card-hero__producer">📍 Sítio Esperança</p>
               <div class="product-card-hero__footer">
                 <div class="product-card-hero__price">
-                  <span class="price-unit">R$ 3,50</span>
+                  <span class="price-unit">R$ 2,50</span>
                   <span class="price-label">/ maço</span>
                 </div>
                 <a href="#produtos" class="btn btn--cta btn--sm">Comprar</a>
@@ -218,8 +221,8 @@
           <div class="stats-card-hero stats-card-hero--bottom">
             <div class="stats-card-hero__icon">⚡</div>
             <div>
-              <strong>API Integrada</strong>
-              <span>Django REST + MySQL/SQLite</span>
+              <strong>Venda Direta</strong>
+              <span>Sem atravessadores</span>
             </div>
           </div>
 
@@ -271,20 +274,18 @@
         <div class="section-header">
           <span class="badge badge--success">Feira Aberta</span>
           <h2 class="section-title">Produtos Frescos da Semana</h2>
-          <p class="section-subtitle">Itens colhidos diretamente pelos produtores parceiros. Estoque e preços atualizados em tempo real.</p>
+          <p class="section-subtitle">Itens colhidos diretamente pelos produtores parceiros. Clique em qualquer produto para ver avaliações e detalhes.</p>
         </div>
 
-        <!-- Barra de Busca e Filtros -->
         <div class="catalog-controls">
           <div class="search-box">
-            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input type="text" id="searchInput" placeholder="Buscar por alface, tomate, cenoura..." aria-label="Buscar produtos" />
-            <button id="btnClearSearch" class="btn-clear" style="display: none;" title="Limpar busca">✕</button>
+            <button type="button" id="btnClearSearch" class="btn-clear" style="display: none;" title="Limpar busca" aria-label="Limpar busca">✕</button>
           </div>
 
-          <!-- Filtro de Tipo de Produção e Ordenação -->
           <div class="select-filters">
             <select id="tipoProducaoSelect" class="form-select" aria-label="Filtrar por tipo de produção">
               <option value="">Todos os cultivos</option>
@@ -301,20 +302,20 @@
           </div>
         </div>
 
-        <!-- Categorias dinâmicas (Pills) -->
-        <div class="category-pills" id="categoryPills" role="tablist">
-          <button class="pill active" data-category="" role="tab" aria-selected="true">Todas as categorias</button>
-          <!-- Injetado dinamicamente via JS -->
+        <div class="category-pills" id="categoryPills" role="tablist" aria-label="Categorias">
+          <button type="button" class="pill active" data-category="" role="tab" aria-selected="true">Todas as categorias</button>
         </div>
 
-        <!-- Grid de Produtos -->
+        <div id="activeProducerFilter"></div>
+
         <div class="products-grid" id="productsGrid" aria-live="polite">
-          <!-- Cards injetados via JS -->
           <div class="catalog-loading">
             <div class="spinner"></div>
             <p>Carregando feira virtual...</p>
           </div>
         </div>
+
+        <div id="paginationControls" class="pagination-wrap"></div>
       </div>
     </section>
 
@@ -327,22 +328,10 @@
           <p class="section-subtitle">Conheça as famílias e propriedades rurais cadastradas na feira.</p>
         </div>
 
-        <div class="producer-showcase">
-          <div class="producer-card">
-            <div class="producer-card__avatar">🏡</div>
-            <div class="producer-card__info">
-              <div class="producer-card__header">
-                <h3>Sítio Esperança</h3>
-                <span class="badge badge--success">✓ Aprovado</span>
-              </div>
-              <p class="producer-card__location">📍 Natal / RN · Agricultura Agroecológica</p>
-              <p class="producer-card__desc">Produção familiar sustentável sem uso de agrotóxicos. Especialistas em hortaliças hidropônicas e mel de abelha nativa.</p>
-              <div class="producer-card__badges">
-                <span class="payment-badge">⚡ Aceita Pix</span>
-                <span class="payment-badge">💳 Maquininha</span>
-                <span class="payment-badge">💵 Dinheiro</span>
-              </div>
-            </div>
+        <div class="producer-showcase" id="producerShowcase">
+          <div class="catalog-loading">
+            <div class="spinner"></div>
+            <p>Carregando produtores cadastrados...</p>
           </div>
         </div>
       </div>
@@ -386,12 +375,20 @@
   <footer class="footer">
     <div class="container footer__inner">
       <div class="footer__brand">
-        <span class="navbar__logo-name">Feira Virtual</span>
+        <picture class="footer__logo-img footer__logo-img--light">
+          <source srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x" type="image/webp" />
+          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual" class="footer__logo-img footer__logo-img--light" height="48" loading="lazy" />
+        </picture>
+        <picture class="footer__logo-img footer__logo-img--dark">
+          <source srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x" type="image/webp" />
+          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual" class="footer__logo-img footer__logo-img--dark" height="48" loading="lazy" />
+        </picture>
         <p>Plataforma de venda direta da agricultura familiar.</p>
       </div>
       <div class="footer__links">
-        <a href="/api/docs/" target="_blank">Documentação da API (Swagger)</a>
-        <a href="/admin/" target="_blank">Painel Administrativo Django</a>
+        <a href="#produtos">Catálogo</a>
+        <a href="#produtores">Produtores</a>
+        <a href="#como-funciona">Como funciona</a>
       </div>
       <p class="footer__copy">© 2026 Feira Virtual. Todos os direitos reservados.</p>
     </div>
@@ -402,16 +399,15 @@
   <aside class="cart-drawer" id="cartDrawer" aria-hidden="true" role="dialog" aria-labelledby="cartTitle">
     <div class="cart-drawer__header">
       <div class="cart-drawer__title-wrap">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
         </svg>
         <h2 id="cartTitle">Meu Carrinho</h2>
       </div>
-      <button class="btn-close" id="btnCloseCart" aria-label="Fechar carrinho">✕</button>
+      <button type="button" class="btn-close" id="btnCloseCart" aria-label="Fechar carrinho">✕</button>
     </div>
 
-    <!-- Lista de itens do carrinho -->
     <div class="cart-drawer__body" id="cartItemsList">
       <div class="cart-empty">
         <span class="cart-empty__icon">🧺</span>
@@ -420,74 +416,85 @@
       </div>
     </div>
 
-    <!-- Rodapé com total e checkout -->
     <div class="cart-drawer__footer" id="cartFooter" style="display: none;">
       <div class="cart-summary">
         <span>Total:</span>
         <strong id="cartTotalVal">R$ 0,00</strong>
       </div>
-      <button class="btn btn--cta btn--full btn--lg" id="btnCheckout">
-        Finalizar Pedido
-      </button>
-      <button class="btn btn--ghost btn--full btn--sm" id="btnClearCart" style="margin-top: var(--space-2);">
-        Limpar carrinho
-      </button>
+      <button type="button" class="btn btn--cta btn--full btn--lg" id="btnCheckout">Finalizar Pedido</button>
+      <button type="button" class="btn btn--ghost btn--full btn--sm" id="btnClearCart" style="margin-top: var(--space-2);">Limpar carrinho</button>
     </div>
   </aside>
 
-  <!-- ===================== MODAL DE AUTENTICAÇÃO (LOGIN / REGISTRO) ===================== -->
-  <div class="modal-overlay" id="authModalOverlay">
-    <div class="modal-card" role="dialog" aria-labelledby="authModalTitle">
-      <button class="btn-close modal-close" id="btnCloseAuthModal">✕</button>
+  <!-- ===================== MODAL DE AUTENTICAÇÃO ===================== -->
+  <div class="modal-overlay" id="authModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--lg" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseAuthModal" aria-label="Fechar janela">✕</button>
 
       <div class="modal-tabs" role="tablist">
-        <button class="modal-tab active" id="tabLogin" role="tab" aria-selected="true">Entrar</button>
-        <button class="modal-tab" id="tabRegister" role="tab" aria-selected="false">Criar Conta</button>
+        <button type="button" class="modal-tab active" id="tabLogin" role="tab" aria-selected="true">Entrar</button>
+        <button type="button" class="modal-tab" id="tabRegister" role="tab" aria-selected="false">Criar Conta</button>
+        <button type="button" class="modal-tab" id="tabRecover" role="tab" aria-selected="false">Recuperar Senha</button>
       </div>
 
-      <!-- Formulário de Login -->
+      <!-- Login -->
       <form id="loginForm" class="auth-form">
         <h3 id="authModalTitle" class="auth-form__title">Acessar sua conta</h3>
-        <p class="auth-form__subtitle">Compre direto de produtores familiares da sua região.</p>
+        <p class="auth-form__subtitle">Compre, gerencie sua produção ou faça entregas na feira.</p>
 
-        <!-- Dica de usuário de teste rápida -->
         <div class="demo-box" id="demoAccountBox">
-          <p><strong>💡 Acesso rápido para teste:</strong></p>
-          <button type="button" class="btn-link" id="btnFillDemoClient">
-            Preencher como: <code>cliente_teste</code>
-          </button>
-          ou
-          <button type="button" class="btn-link" id="btnFillDemoAdmin">
-            <code>paulo</code> (Admin)
-          </button>
+          <p><strong>💡 Acesso rápido (populado via <code>seed_demo</code>):</strong></p>
+          <div class="demo-btn-row">
+            <button type="button" class="btn-link" id="btnFillDemoClient"><code>cliente_demo</code></button> •
+            <button type="button" class="btn-link" id="btnFillDemoProducer"><code>produtor_demo</code></button> •
+            <button type="button" class="btn-link" id="btnFillDemoDelivery"><code>entregador_demo</code></button> •
+            <button type="button" class="btn-link" id="btnFillDemoAdmin"><code>admin</code></button>
+          </div>
         </div>
 
         <div class="form-group">
           <label for="loginUsername">Nome de usuário:</label>
-          <input type="text" id="loginUsername" required placeholder="Seu usuário" class="form-input" />
+          <input type="text" id="loginUsername" required placeholder="Seu usuário" class="form-input" autocomplete="username" />
         </div>
 
         <div class="form-group">
           <label for="loginPassword">Senha:</label>
-          <input type="password" id="loginPassword" required placeholder="Sua senha" class="form-input" />
+          <input type="password" id="loginPassword" required placeholder="Sua senha" class="form-input" autocomplete="current-password" />
         </div>
 
-        <div id="loginError" class="auth-error" style="display: none;"></div>
+        <div class="form-group" style="text-align: right;">
+          <button type="button" class="btn-link" id="btnForgotPassword">Esqueci minha senha</button>
+        </div>
 
-        <button type="submit" class="btn btn--primary btn--full btn--lg" id="btnLoginSubmit">
-          Entrar na Feira
-        </button>
+        <div id="loginError" class="auth-error" style="display: none;" role="alert"></div>
+
+        <button type="submit" class="btn btn--primary btn--full btn--lg" id="btnLoginSubmit">Entrar na Feira</button>
       </form>
 
-      <!-- Formulário de Registro -->
+      <!-- Registro Multi-Perfil -->
       <form id="registerForm" class="auth-form" style="display: none;">
-        <h3 class="auth-form__title">Criar conta de Cliente</h3>
-        <p class="auth-form__subtitle">Cadastre-se em segundos para comprar na feira.</p>
+        <h3 class="auth-form__title">Criar Conta na Feira Virtual</h3>
+        <p class="auth-form__subtitle">Escolha seu perfil de atuação e preencha os dados.</p>
+
+        <div class="role-selector" role="radiogroup" aria-label="Tipo de conta">
+          <label class="role-option active">
+            <input type="radio" name="regRole" value="cliente" checked />
+            <span>🛒 Cliente</span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="regRole" value="produtor" />
+            <span>🌾 Produtor</span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="regRole" value="entregador" />
+            <span>🛵 Entregador</span>
+          </label>
+        </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="regFirstName">Nome:</label>
-            <input type="text" id="regFirstName" required placeholder="Ex: João" class="form-input" />
+            <input type="text" id="regFirstName" required placeholder="Ex: Maria" class="form-input" />
           </div>
           <div class="form-group">
             <label for="regLastName">Sobrenome:</label>
@@ -495,46 +502,136 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="regEmail">E-mail:</label>
-          <input type="email" id="regEmail" required placeholder="seu@email.com" class="form-input" />
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regEmail">E-mail:</label>
+            <input type="email" id="regEmail" required placeholder="seu@email.com" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="regTelefone">Telefone / WhatsApp:</label>
+            <input type="text" id="regTelefone" placeholder="(11) 99999-8888" class="form-input" />
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="regUsername">Usuário:</label>
-          <input type="text" id="regUsername" required placeholder="Escolha um nome de usuário" class="form-input" />
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regUsername">Usuário:</label>
+            <input type="text" id="regUsername" required placeholder="Escolha um usuário" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Senha (mín. 8 dígitos):</label>
+            <input type="password" id="regPassword" required placeholder="Mínimo 8 caracteres" class="form-input" />
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="regPassword">Senha:</label>
-          <input type="password" id="regPassword" required placeholder="Mínimo 8 caracteres" class="form-input" />
-        </div>
+        <!-- Campos de Produtor -->
+        <fieldset id="regProducerFields" class="fieldset-group" style="display: none;">
+          <legend>Dados da Propriedade Rural</legend>
+          <div class="form-group">
+            <label for="regNomePropriedade">Nome da Propriedade / Sítio:</label>
+            <input type="text" id="regNomePropriedade" placeholder="Ex: Sítio Boa Vista" class="form-input" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="regCidade">Cidade:</label>
+              <input type="text" id="regCidade" placeholder="Ex: Campinas" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="regEstado">UF:</label>
+              <input type="text" id="regEstado" maxlength="2" placeholder="SP" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regDescricao">Descrição da produção:</label>
+            <textarea id="regDescricao" rows="2" placeholder="Hortaliças orgânicas, frutas da estação..." class="form-input"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="regChavePix">Chave Pix para recebimento:</label>
+            <input type="text" id="regChavePix" placeholder="CPF, e-mail, telefone ou aleatória" class="form-input" />
+          </div>
+          <div class="checkbox-row">
+            <label><input type="checkbox" id="regPossuiMaquininha" /> Aceito cartão (maquininha)</label>
+            <label><input type="checkbox" id="regAceitaDinheiro" checked /> Aceito dinheiro</label>
+          </div>
+        </fieldset>
 
-        <div id="registerError" class="auth-error" style="display: none;"></div>
+        <!-- Campos de Entregador -->
+        <fieldset id="regDeliveryFields" class="fieldset-group" style="display: none;">
+          <legend>Dados de Entrega</legend>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="regVeiculo">Veículo:</label>
+              <input type="text" id="regVeiculo" placeholder="Ex: Moto 160cc / Utilitário" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="regPlaca">Placa:</label>
+              <input type="text" id="regPlaca" placeholder="ABC1D23" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regAreaAtuacao">Área de atuação:</label>
+            <input type="text" id="regAreaAtuacao" placeholder="Ex: Região central e zona sul" class="form-input" />
+          </div>
+        </fieldset>
 
-        <button type="submit" class="btn btn--cta btn--full btn--lg" id="btnRegisterSubmit">
-          Criar minha conta
-        </button>
+        <div id="registerError" class="auth-error" style="display: none;" role="alert"></div>
+
+        <button type="submit" class="btn btn--cta btn--full btn--lg" id="btnRegisterSubmit">Criar minha conta</button>
       </form>
+
+      <!-- Recuperar e Redefinir Senha -->
+      <div id="recoverWrap" class="auth-form" style="display: none;">
+        <h3 class="auth-form__title">Recuperação de Senha</h3>
+        <p class="auth-form__subtitle">Solicite o código de redefinição ou insira o UID/Token recebidos por e-mail.</p>
+
+        <form id="recoverForm">
+          <div class="form-group">
+            <label for="recoverEmail">Seu e-mail cadastrado:</label>
+            <input type="email" id="recoverEmail" required placeholder="seu@email.com" class="form-input" />
+          </div>
+          <div id="recoverError" class="auth-error" style="display: none;" role="alert"></div>
+          <button type="submit" class="btn btn--primary btn--full" id="btnRecoverSubmit">Enviar instruções de recuperação</button>
+        </form>
+
+        <hr style="margin-block: var(--space-5); border: none; border-top: 1px solid var(--border);" />
+
+        <form id="resetConfirmForm">
+          <h4 style="margin-bottom: var(--space-3);">Já recebeu o código? Redefinir senha</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="resetUid">UID:</label>
+              <input type="text" id="resetUid" required class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="resetToken">Token:</label>
+              <input type="text" id="resetToken" required class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="resetNovaSenha">Nova senha:</label>
+            <input type="password" id="resetNovaSenha" required class="form-input" />
+          </div>
+          <div id="resetError" class="auth-error" style="display: none;" role="alert"></div>
+          <button type="submit" class="btn btn--cta btn--full" id="btnResetConfirmSubmit">Confirmar Nova Senha</button>
+        </form>
+      </div>
     </div>
   </div>
 
   <!-- ===================== MODAL DE CHECKOUT ===================== -->
-  <div class="modal-overlay" id="checkoutModalOverlay">
-    <div class="modal-card" role="dialog" aria-labelledby="checkoutModalTitle">
-      <button class="btn-close modal-close" id="btnCloseCheckoutModal">✕</button>
+  <div class="modal-overlay" id="checkoutModalOverlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="checkoutModalTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseCheckoutModal" aria-label="Fechar checkout">✕</button>
 
       <h3 id="checkoutModalTitle" class="auth-form__title">Confirmar Pedido</h3>
-      <p class="auth-form__subtitle">Revise os detalhes para enviar o pedido diretamente ao produtor.</p>
+      <p class="auth-form__subtitle">Revise os detalhes para enviar diretamente ao produtor.</p>
 
       <form id="checkoutForm" class="auth-form">
-        <!-- Resumo do total -->
         <div class="checkout-total-card">
           <span>Total a pagar:</span>
           <strong id="checkoutTotalDisplay">R$ 0,00</strong>
         </div>
 
-        <!-- Modalidade -->
         <div class="form-group">
           <label><strong>Modalidade de Entrega:</strong></label>
           <div class="radio-cards">
@@ -555,16 +652,16 @@
           </div>
         </div>
 
-        <!-- Campo de Endereço (condicional para Entrega) -->
         <div class="form-group" id="enderecoGroup" style="display: none;">
-          <label for="enderecoSelect"><strong>Endereço de entrega:</strong></label>
-          <select id="enderecoSelect" class="form-select">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="enderecoSelect" style="margin-bottom: 0;"><strong>Endereço de entrega:</strong></label>
+            <button type="button" class="btn-link" id="btnQuickAddAddress">+ Novo endereço</button>
+          </div>
+          <select id="enderecoSelect" class="form-select" style="width: 100%; border-radius: var(--radius-md);">
             <option value="">Carregando endereços...</option>
           </select>
-          <p class="form-help">Caso não tenha endereço cadastrado, crie um no painel ou selecione retirada.</p>
         </div>
 
-        <!-- Forma de Pagamento -->
         <div class="form-group">
           <label><strong>Forma de Pagamento:</strong></label>
           <div class="payment-options">
@@ -583,24 +680,420 @@
           </div>
         </div>
 
-        <!-- Observações -->
         <div class="form-group">
           <label for="checkoutObs">Observações para o produtor (opcional):</label>
           <input type="text" id="checkoutObs" placeholder="Ex: Embalar com cuidado, retirar após as 14h..." class="form-input" />
         </div>
 
-        <div id="checkoutError" class="auth-error" style="display: none;"></div>
+        <div id="checkoutError" class="auth-error" style="display: none;" role="alert"></div>
 
-        <button type="submit" class="btn btn--cta btn--full btn--lg" id="btnConfirmOrder">
-          Confirmar e Enviar Pedido
-        </button>
+        <button type="submit" class="btn btn--cta btn--full btn--lg" id="btnConfirmOrder">Confirmar e Enviar Pedido</button>
       </form>
+    </div>
+  </div>
+
+  <!-- ===================== MODAIS DE DETALHE (PRODUTO / PRODUTOR) ===================== -->
+  <div class="modal-overlay" id="productDetailModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--lg" role="dialog" aria-modal="true" aria-label="Detalhes do Produto">
+      <button type="button" class="btn-close modal-close" id="btnCloseProductDetailModal" aria-label="Fechar detalhes">✕</button>
+      <div id="productDetailBody"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="producerDetailModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--lg" role="dialog" aria-modal="true" aria-label="Detalhes do Produtor">
+      <button type="button" class="btn-close modal-close" id="btnCloseProducerDetailModal" aria-label="Fechar produtor">✕</button>
+      <div id="producerDetailBody"></div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL MEUS PEDIDOS & RECLAMAÇÕES ===================== -->
+  <div class="modal-overlay" id="myOrdersModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="myOrdersTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseMyOrdersModal" aria-label="Fechar pedidos">✕</button>
+      <h3 id="myOrdersTitle" class="auth-form__title">📦 Meus Pedidos</h3>
+      <div class="panel-tabs">
+        <button type="button" class="panel-tab active" id="tabOrdersList">Pedidos Realizados</button>
+        <button type="button" class="panel-tab" id="tabMyComplaints">Minhas Reclamações</button>
+      </div>
+      <div id="myOrdersList" class="orders-list"></div>
+      <div id="myComplaintsList" class="orders-list" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL PIX ===================== -->
+  <div class="modal-overlay" id="pixModalOverlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pixModalTitle">
+      <button type="button" class="btn-close modal-close" id="btnClosePixModal" aria-label="Fechar Pix">✕</button>
+      <h3 id="pixModalTitle" class="auth-form__title">⚡ Pagamento via Pix</h3>
+      <p class="auth-form__subtitle">Escaneie o QR Code ou copie o código Pix abaixo para pagar diretamente ao produtor.</p>
+      <div class="pix-box">
+        <div id="pixQrContainer" class="pix-qr-wrap"></div>
+        <p>Valor: <strong id="pixValorDisplay">R$ 0,00</strong></p>
+        <p>Chave Pix: <strong id="pixChaveDisplay">-</strong></p>
+        <div class="form-group" style="width: 100%; margin-top: var(--space-3);">
+          <label for="pixCopiaColaInput">Pix Copia e Cola:</label>
+          <input type="text" id="pixCopiaColaInput" class="form-input" readonly />
+        </div>
+        <button type="button" class="btn btn--cta btn--full" id="btnCopyPix">📋 Copiar código Pix</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL AVALIAÇÃO ===================== -->
+  <div class="modal-overlay" id="reviewModalOverlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseReviewModal" aria-label="Fechar avaliação">✕</button>
+      <h3 id="reviewModalTitle" class="auth-form__title">⭐ Avaliar Compra</h3>
+      <form id="reviewForm">
+        <input type="hidden" id="reviewOrderId" />
+        <div class="form-group">
+          <label for="reviewTarget">O que deseja avaliar:</label>
+          <select id="reviewTarget" class="form-input"></select>
+        </div>
+        <div class="form-group">
+          <label>Nota:</label>
+          <div class="rating-row">
+            <label><input type="radio" name="reviewNota" value="5" checked /> ⭐⭐⭐⭐⭐ (5)</label>
+            <label><input type="radio" name="reviewNota" value="4" /> ⭐⭐⭐⭐ (4)</label>
+            <label><input type="radio" name="reviewNota" value="3" /> ⭐⭐⭐ (3)</label>
+            <label><input type="radio" name="reviewNota" value="2" /> ⭐⭐ (2)</label>
+            <label><input type="radio" name="reviewNota" value="1" /> ⭐ (1)</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="reviewComment">Comentário (opcional):</label>
+          <textarea id="reviewComment" rows="3" class="form-input" placeholder="Como foi a qualidade e o atendimento?"></textarea>
+        </div>
+        <div id="reviewError" class="auth-error" style="display: none;" role="alert"></div>
+        <button type="submit" class="btn btn--primary btn--full">Enviar Avaliação</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL RECLAMAÇÃO ===================== -->
+  <div class="modal-overlay" id="complaintModalOverlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="complaintModalTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseComplaintModal" aria-label="Fechar reclamação">✕</button>
+      <h3 id="complaintModalTitle" class="auth-form__title">⚠️ Registrar Reclamação</h3>
+      <p id="complaintOrderLabel" class="auth-form__subtitle"></p>
+      <form id="complaintForm">
+        <input type="hidden" id="complaintOrderId" />
+        <div class="form-group">
+          <label for="complaintSubject">Assunto:</label>
+          <input type="text" id="complaintSubject" required placeholder="Ex: Produto avariado / Atraso na entrega" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label for="complaintDescription">Descreva o ocorrido:</label>
+          <textarea id="complaintDescription" rows="4" required class="form-input"></textarea>
+        </div>
+        <div id="complaintError" class="auth-error" style="display: none;" role="alert"></div>
+        <button type="submit" class="btn btn--cta btn--full">Enviar para Moderação</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL ENDEREÇOS (VIACEP) ===================== -->
+  <div class="modal-overlay" id="addressesModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--lg" role="dialog" aria-modal="true" aria-labelledby="addressesModalTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseAddressesModal" aria-label="Fechar endereços">✕</button>
+      <h3 id="addressesModalTitle" class="auth-form__title">📍 Meus Endereços</h3>
+      <div id="addressesList" class="addresses-list"></div>
+
+      <hr style="margin-block: var(--space-5); border: none; border-top: 1px solid var(--border);" />
+      <h4 style="margin-bottom: var(--space-3);">Adicionar Novo Endereço</h4>
+      <form id="addressForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="addrRotulo">Rótulo:</label>
+            <input type="text" id="addrRotulo" value="Casa" required class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="addrCep">CEP (busca automática):</label>
+            <input type="text" id="addrCep" placeholder="00000-000" maxlength="9" class="form-input" />
+            <span id="addrCepStatus" class="form-help"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="addrLogradouro">Logradouro:</label>
+            <input type="text" id="addrLogradouro" required class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="addrNumero">Número:</label>
+            <input type="text" id="addrNumero" required class="form-input" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="addrComplemento">Complemento:</label>
+            <input type="text" id="addrComplemento" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="addrBairro">Bairro:</label>
+            <input type="text" id="addrBairro" required class="form-input" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="addrCidade">Cidade:</label>
+            <input type="text" id="addrCidade" required class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="addrEstado">UF:</label>
+            <input type="text" id="addrEstado" maxlength="2" required class="form-input" />
+          </div>
+        </div>
+        <div id="addressError" class="auth-error" style="display: none;" role="alert"></div>
+        <button type="submit" class="btn btn--primary btn--full">Salvar Endereço</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL EDITAR PERFIL ===================== -->
+  <div class="modal-overlay" id="profileModalOverlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseProfileModal" aria-label="Fechar perfil">✕</button>
+      <h3 id="profileModalTitle" class="auth-form__title">👤 Meu Perfil</h3>
+      <form id="profileForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="profFirstName">Nome:</label>
+            <input type="text" id="profFirstName" required class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="profLastName">Sobrenome:</label>
+            <input type="text" id="profLastName" required class="form-input" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="profEmail">E-mail:</label>
+          <input type="email" id="profEmail" required class="form-input" />
+        </div>
+        <div class="form-group">
+          <label for="profTelefone">Telefone:</label>
+          <input type="text" id="profTelefone" class="form-input" />
+        </div>
+        <div id="profileError" class="auth-error" style="display: none;" role="alert"></div>
+        <button type="submit" class="btn btn--primary btn--full">Salvar Alterações</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== PAINEL DO PRODUTOR ===================== -->
+  <div class="modal-overlay" id="producerPanelModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="producerPanelTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseProducerPanelModal" aria-label="Fechar painel do produtor">✕</button>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <h3 id="producerPanelTitle" class="auth-form__title">🌾 Painel do Produtor</h3>
+        <span id="producerStatusBadge" class="badge badge--outline"></span>
+      </div>
+
+      <div class="panel-tabs" id="producerPanelTabs">
+        <button type="button" class="panel-tab active" data-producer-tab="produtos">Meus Produtos</button>
+        <button type="button" class="panel-tab" data-producer-tab="pedidos">Pedidos Recebidos</button>
+        <button type="button" class="panel-tab" data-producer-tab="vendas">Vendas e Avaliações</button>
+        <button type="button" class="panel-tab" data-producer-tab="propriedade">Minha Propriedade</button>
+      </div>
+
+      <!-- Aba Produtos -->
+      <div id="producerTabProdutos">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-3);">
+          <button type="button" class="btn btn--cta btn--sm" id="btnNewProducerProduct">+ Novo Produto</button>
+        </div>
+
+        <div id="producerProductFormWrap" class="demo-box" style="display: none;">
+          <form id="producerProductForm">
+            <input type="hidden" id="prodId" />
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prodNome">Nome do produto:</label>
+                <input type="text" id="prodNome" required class="form-input" />
+              </div>
+              <div class="form-group">
+                <label for="prodCategoria">Categoria:</label>
+                <select id="prodCategoria" required class="form-input"></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prodPreco">Preço (R$):</label>
+                <input type="number" step="0.01" min="0.01" id="prodPreco" required class="form-input" />
+              </div>
+              <div class="form-group">
+                <label for="prodUnidade">Unidade:</label>
+                <select id="prodUnidade" class="form-input">
+                  <option value="UNIDADE">unidade</option>
+                  <option value="KG">kg</option>
+                  <option value="G">g</option>
+                  <option value="MACO">maço</option>
+                  <option value="CAIXA">caixa</option>
+                  <option value="SACO">saco</option>
+                  <option value="L">L</option>
+                  <option value="ML">ml</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prodEstoque">Estoque:</label>
+                <input type="number" step="0.001" min="0" id="prodEstoque" required class="form-input" />
+              </div>
+              <div class="form-group">
+                <label for="prodTipo">Tipo de cultivo:</label>
+                <select id="prodTipo" class="form-input">
+                  <option value="ORGANICO_CERTIFICADO">Orgânico certificado</option>
+                  <option value="AGROECOLOGICO">Agroecológico</option>
+                  <option value="CONVENCIONAL">Convencional</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="prodDescricao">Descrição:</label>
+              <textarea id="prodDescricao" rows="2" class="form-input"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prodImagem">Foto (JPEG/PNG/WebP até 5MB):</label>
+                <input type="file" id="prodImagem" accept="image/jpeg,image/png,image/webp" class="form-input" />
+              </div>
+              <div class="form-group" style="display: flex; align-items: center;">
+                <label><input type="checkbox" id="prodAtivo" checked /> Visível no catálogo</label>
+              </div>
+            </div>
+            <div id="producerProductError" class="auth-error" style="display: none;" role="alert"></div>
+            <div style="display: flex; gap: var(--space-2);">
+              <button type="submit" class="btn btn--primary btn--sm">Salvar Produto</button>
+              <button type="button" class="btn btn--outline btn--sm" id="btnCancelProducerProduct">Cancelar</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="producerProductsList" class="panel-list"></div>
+      </div>
+
+      <!-- Aba Pedidos -->
+      <div id="producerTabPedidos" style="display: none;">
+        <div id="producerOrdersList" class="orders-list"></div>
+      </div>
+
+      <!-- Aba Vendas -->
+      <div id="producerTabVendas" style="display: none;">
+        <div id="producerSalesContent"></div>
+      </div>
+
+      <!-- Aba Propriedade -->
+      <div id="producerTabPropriedade" style="display: none;">
+        <form id="producerPropertyForm">
+          <div class="form-group">
+            <label for="propNome">Nome da propriedade:</label>
+            <input type="text" id="propNome" required class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="propDescricao">História e descrição:</label>
+            <textarea id="propDescricao" rows="3" class="form-input"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="propEndereco">Endereço da propriedade:</label>
+            <input type="text" id="propEndereco" class="form-input" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="propCidade">Cidade:</label>
+              <input type="text" id="propCidade" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="propEstado">UF:</label>
+              <input type="text" id="propEstado" maxlength="2" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="propChavePix">Chave Pix:</label>
+            <input type="text" id="propChavePix" class="form-input" />
+          </div>
+          <div class="checkbox-row" style="margin-bottom: var(--space-4);">
+            <label><input type="checkbox" id="propMaquininha" /> Possuo maquininha de cartão</label>
+            <label><input type="checkbox" id="propDinheiro" /> Aceito dinheiro</label>
+          </div>
+          <div class="form-group">
+            <label for="propFoto">Foto da propriedade (até 5MB):</label>
+            <input type="file" id="propFoto" accept="image/jpeg,image/png,image/webp" class="form-input" />
+          </div>
+          <div id="producerPropertyError" class="auth-error" style="display: none;" role="alert"></div>
+          <button type="submit" class="btn btn--primary btn--full">Salvar Dados da Propriedade</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PAINEL DO ENTREGADOR ===================== -->
+  <div class="modal-overlay" id="deliveryPanelModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="deliveryPanelTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseDeliveryPanelModal" aria-label="Fechar painel do entregador">✕</button>
+      <h3 id="deliveryPanelTitle" class="auth-form__title">🛵 Painel do Entregador</h3>
+
+      <div class="panel-tabs" id="deliveryPanelTabs">
+        <button type="button" class="panel-tab active" data-delivery-tab="disponiveis">Entregas Disponíveis</button>
+        <button type="button" class="panel-tab" data-delivery-tab="minhas">Minhas Entregas</button>
+        <button type="button" class="panel-tab" data-delivery-tab="veiculo">Meu Veículo</button>
+      </div>
+
+      <div id="deliveryTabDisponiveis">
+        <div id="deliveryAvailableList" class="orders-list"></div>
+      </div>
+
+      <div id="deliveryTabMinhas" style="display: none;">
+        <div id="deliveryMineList" class="orders-list"></div>
+      </div>
+
+      <div id="deliveryTabVeiculo" style="display: none;">
+        <form id="deliveryVehicleForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="delivVeiculo">Veículo:</label>
+              <input type="text" id="delivVeiculo" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="delivPlaca">Placa:</label>
+              <input type="text" id="delivPlaca" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="delivArea">Área de atuação:</label>
+            <input type="text" id="delivArea" class="form-input" />
+          </div>
+          <div id="deliveryVehicleError" class="auth-error" style="display: none;" role="alert"></div>
+          <button type="submit" class="btn btn--primary btn--full">Atualizar Dados do Veículo</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PAINEL DE MODERAÇÃO ADMIN ===================== -->
+  <div class="modal-overlay" id="adminPanelModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="adminPanelTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseAdminPanelModal" aria-label="Fechar painel admin">✕</button>
+      <h3 id="adminPanelTitle" class="auth-form__title">🛡️ Painel de Moderação Administrativa</h3>
+
+      <div class="panel-tabs" id="adminPanelTabs">
+        <button type="button" class="panel-tab active" data-admin-tab="indicadores">Indicadores</button>
+        <button type="button" class="panel-tab" data-admin-tab="produtores">Produtores</button>
+        <button type="button" class="panel-tab" data-admin-tab="produtos">Produtos</button>
+        <button type="button" class="panel-tab" data-admin-tab="reclamacoes">Reclamações</button>
+        <button type="button" class="panel-tab" data-admin-tab="usuarios">Usuários</button>
+      </div>
+
+      <div id="adminTabIndicadores"><div id="adminIndicatorsContent"></div></div>
+      <div id="adminTabProdutores" style="display: none;"><div id="adminProducersList" class="panel-list"></div></div>
+      <div id="adminTabProdutos" style="display: none;"><div id="adminProductsList" class="panel-list"></div></div>
+      <div id="adminTabReclamacoes" style="display: none;"><div id="adminComplaintsList" class="orders-list"></div></div>
+      <div id="adminTabUsuarios" style="display: none;"><div id="adminUsersList" class="panel-list"></div></div>
     </div>
   </div>
 
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script src="main.js"></script>
+  <script type="module" src="{% static 'main.js' %}"></script>
 </body>
 </html>

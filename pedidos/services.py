@@ -9,6 +9,7 @@ from catalogo.models import Produto
 from usuarios.models import PerfilProdutor
 
 from .models import HistoricoStatus, ItemPedido, Pedido
+from .notificacoes import notificador
 
 S = Pedido.Status
 
@@ -35,8 +36,8 @@ def _registrar(pedido):
 
 
 @transaction.atomic
-def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observacao=""):
-    """Transforma o carrinho em pedidos (um por produtor)."""
+def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observacao="", taxa_entrega=Decimal("0.00")):
+    """Transforma o carrinho em pedidos (um por produtor) com proteção contra concorrência."""
     carrinho = getattr(cliente, "carrinho", None)
     itens = list(carrinho.itens.select_related("produto__produtor")) if carrinho else []
     if not itens:
@@ -44,32 +45,46 @@ def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observaca
     if modalidade == Pedido.Modalidade.ENTREGA and endereco is None:
         raise ValidationError({"endereco_id": "Informe o endereço de entrega."})
 
+    # Proteção de concorrência: lock nos produtos envolvidos
+    p_ids = [it.produto_id for it in itens]
+    produtos_lock = {p.id: p for p in Produto.objects.select_for_update().filter(id__in=p_ids)}
+
     por_produtor = defaultdict(list)
     for item in itens:
-        p = item.produto
-        if not p.ativo or p.produtor.status != PerfilProdutor.Status.APROVADO:
-            raise ValidationError(f"O produto '{p.nome}' não está mais disponível.")
+        p = produtos_lock.get(item.produto_id)
+        if not p or not p.ativo or p.produtor.status != PerfilProdutor.Status.APROVADO:
+            raise ValidationError(f"O produto '{item.produto.nome}' não está mais disponível.")
         if item.quantidade > p.estoque:
             raise ValidationError(f"Estoque insuficiente para '{p.nome}' (disponível: {p.estoque}).")
-        por_produtor[p.produtor].append(item)
+        por_produtor[p.produtor].append((item, p))
 
     pedidos = []
     for produtor, its in por_produtor.items():
         validar_pagamento(produtor, forma_pagamento)
         pedido = Pedido.objects.create(
-            cliente=cliente, produtor=produtor, modalidade=modalidade, forma_pagamento=forma_pagamento,
+            cliente=cliente,
+            produtor=produtor,
+            modalidade=modalidade,
+            forma_pagamento=forma_pagamento,
+            taxa_entrega=taxa_entrega if modalidade == Pedido.Modalidade.ENTREGA else Decimal("0.00"),
             endereco_entrega=endereco.como_texto() if (endereco and modalidade == Pedido.Modalidade.ENTREGA) else "",
-            observacao=observacao)
+            observacao=observacao,
+        )
         total = Decimal("0.00")
-        for it in its:
+        for it, p in its:
             ip = ItemPedido.objects.create(
-                pedido=pedido, produto=it.produto, nome_produto=it.produto.nome,
-                unidade_medida=it.produto.unidade_medida, preco_unitario=it.produto.preco,
-                quantidade=it.quantidade)
+                pedido=pedido,
+                produto=p,
+                nome_produto=p.nome,
+                unidade_medida=p.unidade_medida,
+                preco_unitario=p.preco,
+                quantidade=it.quantidade,
+            )
             total += ip.subtotal
         pedido.total = total
         pedido.save(update_fields=["total"])
         _registrar(pedido)
+        notificador.disparar(pedido, None, pedido.status, observacao)
         pedidos.append(pedido)
     carrinho.itens.all().delete()
     return pedidos
@@ -97,9 +112,10 @@ def _devolver_estoque(pedido):
 
 
 @transaction.atomic
-def mudar_status(pedido, novo, usuario):
+def mudar_status(pedido, novo, usuario, motivo="", previsao_entrega=""):
     """Aplica uma transição respeitando quem pode fazê-la e o fluxo permitido."""
     pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+    status_anterior = pedido.status
     novo = S(novo)
     if novo not in TRANSICOES.get(S(pedido.status), set()):
         raise ValidationError(f"Não é possível ir de '{pedido.get_status_display()}' para '{novo.label}'.")
@@ -126,7 +142,13 @@ def mudar_status(pedido, novo, usuario):
     elif novo in (S.CANCELADO, S.RECUSADO) and pedido.estoque_baixado:
         _devolver_estoque(pedido)
 
+    if motivo:
+        pedido.motivo_cancelamento = motivo
+    if previsao_entrega:
+        pedido.previsao_entrega = previsao_entrega
+
     pedido.status = novo
     pedido.save()
     _registrar(pedido)
+    notificador.disparar(pedido, status_anterior, novo, motivo)
     return pedido

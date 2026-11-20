@@ -6,11 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Instala dependências do sistema necessárias para build básico
+# PyMySQL é 100% Python puro: dispensamos gcc e bibliotecas C de MySQL
+# Mantemos apenas utilitários essenciais
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    default-libmysqlclient-dev \
-    pkg-config \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Cria usuário sem privilégios administrativos para segurança
@@ -35,6 +34,9 @@ RUN DB_ENGINE=sqlite python manage.py collectstatic --no-input
 
 EXPOSE 8000
 
+# Healthcheck do container no endpoint dedicado da API
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')" || exit 1
+
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "60"]
-

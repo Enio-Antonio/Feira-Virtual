@@ -1,30 +1,29 @@
-# 🌱 Feira Virtual — Plataforma de Venda Direta
+# Feira Virtual — Plataforma de Venda Direta
 
 Plataforma completa (Backend API + Frontend integrado) para conexão direta entre **produtores rurais da agricultura familiar**, **entregadores parceiros** e **compradores finais**, eliminando atravessadores e garantindo alimentos frescos com preço justo.
 
 ---
 
-## 📌 Sumário
+## Sumário
 
-- [Visão Geral e Arquitetura](#-visão-geral-e-arquitetura)
-- [Histórico de Atualizações](#-histórico-de-atualizações)
-- [Como Rodar o Projeto](#-como-rodar-o-projeto)
+- [Visão Geral e Arquitetura](#visão-geral-e-arquitetura)
+- [Histórico de Atualizações](#histórico-de-atualizações)
+- [Como Rodar o Projeto](#como-rodar-o-projeto)
   - [Opção 1: Inicialização Rápida (Recomendada)](#opção-1-inicialização-rápida-recomendada)
   - [Opção 2: Com Banco MySQL Local ou Docker](#opção-2-com-banco-mysql-local-ou-docker)
   - [Opção 3: Acesso Externo / Celular (ngrok ou Cloudflare)](#opção-3-acesso-externo--celular-ngrok-ou-cloudflare)
   - [Checklist de Produção](#checklist-de-produção)
-- [Contas de Teste (seed_demo)](#-contas-de-teste-seed_demo)
-- [Variáveis de Ambiente](#-variáveis-de-ambiente)
-- [Estrutura dos Módulos](#-estrutura-dos-módulos)
-- [Principais Endpoints da API](#-principais-endpoints-da-api)
-- [Fluxo de Pedido e Regras de Negócio](#-fluxo-de-pedido-e-regras-de-negócio)
-- [Design System e Identidade Visual](#-design-system-e-identidade-visual)
-- [Testes e CI](#-testes-e-ci)
-- [Próximos Passos](#-próximos-passos)
+- [Contas de Teste (seed_demo)](#contas-de-teste-seed_demo)
+- [Variáveis de Ambiente](#variáveis-de-ambiente)
+- [Estrutura dos Módulos](#estrutura-dos-módulos)
+- [Principais Endpoints da API](#principais-endpoints-da-api)
+- [Fluxo de Pedido e Regras de Negócio](#fluxo-de-pedido-e-regras-de-negócio)
+- [Design System e Identidade Visual](#design-system-e-identidade-visual)
+- [Testes e CI](#testes-e-ci)
 
 ---
 
-## 🏗 Visão Geral e Arquitetura
+## Visão Geral e Arquitetura
 
 O sistema é composto por:
 
@@ -37,14 +36,14 @@ O sistema é composto por:
 
 | Perfil | O que faz na plataforma |
 |---|---|
-| 🛒 **Cliente** | Navega no catálogo, monta o carrinho, finaliza pedidos (retirada ou entrega), paga via Pix/cartão/dinheiro, acompanha o status, avalia e registra reclamações |
-| 🌾 **Produtor** | Cadastra produtos com foto e estoque, aceita ou recusa pedidos, atualiza o status e acompanha vendas e avaliações |
-| 🛵 **Entregador** | Vê entregas disponíveis, aceita, marca "saiu para entrega" e confirma a entrega |
-| 🛡️ **Administrador** | Aprova/suspende produtores, oculta produtos, modera reclamações e usuários, consulta indicadores |
+| **Cliente** | Navega no catálogo, monta o carrinho, finaliza pedidos (retirada ou entrega), paga via Pix/cartão/dinheiro, acompanha o status, avalia e registra reclamações |
+| **Produtor** | Cadastra produtos com foto e estoque, aceita ou recusa pedidos, atualiza o status e acompanha vendas e avaliações |
+| **Entregador** | Vê entregas disponíveis, aceita, marca "saiu para entrega" e confirma a entrega |
+| **Administrador** | Aprova/suspende produtores, oculta produtos, modera reclamações e usuários, consulta indicadores |
 
 ---
 
-## 🚀 Histórico de Atualizações
+## Histórico de Atualizações
 
 Principais melhorias implementadas até agora:
 
@@ -97,7 +96,7 @@ Principais melhorias implementadas até agora:
 
 ---
 
-## 💻 Como Rodar o Projeto
+## Como Rodar o Projeto
 
 ### Opção 1: Inicialização Rápida (Recomendada)
 
@@ -185,7 +184,7 @@ Depois execute `python manage.py migrate` e `python manage.py runserver`.
 
 ---
 
-## 👥 Contas de Teste (`seed_demo`)
+## Contas de Teste (`seed_demo`)
 
 Criadas por `python manage.py seed_demo` (somente com `DJANGO_DEBUG=1`; use `--reset` para recriar):
 
@@ -200,7 +199,7 @@ Criadas por `python manage.py seed_demo` (somente com `DJANGO_DEBUG=1`; use `--r
 
 ---
 
-## ⚙️ Variáveis de Ambiente
+## Variáveis de Ambiente
 
 Todas as opções estão em [`.env.example`](.env.example). As principais:
 
@@ -219,7 +218,7 @@ Todas as opções estão em [`.env.example`](.env.example). As principais:
 
 ---
 
-## 📦 Estrutura dos Módulos
+## Estrutura dos Módulos
 
 ```
 feira_virtual/
@@ -236,7 +235,7 @@ feira_virtual/
 
 ---
 
-## 🔌 Principais Endpoints da API
+## Principais Endpoints da API
 
 ### Autenticação, Perfil e LGPD
 - `POST /api/auth/login/` — Retorna tokens JWT (`access` e `refresh`).
@@ -273,7 +272,7 @@ feira_virtual/
 
 ---
 
-## ⚖️ Fluxo de Pedido e Regras de Negócio
+## Fluxo de Pedido e Regras de Negócio
 
 ```text
 PENDENTE ─▶ ACEITO ─▶ EM_PREPARO ─▶ PRONTO ─▶ EM_ENTREGA ─▶ CONCLUIDO
@@ -292,7 +291,7 @@ PENDENTE ─▶ ACEITO ─▶ EM_PREPARO ─▶ PRONTO ─▶ EM_ENTREGA ─▶ 
 
 ---
 
-## 🎨 Design System e Identidade Visual
+## Design System e Identidade Visual
 
 - **Paleta (regra 60-30-10, contraste WCAG 2.1 AA):**
 
@@ -312,7 +311,7 @@ PENDENTE ─▶ ACEITO ─▶ EM_PREPARO ─▶ PRONTO ─▶ EM_ENTREGA ─▶ 
 
 ---
 
-## 🧪 Testes e CI
+## Testes e CI
 
 ```bash
 python manage.py test                                  # 23 testes
@@ -324,11 +323,3 @@ python manage.py spectacular --validate > /dev/null    # valida o schema OpenAPI
 O GitHub Actions (`.github/workflows/ci.yml`) executa Ruff, `check`, `check --deploy`, `collectstatic` e testes com cobertura a cada push/PR na `main`.
 
 ---
-
-## 🔮 Próximos Passos
-
-- Integrar gateway Pix real (Mercado Pago / Efí / Asaas) e WhatsApp oficial.
-- Migrar os tokens JWT do `localStorage` para cookies `httpOnly`.
-- Self-host das fontes Inter/Fraunces (`.woff2`) e auditoria Lighthouse.
-- Cálculo automático de frete por CEP e armazenamento de mídia em S3/Cloudflare R2.
-- Build da imagem Docker no CI.

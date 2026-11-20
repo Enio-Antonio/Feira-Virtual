@@ -1,10 +1,10 @@
-# 🌱 Feira Virtual — Plataforma de Venda Direta
+#  Feira Virtual — Plataforma de Venda Direta
 
 Plataforma completa (Backend API + Frontend integrado) para conexão direta entre **produtores rurais da agricultura familiar**, **entregadores parceiros** e **compradores finais**, eliminando atravessadores e garantindo alimentos frescos com preço justo.
 
 ---
 
-## 📌 Sumário
+##  Sumário
 
 - [Visão Geral e Arquitetura](#-visão-geral-e-arquitetura)
 - [Histórico de Atualizações](#-histórico-de-atualizações)
@@ -24,7 +24,7 @@ Plataforma completa (Backend API + Frontend integrado) para conexão direta entr
 
 ---
 
-## 🏗 Visão Geral e Arquitetura
+## Visão Geral e Arquitetura
 
 O sistema é composto por:
 
@@ -97,7 +97,7 @@ Principais melhorias implementadas até agora:
 
 ---
 
-## 💻 Como Rodar o Projeto
+##  Como Rodar o Projeto
 
 ### Opção 1: Inicialização Rápida (Recomendada)
 
@@ -236,7 +236,7 @@ feira_virtual/
 
 ---
 
-## 🔌 Principais Endpoints da API
+##  Principais Endpoints da API
 
 ### Autenticação, Perfil e LGPD
 - `POST /api/auth/login/` — Retorna tokens JWT (`access` e `refresh`).
@@ -310,7 +310,6 @@ PENDENTE ─▶ ACEITO ─▶ EM_PREPARO ─▶ PRONTO ─▶ EM_ENTREGA ─▶ 
 - **Tokens CSS:** variáveis centralizadas no topo de `frontend/style.css`.
 - **Assets:** logos (PNG/WebP), favicons, ícones PWA e `og-image` em `frontend/assets/`.
 
----
 
 ## 🧪 Testes e CI
 

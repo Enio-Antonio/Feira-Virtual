@@ -1,8 +1,8 @@
 /**
  * Pedidos do Cliente (Timeline, Cancelamento, Pix QR/Copia-e-Cola), Avaliações, Reclamações e Endereços (ViaCEP).
  */
-import { apiFetch, parseError } from './api.js';
-import { closeModal, escapeHtml, formatCurrency, formatDate, generateSimpleQrSvg, openModal, renderPaginationBar, showToast } from './ui.js';
+import { apiFetch, parseError } from './api.js?v=20261120h';
+import { closeModal, escapeHtml, formatCurrency, formatDate, generateSimpleQrSvg, openModal, renderPaginationBar, showToast } from './ui.js?v=20261120h';
 
 const ordersCache = new Map();
 

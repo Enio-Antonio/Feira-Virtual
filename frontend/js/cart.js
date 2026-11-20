@@ -1,9 +1,9 @@
 /**
  * Gerenciamento do Carrinho de Compras, Drawer Lateral e Checkout.
  */
-import { apiFetch, parseError } from './api.js';
-import { authState } from './auth.js';
-import { closeModal, escapeHtml, formatCurrency, formatQuantity, getUnitStep, openModal, showToast } from './ui.js';
+import { apiFetch, parseError } from './api.js?v=20261120h';
+import { authState } from './auth.js?v=20261120h';
+import { closeModal, escapeHtml, formatCurrency, formatQuantity, getUnitStep, openModal, showToast } from './ui.js?v=20261120h';
 
 export const cartState = {
   items: [],

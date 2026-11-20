@@ -1,9 +1,9 @@
 /**
  * Painel do Produtor: CRUD de Produtos, Gestão de Pedidos, Resumo de Vendas, Avaliações e Propriedade.
  */
-import { apiFetch, parseError } from './api.js';
-import { statusLabels } from './orders.js';
-import { clearFormError, escapeHtml, formatCurrency, formatDate, openModal, renderPaginationBar, safeUrl, showFormError, showToast } from './ui.js';
+import { apiFetch, parseError } from './api.js?v=20261120h';
+import { statusLabels } from './orders.js?v=20261120h';
+import { clearFormError, escapeHtml, formatCurrency, formatDate, openModal, renderPaginationBar, safeUrl, showFormError, showToast } from './ui.js?v=20261120h';
 
 let producerProductsCache = [];
 

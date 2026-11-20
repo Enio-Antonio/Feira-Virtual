@@ -1,9 +1,9 @@
 /**
  * Painel do Entregador: Entregas Disponíveis, Minhas Entregas e Dados do Veículo.
  */
-import { apiFetch, parseError } from './api.js';
-import { statusLabels } from './orders.js';
-import { clearFormError, escapeHtml, formatCurrency, openModal, showFormError, showToast } from './ui.js';
+import { apiFetch, parseError } from './api.js?v=20261120h';
+import { statusLabels } from './orders.js?v=20261120h';
+import { clearFormError, escapeHtml, formatCurrency, openModal, showFormError, showToast } from './ui.js?v=20261120h';
 
 export function openDeliveryPanel(initialTab = 'disponiveis') {
   openModal('deliveryPanelModalOverlay');

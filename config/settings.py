@@ -2,6 +2,7 @@ import os
 import secrets
 import sys
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -46,6 +47,14 @@ ALLOWED_HOSTS = [
 
 # Swagger / Documentação OpenAPI (padrão: restrito a admins)
 ENABLE_SWAGGER = os.environ.get("ENABLE_SWAGGER", "0") == "1"
+
+# Pagamentos e entrega
+PIX_WEBHOOK_SECRET = os.environ.get("PIX_WEBHOOK_SECRET", "")
+try:
+    _taxa_env = Decimal(os.environ.get("TAXA_ENTREGA_PADRAO", "0.00"))
+except InvalidOperation:
+    _taxa_env = Decimal("0.00")
+TAXA_ENTREGA_PADRAO = max(Decimal("0.00"), _taxa_env)
 
 INSTALLED_APPS = [
     "django.contrib.admin",

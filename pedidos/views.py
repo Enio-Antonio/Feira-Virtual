@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from drf_spectacular.utils import extend_schema
@@ -88,13 +89,14 @@ class PedidoClienteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixin
         ser = CheckoutSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
+        taxa_servidor = max(Decimal("0.00"), Decimal(str(getattr(settings, "TAXA_ENTREGA_PADRAO", "0.00"))))
         pedidos = services.finalizar_carrinho(
             request.user,
             d["modalidade"],
             d["endereco"],
             d["forma_pagamento"],
             d.get("observacao", ""),
-            taxa_entrega=d.get("taxa_entrega", Decimal("0.00")),
+            taxa_entrega=taxa_servidor,
         )
         return Response(PedidoSerializer(pedidos, many=True, context={"request": request}).data, status=status.HTTP_201_CREATED)
 

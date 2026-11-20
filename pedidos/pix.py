@@ -19,12 +19,22 @@ class GatewayPixBase:
         raise NotImplementedError
 
 
+DEFAULT_DEV_SECRET = "feira-virtual-pix-secret-dev"
+
+
 class MockPixGateway(GatewayPixBase):
     """
     Gateway Pix Mock para testes e ambiente local.
     Gera códigos copia-e-cola válidos em formato BR Code simulado.
     """
-    SECRET = getattr(settings, "PIX_WEBHOOK_SECRET", "feira-virtual-pix-secret-dev")
+
+    def _obter_segredo(self) -> str | None:
+        segredo = (getattr(settings, "PIX_WEBHOOK_SECRET", "") or "").strip()
+        if not settings.DEBUG:
+            if not segredo or segredo == DEFAULT_DEV_SECRET:
+                return None
+            return segredo
+        return segredo or DEFAULT_DEV_SECRET
 
     def gerar_cobranca(self, pedido):
         valor = f"{pedido.total_com_frete:.2f}"
@@ -44,14 +54,17 @@ class MockPixGateway(GatewayPixBase):
             "valor": valor,
             "chave": chave,
             "copia_e_cola": copia_e_cola,
-            "qr_code_url": f"/api/pedidos/{pedido.pk}/pix/qrcode/",
+            "simulado": True,
         }
 
     def validar_assinatura_webhook(self, payload_bytes, assinatura_header):
         if not assinatura_header:
             return False
+        segredo = self._obter_segredo()
+        if not segredo:
+            return False
         esperado = hmac.new(
-            self.SECRET.encode("utf-8"),
+            segredo.encode("utf-8"),
             payload_bytes,
             hashlib.sha256,
         ).hexdigest()

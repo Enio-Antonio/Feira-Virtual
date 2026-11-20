@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from catalogo.models import Categoria, Produto
@@ -170,6 +171,7 @@ class FluxoCompletoTest(APITestCase):
         produtores_dos_pedidos = {p["produtor"] for p in res.data}
         self.assertEqual(len(produtores_dos_pedidos), 2)
 
+    @override_settings(PIX_WEBHOOK_SECRET="segredo-pix-teste-seguro-2026")
     def test_pix_cobranca_e_webhook(self):
         p1_user = Usuario.objects.get(username="maria")
         p1_user.perfil_produtor.status = "APROVADO"
@@ -186,6 +188,8 @@ class FluxoCompletoTest(APITestCase):
         r_pix = self.client.get(f"/api/pedidos/{pedido_id}/pix/")
         self.assertEqual(r_pix.status_code, 200)
         self.assertIn("copia_e_cola", r_pix.data)
+        self.assertTrue(r_pix.data.get("simulado"))
+        self.assertNotIn("qr_code_url", r_pix.data)
 
         # Simula Webhook com assinatura HMAC válida
         import hashlib
@@ -193,8 +197,7 @@ class FluxoCompletoTest(APITestCase):
         import json
         txid = numero_publico.replace("PED-", "")
         payload = json.dumps({"txid": txid, "evento": "PAGAMENTO_CONFIRMADO"}).encode("utf-8")
-        from .pix import MockPixGateway
-        sig = hmac.new(MockPixGateway.SECRET.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+        sig = hmac.new(b"segredo-pix-teste-seguro-2026", payload, hashlib.sha256).hexdigest()
 
         self.client.credentials()  # webhook é anônimo
         r_wh = self.client.post(
@@ -207,6 +210,63 @@ class FluxoCompletoTest(APITestCase):
         from .models import Pedido
         p_db = Pedido.objects.get(pk=pedido_id)
         self.assertEqual(p_db.status, Pedido.Status.ACEITO)
+
+    @override_settings(DEBUG=False, PIX_WEBHOOK_SECRET="segredo-producao-forte")
+    def test_webhook_pix_rejeita_segredo_antigo_e_default_em_producao(self):
+        import hashlib
+        import hmac
+        import json
+        from .pix import DEFAULT_DEV_SECRET
+
+        payload = json.dumps({"txid": "ABC123", "evento": "PAGAMENTO_CONFIRMADO"}).encode("utf-8")
+        sig_antiga = hmac.new(DEFAULT_DEV_SECRET.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+
+        self.client.credentials()
+        r = self.client.post(
+            "/api/pedidos/pix/webhook/",
+            data=payload,
+            content_type="application/json",
+            HTTP_X_SIGNATURE=sig_antiga,
+        )
+        self.assertEqual(r.status_code, 401)
+
+        with override_settings(DEBUG=False, PIX_WEBHOOK_SECRET=""):
+            r_vazio = self.client.post(
+                "/api/pedidos/pix/webhook/",
+                data=payload,
+                content_type="application/json",
+                HTTP_X_SIGNATURE=sig_antiga,
+            )
+            self.assertEqual(r_vazio.status_code, 401)
+
+        with override_settings(DEBUG=False, PIX_WEBHOOK_SECRET=DEFAULT_DEV_SECRET):
+            r_default = self.client.post(
+                "/api/pedidos/pix/webhook/",
+                data=payload,
+                content_type="application/json",
+                HTTP_X_SIGNATURE=sig_antiga,
+            )
+            self.assertEqual(r_default.status_code, 401)
+
+    @override_settings(TAXA_ENTREGA_PADRAO=Decimal("7.50"))
+    def test_checkout_ignora_taxa_entrega_cliente_e_usa_servidor(self):
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "APROVADO"
+        p1_user.perfil_produtor.save()
+        prod = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Tomate",
+                                      preco="10.00", estoque="10", unidade_medida="KG")
+        self.login("joao")
+        end = self.client.post("/api/enderecos/", {"logradouro": "Rua B", "numero": "20", "bairro": "Centro",
+                                                    "cidade": "Natal", "estado": "RN"}, format="json").data["id"]
+        self.client.post("/api/carrinho/itens/", {"produto": prod.id, "quantidade": "2"}, format="json")
+        res = self.client.post(
+            "/api/pedidos/",
+            {"modalidade": "ENTREGA", "forma_pagamento": "PIX", "endereco_id": end, "taxa_entrega": "-50.00"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 201, res.data)
+        self.assertEqual(Decimal(res.data[0]["taxa_entrega"]), Decimal("7.50"))
+        self.assertEqual(Decimal(res.data[0]["total_com_frete"]), Decimal("27.50"))
 
     def test_recusar_pedido_com_motivo(self):
         p1_user = Usuario.objects.get(username="maria")

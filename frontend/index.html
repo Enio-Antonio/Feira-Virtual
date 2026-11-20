@@ -765,6 +765,9 @@
       </h3>
       <p class="auth-form__subtitle">Escaneie o QR Code ou copie o código Pix abaixo para pagar diretamente ao produtor.
       </p>
+      <div id="pixSimuladoNotice" class="demo-box" style="display: none;" role="status">
+        Pagamento Pix simulado (ambiente de demonstração) — o QR Code não é escaneável.
+      </div>
       <div class="pix-box">
         <div id="pixQrContainer" class="pix-qr-wrap"></div>
         <p>Valor: <strong id="pixValorDisplay">R$ 0,00</strong></p>
@@ -1155,7 +1158,7 @@
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="{% static 'main.js' %}?v=20261120c"></script>
+  <script type="module" src="{% static 'main.js' %}?v=20261120f"></script>
 </body>
 
 </html>

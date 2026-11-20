@@ -90,7 +90,6 @@ class CheckoutSerializer(serializers.Serializer):
     modalidade = serializers.ChoiceField(choices=Pedido.Modalidade.choices)
     forma_pagamento = serializers.ChoiceField(choices=Pedido.FormaPagamento.choices)
     endereco_id = serializers.IntegerField(required=False)
-    taxa_entrega = serializers.DecimalField(max_digits=8, decimal_places=2, required=False, default=Decimal("0.00"))
     observacao = serializers.CharField(required=False, allow_blank=True, max_length=255)
 
     def validate(self, attrs):

@@ -58,6 +58,7 @@ def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observaca
             raise ValidationError(f"Estoque insuficiente para '{p.nome}' (disponível: {p.estoque}).")
         por_produtor[p.produtor].append((item, p))
 
+    taxa_segura = max(Decimal("0.00"), Decimal(str(taxa_entrega or "0.00")))
     pedidos = []
     for produtor, its in por_produtor.items():
         validar_pagamento(produtor, forma_pagamento)
@@ -66,7 +67,7 @@ def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observaca
             produtor=produtor,
             modalidade=modalidade,
             forma_pagamento=forma_pagamento,
-            taxa_entrega=taxa_entrega if modalidade == Pedido.Modalidade.ENTREGA else Decimal("0.00"),
+            taxa_entrega=taxa_segura if modalidade == Pedido.Modalidade.ENTREGA else Decimal("0.00"),
             endereco_entrega=endereco.como_texto() if (endereco and modalidade == Pedido.Modalidade.ENTREGA) else "",
             observacao=observacao,
         )

@@ -191,6 +191,11 @@ export async function showPixDetails(pedidoId) {
     document.getElementById('pixChaveDisplay').textContent = pix.chave || 'Chave não configurada';
     document.getElementById('pixCopiaColaInput').value = pix.copia_e_cola || '';
 
+    const notice = document.getElementById('pixSimuladoNotice');
+    if (notice) {
+      notice.style.display = pix.simulado ? 'block' : 'none';
+    }
+
     const qrBox = document.getElementById('pixQrContainer');
     if (qrBox) {
       qrBox.innerHTML = generateSimpleQrSvg(pix.copia_e_cola || pix.chave || String(pedidoId));

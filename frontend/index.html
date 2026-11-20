@@ -40,13 +40,13 @@
 
       <!-- Logo responsiva em WebP + fallback PNG + variante Dark Mode -->
       <a href="#" class="navbar__logo" aria-label="Feira Virtual - Página inicial">
-        <picture class="navbar__logo-img navbar__logo-img--light">
+        <picture class="navbar__logo-img--light">
           <source srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x" type="image/webp" />
-          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual — Venda Direta" class="navbar__logo-img navbar__logo-img--light" width="160" height="70" />
+          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual — Venda Direta" class="navbar__logo-img" width="160" height="70" />
         </picture>
-        <picture class="navbar__logo-img navbar__logo-img--dark">
+        <picture class="navbar__logo-img--dark">
           <source srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x" type="image/webp" />
-          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual — Venda Direta" class="navbar__logo-img navbar__logo-img--dark" width="160" height="70" />
+          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual — Venda Direta" class="navbar__logo-img" width="160" height="70" />
         </picture>
       </a>
 
@@ -375,13 +375,13 @@
   <footer class="footer">
     <div class="container footer__inner">
       <div class="footer__brand">
-        <picture class="footer__logo-img footer__logo-img--light">
+        <picture class="footer__logo-img--light">
           <source srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x" type="image/webp" />
-          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual" class="footer__logo-img footer__logo-img--light" height="48" loading="lazy" />
+          <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual" class="footer__logo-img" height="48" loading="lazy" />
         </picture>
-        <picture class="footer__logo-img footer__logo-img--dark">
+        <picture class="footer__logo-img--dark">
           <source srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x" type="image/webp" />
-          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual" class="footer__logo-img footer__logo-img--dark" height="48" loading="lazy" />
+          <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual" class="footer__logo-img" height="48" loading="lazy" />
         </picture>
         <p>Plataforma de venda direta da agricultura familiar.</p>
       </div>

@@ -101,3 +101,51 @@ class CatalogoTests(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertIn("total_produtos", r.data)
         self.assertIn("total_produtores", r.data)
+
+    def test_frontend_index_csp_e_health(self):
+        self.client.credentials()
+        res_home = self.client.get("/")
+        self.assertEqual(res_home.status_code, status.HTTP_200_OK)
+        self.assertIn('type="module"', res_home.content.decode("utf-8"))
+        csp = res_home.headers.get("Content-Security-Policy", "")
+        self.assertIn("script-src 'self'", csp)
+
+        res_health = self.client.get("/api/health/")
+        self.assertEqual(res_health.status_code, status.HTTP_200_OK)
+        self.assertJSONEqual(res_health.content, {"status": "ok", "db": True})
+
+    def test_upload_imagem_invalida_bloqueado(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.login("produtor1")
+        arquivo_exe = SimpleUploadedFile("virus.exe", b"MZ123", content_type="application/octet-stream")
+        r_ext = self.client.post(
+            "/api/produtor/produtos/",
+            {
+                "nome": "Tomate",
+                "preco": "5.00",
+                "unidade_medida": "KG",
+                "estoque": "10",
+                "tipo_producao": "AGROECOLOGICO",
+                "categoria": self.categoria.id,
+                "imagem": arquivo_exe,
+            },
+            format="multipart",
+        )
+        self.assertEqual(r_ext.status_code, status.HTTP_400_BAD_REQUEST)
+
+        arquivo_corrompido = SimpleUploadedFile("falso.png", b"nao-eh-imagem", content_type="image/png")
+        r_corrupt = self.client.post(
+            "/api/produtor/produtos/",
+            {
+                "nome": "Tomate",
+                "preco": "5.00",
+                "unidade_medida": "KG",
+                "estoque": "10",
+                "tipo_producao": "AGROECOLOGICO",
+                "categoria": self.categoria.id,
+                "imagem": arquivo_corrompido,
+            },
+            format="multipart",
+        )
+        self.assertEqual(r_corrupt.status_code, status.HTTP_400_BAD_REQUEST)

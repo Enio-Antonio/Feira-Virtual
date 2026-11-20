@@ -2,6 +2,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from rest_framework import serializers
 
+from config.validators import validar_imagem_upload
+
 from .models import Endereco, PerfilEntregador, PerfilProdutor, Usuario
 
 
@@ -11,6 +13,11 @@ class PerfilProdutorSerializer(serializers.ModelSerializer):
         fields = ["id", "status", "nome_propriedade", "descricao", "endereco_propriedade",
                   "cidade", "estado", "foto_propriedade", "chave_pix", "possui_maquininha", "aceita_dinheiro"]
         read_only_fields = ["status"]
+
+    def validate_foto_propriedade(self, value):
+        if value is not None:
+            validar_imagem_upload(value)
+        return value
 
 
 class PerfilEntregadorSerializer(serializers.ModelSerializer):

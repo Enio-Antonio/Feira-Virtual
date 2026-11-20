@@ -91,12 +91,20 @@ class UsuariosTests(APITestCase):
         self.assertEqual(res_del.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_lgpd_exportar_e_excluir_conta(self):
+        from painel.models import LogAuditoria
+
         self.login("cliente_teste")
         # Exportar
         res_exp = self.client.get("/api/perfil/exportar-dados/")
         self.assertEqual(res_exp.status_code, status.HTTP_200_OK)
         self.assertIn("titular", res_exp.data)
         self.assertEqual(res_exp.data["titular"]["email"], "cliente@exemplo.com")
+        self.assertTrue(
+            LogAuditoria.objects.filter(
+                usuario=self.cliente,
+                acao=LogAuditoria.Acao.EXPORTAR_DADOS_LGPD,
+            ).exists()
+        )
 
         # Excluir / Anonimizar
         res_del = self.client.delete("/api/perfil/excluir-conta/")
@@ -104,3 +112,9 @@ class UsuariosTests(APITestCase):
         self.cliente.refresh_from_db()
         self.assertFalse(self.cliente.is_active)
         self.assertIn("anonimo_", self.cliente.email)
+        self.assertTrue(
+            LogAuditoria.objects.filter(
+                usuario=self.cliente,
+                acao=LogAuditoria.Acao.EXCLUIR_CONTA_LGPD,
+            ).exists()
+        )

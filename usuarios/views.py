@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -13,9 +14,18 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from painel.models import LogAuditoria
+
 from . import serializers as s
 from .models import Endereco, Usuario
 from .permissions import EhEntregador, EhProdutor
+
+
+def _obter_ip(request):
+    ip = request.META.get("HTTP_X_FORWARDED_FOR")
+    if ip:
+        return ip.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
 
 
 # ── Throttles dedicados por escopo ──────────────────────────────────────────
@@ -52,7 +62,6 @@ class RegistroEntregadorView(generics.CreateAPIView):
     serializer_class = s.RegistroEntregadorSerializer
     permission_classes = [AllowAny]
     throttle_classes = [RegistroRateThrottle]
-    permission_classes = [AllowAny]
 
 
 class LogoutView(APIView):
@@ -151,6 +160,7 @@ class EnderecoViewSet(viewsets.ModelViewSet):
 
 class ExportarDadosLGPDView(APIView):
     """LGPD: Exportação completa dos dados do titular em formato JSON estruturado."""
+    @extend_schema(responses=dict)
     def get(self, request):
         user = request.user
         enderecos = list(user.enderecos.values("rotulo", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "estado"))
@@ -177,13 +187,21 @@ class ExportarDadosLGPDView(APIView):
                 "cidade": prod.cidade,
                 "estado": prod.estado,
             }
+        LogAuditoria.objects.create(
+            usuario=user,
+            acao=LogAuditoria.Acao.EXPORTAR_DADOS_LGPD,
+            descricao=f"Titular {user.username} (ID: {user.pk}) exportou dados pessoais (LGPD)",
+            ip=_obter_ip(request),
+        )
         return Response(dados)
 
 
 class ExcluirContaLGPDView(APIView):
     """LGPD: Direito ao esquecimento — anonimiza os dados pessoais e desativa a conta."""
+    @extend_schema(responses=dict)
     def delete(self, request):
         user = request.user
+        username_original = user.username
         user.first_name = "Titular"
         user.last_name = "Anonimizado"
         user.email = f"anonimo_{user.id}@excluido.local"
@@ -191,4 +209,10 @@ class ExcluirContaLGPDView(APIView):
         user.is_active = False
         user.save()
         user.enderecos.all().delete()
+        LogAuditoria.objects.create(
+            usuario=user,
+            acao=LogAuditoria.Acao.EXCLUIR_CONTA_LGPD,
+            descricao=f"Conta {username_original} (ID: {user.pk}) anonimizada e desativada (LGPD)",
+            ip=_obter_ip(request),
+        )
         return Response({"mensagem": "Conta desativada e dados pessoais anonimizados com sucesso conforme LGPD."})

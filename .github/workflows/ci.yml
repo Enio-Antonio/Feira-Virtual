@@ -31,13 +31,14 @@ jobs:
 
     - name: Checagem do Django
       run: |
-        DB_ENGINE=sqlite python manage.py check
+        DJANGO_DEBUG=1 DB_ENGINE=sqlite python manage.py check
 
     - name: Checagem de Deploy
       run: |
         DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-secret-key-1234567890-test-deploy DB_ENGINE=sqlite python manage.py check --deploy
 
-    - name: Executar Testes com Cobertura
+    - name: Coletar Estáticos e Executar Testes com Cobertura
       run: |
+        DB_ENGINE=sqlite python manage.py collectstatic --no-input
         DB_ENGINE=sqlite coverage run manage.py test
         coverage report

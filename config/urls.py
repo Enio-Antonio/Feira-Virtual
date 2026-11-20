@@ -1,23 +1,13 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import FileResponse, HttpResponse
 from django.urls import include, path
+from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.permissions import AllowAny, IsAdminUser
 
 FRONTEND_DIR = settings.BASE_DIR / "frontend"
 ASSETS_DIR = FRONTEND_DIR / "assets"
-
-
-def frontend_view(request):
-    return FileResponse(open(FRONTEND_DIR / "index.html", "rb"), content_type="text/html")
-
-
-def frontend_asset(filename, content_type):
-    def view(request):
-        return FileResponse(open(FRONTEND_DIR / filename, "rb"), content_type=content_type)
-    return view
 
 
 def frontend_assets_view(request, filename):
@@ -92,9 +82,7 @@ def media_serve_view(request, path):
 swagger_perms = [AllowAny] if getattr(settings, "ENABLE_SWAGGER", False) else [IsAdminUser]
 
 urlpatterns = [
-    path("", frontend_view, name="home"),
-    path("style.css", frontend_asset("style.css", "text/css")),
-    path("main.js", frontend_asset("main.js", "application/javascript")),
+    path("", TemplateView.as_view(template_name="index.html"), name="home"),
     path("assets/<path:filename>", frontend_assets_view, name="frontend-asset"),
     path("media/<path:path>", media_serve_view, name="media-serve"),
     path("admin/", admin.site.urls),

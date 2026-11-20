@@ -207,3 +207,24 @@ class FluxoCompletoTest(APITestCase):
         from .models import Pedido
         p_db = Pedido.objects.get(pk=pedido_id)
         self.assertEqual(p_db.status, Pedido.Status.ACEITO)
+
+    def test_recusar_pedido_com_motivo(self):
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "APROVADO"
+        p1_user.perfil_produtor.save()
+        prod = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Rúcula",
+                                      preco="4.50", estoque="10", unidade_medida="MACO")
+        self.login("joao")
+        self.client.post("/api/carrinho/itens/", {"produto": prod.id, "quantidade": "1"}, format="json")
+        res = self.client.post("/api/pedidos/", {"modalidade": "RETIRADA", "forma_pagamento": "DINHEIRO"}, format="json")
+        pedido_id = res.data[0]["id"]
+
+        self.login("maria")
+        r_rec = self.client.post(
+            f"/api/produtor/pedidos/{pedido_id}/recusar/",
+            {"motivo": "Sem estoque fresco"},
+            format="json",
+        )
+        self.assertEqual(r_rec.status_code, 200)
+        self.assertEqual(r_rec.data["status"], "RECUSADO")
+        self.assertEqual(r_rec.data["motivo_cancelamento"], "Sem estoque fresco")

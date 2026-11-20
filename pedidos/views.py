@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -140,15 +141,15 @@ class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
         motivo = request.data.get("motivo", "")
         return self._mudar(S.RECUSADO, motivo=motivo)
 
-    @action(detail=True, methods=["post"])
-    def recusar(self, request, pk=None):
-        return self._mudar(S.RECUSADO)
-
     @action(detail=True, methods=["post"], serializer_class=StatusSerializer)
     def status(self, request, pk=None):
         ser = StatusSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        return self._mudar(ser.validated_data["status"])
+        return self._mudar(
+            ser.validated_data["status"],
+            motivo=ser.validated_data.get("motivo", ""),
+            previsao_entrega=ser.validated_data.get("previsao_entrega", ""),
+        )
 
     @action(detail=False, methods=["get"])
     def vendas(self, request):
@@ -157,7 +158,7 @@ class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
         agg = concluidos.aggregate(quantidade=Count("id"), faturamento=Sum("total"))
         return Response({"quantidade_vendas": agg["quantidade"],
                          "faturamento": agg["faturamento"] or Decimal("0.00"),
-                         "pedidos": PedidoSerializer(concluidos, many=True).data})
+                         "pedidos": PedidoSerializer(concluidos, many=True, context={"request": request}).data})
 
 
 class EntregaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -205,6 +206,7 @@ class PixWebhookView(APIView):
     """Webhook do gateway Pix com validação de assinatura HMAC."""
     permission_classes = [AllowAny]
 
+    @extend_schema(request=dict, responses=dict)
     def post(self, request):
         assinatura = request.headers.get("X-Signature", "")
         payload = request.body
@@ -224,24 +226,3 @@ class PixWebhookView(APIView):
             return Response({"status": "processado"})
         except Exception as e:
             return Response({"erro": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=["post"])
-    def aceitar(self, request, pk=None):
-        """Atribui a entrega ao entregador (primeiro que aceitar leva)."""
-        with transaction.atomic():
-            ok = Pedido.objects.filter(pk=pk, modalidade=Pedido.Modalidade.ENTREGA, entregador__isnull=True,
-                                       status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO]
-                                       ).update(entregador=request.user)
-        if not ok:
-            raise ValidationError("Entrega indisponível ou já atribuída a outro entregador.")
-        return Response(PedidoSerializer(_pedidos_qs.get(pk=pk)).data)
-
-    @action(detail=True, methods=["post"], url_path="saiu-para-entrega")
-    def saiu_para_entrega(self, request, pk=None):
-        pedido = services.mudar_status(self.get_object(), S.EM_ENTREGA, request.user)
-        return Response(PedidoSerializer(pedido).data)
-
-    @action(detail=True, methods=["post"])
-    def confirmar(self, request, pk=None):
-        pedido = services.mudar_status(self.get_object(), S.CONCLUIDO, request.user)
-        return Response(PedidoSerializer(pedido).data)

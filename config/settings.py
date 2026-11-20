@@ -22,15 +22,15 @@ if env_file.exists():
                 os.environ.setdefault(key, value)
 
 # ---------------------------------------------------------------------------
-# Segurança: SECRET_KEY obrigatória em produção
+# Segurança: SECRET_KEY obrigatória em produção e DEBUG=0 por padrão
 # ---------------------------------------------------------------------------
-_DEBUG_DEFAULT = "1"
+_DEBUG_DEFAULT = "0"
 DEBUG = os.environ.get("DJANGO_DEBUG", _DEBUG_DEFAULT) == "1"
 
 _secret = os.environ.get("DJANGO_SECRET_KEY", "")
 if not _secret:
-    if DEBUG:
-        # Desenvolvimento: gera uma chave temporária aceitável (>= 50 chars)
+    if DEBUG or "test" in sys.argv or "collectstatic" in sys.argv:
+        # Desenvolvimento / testes / collectstatic: gera uma chave temporária (>= 50 chars)
         _secret = "django-dev-unsafe-" + secrets.token_hex(32)
     else:
         raise RuntimeError(
@@ -38,7 +38,11 @@ if not _secret:
         )
 SECRET_KEY = _secret
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*" if DEBUG else "").split(",")
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "*" if DEBUG else "").split(",")
+    if h.strip()
+]
 
 # Swagger / Documentação OpenAPI (padrão: restrito a admins)
 ENABLE_SWAGGER = os.environ.get("ENABLE_SWAGGER", "0") == "1"
@@ -64,6 +68,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "config.middleware.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -77,7 +82,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [{
     "BACKEND": "django.template.backends.django.DjangoTemplates",
-    "DIRS": [],
+    "DIRS": [BASE_DIR / "frontend"],
     "APP_DIRS": True,
     "OPTIONS": {"context_processors": [
         "django.template.context_processors.request",
@@ -130,8 +135,10 @@ USE_TZ = True
 # ---------------------------------------------------------------------------
 # Estáticos e mídia
 # ---------------------------------------------------------------------------
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "frontend"]
+WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -232,6 +239,12 @@ REST_FRAMEWORK = {
 }
 
 if "test" in sys.argv:
+    STORAGES = {
+        **STORAGES,
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
     REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
         "anon": "10000/minute",
         "user": "10000/minute",
@@ -239,6 +252,27 @@ if "test" in sys.argv:
         "registro": "10000/minute",
         "recuperar_senha": "10000/minute",
     }
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "structured": {
+            "format": "time=%(asctime)s level=%(levelname)s logger=%(name)s msg=%(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "structured",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": os.environ.get("LOG_LEVEL", "INFO"),
+    },
+}
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),

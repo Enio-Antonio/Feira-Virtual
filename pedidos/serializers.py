@@ -74,7 +74,7 @@ class PedidoSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_chave_pix(self, obj):
+    def get_chave_pix(self, obj) -> str | None:
         request = self.context.get("request")
         if not request or not getattr(request.user, "is_authenticated", False):
             return None

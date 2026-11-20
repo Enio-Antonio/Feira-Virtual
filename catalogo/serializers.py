@@ -2,6 +2,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from config.validators import validar_imagem_upload
 from usuarios.models import PerfilProdutor
 
 from .models import Categoria, Produto
@@ -68,4 +69,9 @@ class ProdutoProdutorSerializer(serializers.ModelSerializer):
     def validate_categoria(self, value):
         if not value.ativa:
             raise serializers.ValidationError("Categoria inativa.")
+        return value
+
+    def validate_imagem(self, value):
+        if value is not None:
+            validar_imagem_upload(value)
         return value

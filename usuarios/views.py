@@ -90,10 +90,18 @@ class RecuperarSenhaView(APIView):
         if user:
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
+            origem = request.build_absolute_uri("/").rstrip("/")
+            link = f"{origem}/#redefinir-senha?uid={uid}&token={token}"
             send_mail(
                 "Feira Virtual - recuperação de senha",
-                f"Use os dados abaixo em POST /api/auth/redefinir-senha/\n\nuid: {uid}\ntoken: {token}\n",
-                None, [user.email])
+                (
+                    f"Para redefinir sua senha, acesse o link abaixo:\n{link}\n\n"
+                    f"Ou informe manualmente os dados abaixo em POST /api/auth/redefinir-senha/\n\n"
+                    f"uid: {uid}\ntoken: {token}\n"
+                ),
+                None,
+                [user.email],
+            )
         # Resposta idêntica exista ou não o e-mail (evita enumeração de contas)
         return Response({"detail": "Se o e-mail existir, enviaremos as instruções."})
 

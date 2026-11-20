@@ -295,3 +295,48 @@ export function generateSimpleQrSvg(text) {
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" width="180" height="180" role="img" aria-label="QR Code Pix"><rect width="${total}" height="${total}" fill="#FFFFFF" rx="12"/>${rects}</svg>`;
 }
+
+// ── Passo e Formatação de Quantidade por Unidade de Medida ────────────────
+export function getUnitStep(unidade) {
+  const u = String(unidade || '').toUpperCase();
+  if (u === 'KG' || u === 'L') return { step: 0.5, min: 0.5, integer: false };
+  if (u === 'G' || u === 'ML') return { step: 50, min: 50, integer: false };
+  return { step: 1, min: 1, integer: true };
+}
+
+export function formatQuantity(val, unidade) {
+  const num = Number(val) || 0;
+  const { integer } = getUnitStep(unidade);
+  if (integer) return String(Math.round(num));
+  const rounded = Math.round(num * 1000) / 1000;
+  return String(rounded);
+}
+
+// ── Paginação Reutilizável (DRF count/next/previous) ──────────────────────
+export function renderPaginationBar(container, data, currentPage, onPageChange, pageSize = 20) {
+  if (!container) return;
+  if (!data || Array.isArray(data) || (!data.next && !data.previous)) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const totalCount = Number(data.count) || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const hasPrev = Boolean(data.previous);
+  const hasNext = Boolean(data.next);
+
+  container.innerHTML = `
+    <div class="pagination">
+      <button type="button" class="btn btn--outline btn--sm btnPagPrev" ${hasPrev ? '' : 'disabled'}>◀ Anterior</button>
+      <span class="pagination__info">Página ${currentPage} de ${totalPages} (${totalCount} itens)</span>
+      <button type="button" class="btn btn--outline btn--sm btnPagNext" ${hasNext ? '' : 'disabled'}>Próxima ▶</button>
+    </div>
+  `;
+
+  container.querySelector('.btnPagPrev')?.addEventListener('click', () => {
+    if (hasPrev && currentPage > 1) onPageChange(currentPage - 1);
+  });
+  container.querySelector('.btnPagNext')?.addEventListener('click', () => {
+    if (hasNext) onPageChange(currentPage + 1);
+  });
+}

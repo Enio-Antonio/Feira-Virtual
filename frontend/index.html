@@ -31,7 +31,7 @@
   <link rel="manifest" href="{% static 'assets/manifest.webmanifest' %}" />
 
   <!-- Estilos (servido pelo WhiteNoise com cache imutável, sem requisições externas) -->
-  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120e" />
+  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120g" />
 </head>
 
 <body>
@@ -462,15 +462,7 @@
         <h3 id="authModalTitle" class="auth-form__title">Acessar sua conta</h3>
         <p class="auth-form__subtitle">Compre, gerencie sua produção ou faça entregas na feira.</p>
 
-        <div class="demo-box" id="demoAccountBox">
-          <p><strong>💡 Acesso rápido (populado via <code>seed_demo</code>):</strong></p>
-          <div class="demo-btn-row">
-            <button type="button" class="btn-link" id="btnFillDemoClient"><code>cliente_demo</code></button> •
-            <button type="button" class="btn-link" id="btnFillDemoProducer"><code>produtor_demo</code></button> •
-            <button type="button" class="btn-link" id="btnFillDemoDelivery"><code>entregador_demo</code></button> •
-            <button type="button" class="btn-link" id="btnFillDemoAdmin"><code>admin</code></button>
-          </div>
-        </div>
+        <div class="demo-box" id="demoAccountBox" style="display: none;"></div>
 
         <div class="form-group">
           <label for="loginUsername">Nome de usuário:</label>
@@ -624,8 +616,8 @@
         <hr style="margin-block: var(--space-5); border: none; border-top: 1px solid var(--border);" />
 
         <form id="resetConfirmForm">
-          <h4 style="margin-bottom: var(--space-3);">Já recebeu o código? Redefinir senha</h4>
-          <div class="form-row">
+          <h4 id="resetFormHeading" style="margin-bottom: var(--space-3);">Já recebeu o código? Redefinir senha</h4>
+          <div class="form-row" id="resetUidTokenRow">
             <div class="form-group">
               <label for="resetUid">UID:</label>
               <input type="text" id="resetUid" required class="form-input" />
@@ -656,10 +648,13 @@
       <p class="auth-form__subtitle">Revise os detalhes para enviar diretamente ao produtor.</p>
 
       <form id="checkoutForm" class="auth-form">
+        <div id="checkoutProducerSummary" class="checkout-producers-summary"></div>
+
         <div class="checkout-total-card">
           <span>Total a pagar:</span>
           <strong id="checkoutTotalDisplay">R$ 0,00</strong>
         </div>
+        <div id="checkoutFeeBreakdown" class="checkout-fee-breakdown" style="display: none;"></div>
 
         <div class="form-group">
           <label><strong>Modalidade de Entrega:</strong></label>
@@ -707,6 +702,7 @@
               <span>💵 Dinheiro</span>
             </label>
           </div>
+          <p id="paymentUnavailableHint" class="form-help" style="display: none;" role="status"></p>
         </div>
 
         <div class="form-group">
@@ -751,6 +747,7 @@
         <button type="button" class="panel-tab" id="tabMyComplaints">Minhas Reclamações</button>
       </div>
       <div id="myOrdersList" class="orders-list"></div>
+      <div id="myOrdersPagination" class="pagination-wrap"></div>
       <div id="myComplaintsList" class="orders-list" style="display: none;"></div>
     </div>
   </div>
@@ -946,6 +943,7 @@
 
       <!-- Aba Produtos -->
       <div id="producerTabProdutos">
+        <div id="producerStatusWarning" class="auth-error" style="display: none;" role="status"></div>
         <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-3);">
           <button type="button" class="btn btn--cta btn--sm" id="btnNewProducerProduct">+ Novo Produto</button>
         </div>
@@ -990,9 +988,9 @@
               <div class="form-group">
                 <label for="prodTipo">Tipo de cultivo:</label>
                 <select id="prodTipo" class="form-input">
-                  <option value="ORGANICO_CERTIFICADO">Orgânico certificado</option>
+                  <option value="CONVENCIONAL" selected>Convencional</option>
                   <option value="AGROECOLOGICO">Agroecológico</option>
-                  <option value="CONVENCIONAL">Convencional</option>
+                  <option value="ORGANICO_CERTIFICADO">Orgânico certificado</option>
                 </select>
               </div>
             </div>
@@ -1023,6 +1021,7 @@
       <!-- Aba Pedidos -->
       <div id="producerTabPedidos" style="display: none;">
         <div id="producerOrdersList" class="orders-list"></div>
+        <div id="producerOrdersPagination" class="pagination-wrap"></div>
       </div>
 
       <!-- Aba Vendas -->
@@ -1133,6 +1132,8 @@
         <button type="button" class="panel-tab active" data-admin-tab="indicadores">Indicadores</button>
         <button type="button" class="panel-tab" data-admin-tab="produtores">Produtores</button>
         <button type="button" class="panel-tab" data-admin-tab="produtos">Produtos</button>
+        <button type="button" class="panel-tab" data-admin-tab="categorias">Categorias</button>
+        <button type="button" class="panel-tab" data-admin-tab="pedidos">Pedidos</button>
         <button type="button" class="panel-tab" data-admin-tab="reclamacoes">Reclamações</button>
         <button type="button" class="panel-tab" data-admin-tab="usuarios">Usuários</button>
       </div>
@@ -1142,15 +1143,64 @@
       </div>
       <div id="adminTabProdutores" style="display: none;">
         <div id="adminProducersList" class="panel-list"></div>
+        <div id="adminProducersPagination" class="pagination-wrap"></div>
       </div>
       <div id="adminTabProdutos" style="display: none;">
         <div id="adminProductsList" class="panel-list"></div>
+        <div id="adminProductsPagination" class="pagination-wrap"></div>
+      </div>
+      <div id="adminTabCategorias" style="display: none;">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-3);">
+          <button type="button" class="btn btn--cta btn--sm" id="btnNewAdminCategory">+ Nova Categoria</button>
+        </div>
+        <div id="adminCategoryFormWrap" class="demo-box" style="display: none;">
+          <form id="adminCategoryForm">
+            <input type="hidden" id="adminCatId" />
+            <div class="form-group">
+              <label for="adminCatNome">Nome da categoria:</label>
+              <input type="text" id="adminCatNome" required class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="adminCatDesc">Descrição (opcional):</label>
+              <input type="text" id="adminCatDesc" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="adminCatAtiva" checked /> Categoria ativa</label>
+            </div>
+            <div id="adminCategoryError" class="auth-error" style="display: none;" role="alert"></div>
+            <div style="display: flex; gap: var(--space-2);">
+              <button type="submit" class="btn btn--primary btn--sm">Salvar Categoria</button>
+              <button type="button" class="btn btn--outline btn--sm" id="btnCancelAdminCategory">Cancelar</button>
+            </div>
+          </form>
+        </div>
+        <div id="adminCategoriesList" class="panel-list"></div>
+      </div>
+      <div id="adminTabPedidos" style="display: none;">
+        <div class="form-group" style="max-width: 280px;">
+          <label for="adminOrderStatusFilter">Filtrar por status:</label>
+          <select id="adminOrderStatusFilter" class="form-select" style="width: 100%; border-radius: var(--radius-md);">
+            <option value="">Todos os status</option>
+            <option value="PENDENTE">Aguardando produtor</option>
+            <option value="ACEITO">Aceito</option>
+            <option value="EM_PREPARO">Em preparo</option>
+            <option value="PRONTO">Pronto</option>
+            <option value="EM_ENTREGA">Saiu para entrega</option>
+            <option value="CONCLUIDO">Concluído</option>
+            <option value="CANCELADO">Cancelado</option>
+            <option value="RECUSADO">Recusado</option>
+          </select>
+        </div>
+        <div id="adminOrdersList" class="panel-list"></div>
+        <div id="adminOrdersPagination" class="pagination-wrap"></div>
       </div>
       <div id="adminTabReclamacoes" style="display: none;">
         <div id="adminComplaintsList" class="orders-list"></div>
+        <div id="adminComplaintsPagination" class="pagination-wrap"></div>
       </div>
       <div id="adminTabUsuarios" style="display: none;">
         <div id="adminUsersList" class="panel-list"></div>
+        <div id="adminUsersPagination" class="pagination-wrap"></div>
       </div>
     </div>
   </div>
@@ -1158,7 +1208,7 @@
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="{% static 'main.js' %}?v=20261120f"></script>
+  <script type="module" src="{% static 'main.js' %}?v=20261120g"></script>
 </body>
 
 </html>

@@ -2,7 +2,7 @@
  * Pedidos do Cliente (Timeline, Cancelamento, Pix QR/Copia-e-Cola), Avaliações, Reclamações e Endereços (ViaCEP).
  */
 import { apiFetch, parseError } from './api.js';
-import { closeModal, escapeHtml, formatCurrency, formatDate, generateSimpleQrSvg, openModal, showToast } from './ui.js';
+import { closeModal, escapeHtml, formatCurrency, formatDate, generateSimpleQrSvg, openModal, renderPaginationBar, showToast } from './ui.js';
 
 const ordersCache = new Map();
 
@@ -17,16 +17,18 @@ export const statusLabels = {
   CANCELADO: { label: 'Cancelado', class: 'status--cancelled' },
 };
 
-export async function loadMyOrders() {
+export async function loadMyOrders(page = 1) {
   const container = document.getElementById('myOrdersList');
+  const pagEl = document.getElementById('myOrdersPagination');
   if (!container) return;
 
   container.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando seus pedidos...</p></div>';
+  if (pagEl) pagEl.innerHTML = '';
   switchOrdersTab('pedidos');
   openModal('myOrdersModalOverlay');
 
   try {
-    const res = await apiFetch('/pedidos/');
+    const res = await apiFetch(`/pedidos/?page=${page}`);
     if (!res.ok) throw new Error('Falha ao obter pedidos.');
     const data = await res.json();
     const orders = data.results || data || [];
@@ -45,6 +47,7 @@ export async function loadMyOrders() {
     }
 
     renderOrdersList(container, orders);
+    renderPaginationBar(pagEl, data, page, (nextPage) => loadMyOrders(nextPage));
   } catch (err) {
     container.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }

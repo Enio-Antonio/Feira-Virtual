@@ -79,6 +79,26 @@ def media_serve_view(request, path):
     return response
 
 
+def config_publica_view(request):
+    """Configurações públicas leves para o frontend (sem credenciais em produção)."""
+    import json
+    from decimal import Decimal
+
+    taxa = max(Decimal("0.00"), Decimal(str(getattr(settings, "TAXA_ENTREGA_PADRAO", "0.00"))))
+    payload = {
+        "demo": bool(settings.DEBUG),
+        "taxa_entrega_padrao": f"{taxa:.2f}",
+    }
+    if settings.DEBUG:
+        payload["demo_accounts"] = [
+            {"label": "cliente_demo", "username": "cliente_demo", "password": "cliente-demo-2024"},
+            {"label": "produtor_demo", "username": "produtor_demo", "password": "produtor-demo-2024"},
+            {"label": "entregador_demo", "username": "entregador_demo", "password": "entregador-demo-2024"},
+            {"label": "admin", "username": "admin", "password": "admin-demo-2024"},
+        ]
+    return HttpResponse(json.dumps(payload), content_type="application/json", status=200)
+
+
 swagger_perms = [AllowAny] if getattr(settings, "ENABLE_SWAGGER", False) else [IsAdminUser]
 
 urlpatterns = [
@@ -91,6 +111,7 @@ urlpatterns = [
     path("api/", include("pedidos.urls")),
     path("api/", include("avaliacoes.urls")),
     path("api/admin/", include("painel.urls")),
+    path("api/config/", config_publica_view, name="config-publica"),
     path("api/health/", health_view, name="health"),
     path("api/schema/", SpectacularAPIView.as_view(permission_classes=swagger_perms), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema", permission_classes=swagger_perms), name="docs"),

@@ -3,7 +3,7 @@
  */
 import { apiFetch } from './api.js';
 import { addToCart } from './cart.js';
-import { escapeHtml, formatCurrency, formatDate, openModal, renderProductSkeletons, safeUrl } from './ui.js';
+import { escapeHtml, formatCurrency, formatDate, getUnitStep, openModal, renderProductSkeletons, safeUrl } from './ui.js';
 
 export const catalogState = {
   categories: [],
@@ -210,6 +210,8 @@ function renderProductsGrid(products) {
             type="button"
             class="btn btn--primary btn--sm btnAddToCart"
             data-id="${p.id}"
+            data-unit="${escapeHtml(p.unidade_medida)}"
+            data-stock="${parseFloat(p.estoque)}"
             ${semEstoque ? 'disabled' : ''}>
             ${semEstoque ? 'Esgotado' : '＋ Adicionar'}
           </button>
@@ -287,7 +289,7 @@ export async function openProductDetail(productId) {
             <span class="text-muted">Disponível: ${parseFloat(p.estoque)}</span>
           </div>
           <div class="detail-buy-row">
-            <input type="number" id="detailProductQty" class="form-input" value="1" min="1" max="${parseFloat(p.estoque) || 1}" step="1" aria-label="Quantidade" ${semEstoque ? 'disabled' : ''} />
+            <input type="number" id="detailProductQty" class="form-input" value="${Math.min(getUnitStep(p.unidade_medida).min, parseFloat(p.estoque) || getUnitStep(p.unidade_medida).min)}" min="${getUnitStep(p.unidade_medida).min}" max="${parseFloat(p.estoque) || getUnitStep(p.unidade_medida).min}" step="${getUnitStep(p.unidade_medida).step}" aria-label="Quantidade" ${semEstoque ? 'disabled' : ''} />
             <button type="button" class="btn btn--cta btn--lg" id="btnDetailAddToCart" data-id="${p.id}" ${semEstoque ? 'disabled' : ''}>
               ${semEstoque ? 'Esgotado' : 'Adicionar ao Carrinho'}
             </button>
@@ -313,7 +315,8 @@ export async function openProductDetail(productId) {
     `;
 
     document.getElementById('btnDetailAddToCart')?.addEventListener('click', () => {
-      const qty = parseFloat(document.getElementById('detailProductQty')?.value || '1') || 1;
+      const { min } = getUnitStep(p.unidade_medida);
+      const qty = parseFloat(document.getElementById('detailProductQty')?.value || String(min)) || min;
       addToCart(p.id, qty);
     });
   } catch (err) {
@@ -350,7 +353,7 @@ export async function openProducerDetail(producerId) {
       </div>
       <p class="detail-desc">${escapeHtml(p.descricao || 'Produção rural familiar direta.')}</p>
       <div class="producer-card__badges" style="margin-bottom: var(--space-4);">
-        ${PIX_BADGE_HTML}
+        ${p.aceita_pix ? PIX_BADGE_HTML : ''}
         ${p.possui_maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
         ${p.aceita_dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}
         <span class="badge badge--produtos">${p.total_produtos || 0} produto(s) ativo(s)</span>
@@ -436,7 +439,7 @@ export async function loadProducers() {
           <p class="producer-card__desc">${escapeHtml(p.descricao || 'Produção familiar local e sustentável.')}</p>
           <div class="producer-card__footer">
             <div class="producer-card__badges">
-              ${PIX_BADGE_HTML}
+              ${p.aceita_pix ? PIX_BADGE_HTML : ''}
               ${p.possui_maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
               ${p.aceita_dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}
               <span class="badge badge--produtos">${Number(p.total_produtos) || 0} produto(s)</span>

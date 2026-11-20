@@ -1,7 +1,18 @@
 /**
  * Orquestrador principal da aplicação (ES Module — sem estado global solto).
  */
-import { handleAdminAction, openAdminPanel, saveAdminComplaint, switchAdminTab } from './js/admin.js';
+import {
+  deleteAdminCategory,
+  handleAdminAction,
+  loadAdminOrders,
+  openAdminCategoryForm,
+  openAdminPanel,
+  saveAdminCategory,
+  saveAdminComplaint,
+  switchAdminTab,
+  toggleAdminCategory,
+} from './js/admin.js';
+import { apiFetch } from './js/api.js';
 import {
   checkAuth,
   confirmPasswordReset,
@@ -23,7 +34,9 @@ import {
   openCheckout,
   refreshCheckoutAddresses,
   removeItem,
+  setDeliveryFeeRate,
   submitCheckout,
+  updateCheckoutSummary,
   updateItemQuantity,
 } from './js/cart.js';
 import { handleDeliveryAction, openDeliveryPanel, saveDeliveryVehicle, switchDeliveryTab } from './js/delivery.js';
@@ -64,6 +77,8 @@ import {
   clearFormError,
   clearFormFieldErrors,
   closeModal,
+  escapeHtml,
+  getUnitStep,
   maskCEP,
   maskPhone,
   openModal,
@@ -278,25 +293,74 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnCloseAuthModal')?.addEventListener('click', () => closeModal('authModalOverlay'));
   document.getElementById('tabLogin')?.addEventListener('click', () => switchAuthTab('login'));
   document.getElementById('tabRegister')?.addEventListener('click', () => switchAuthTab('register'));
-  document.getElementById('tabRecover')?.addEventListener('click', () => switchAuthTab('recover'));
+  document.getElementById('tabRecover')?.addEventListener('click', () => {
+    const uidRow = document.getElementById('resetUidTokenRow');
+    const recForm = document.getElementById('recoverForm');
+    if (uidRow) uidRow.style.display = 'grid';
+    if (recForm) recForm.style.display = 'block';
+    switchAuthTab('recover');
+  });
   document.getElementById('btnForgotPassword')?.addEventListener('click', () => switchAuthTab('recover'));
 
-  document.getElementById('btnFillDemoClient')?.addEventListener('click', () => {
-    document.getElementById('loginUsername').value = 'cliente_demo';
-    document.getElementById('loginPassword').value = 'cliente-demo-2024';
-  });
-  document.getElementById('btnFillDemoProducer')?.addEventListener('click', () => {
-    document.getElementById('loginUsername').value = 'produtor_demo';
-    document.getElementById('loginPassword').value = 'produtor-demo-2024';
-  });
-  document.getElementById('btnFillDemoDelivery')?.addEventListener('click', () => {
-    document.getElementById('loginUsername').value = 'entregador_demo';
-    document.getElementById('loginPassword').value = 'entregador-demo-2024';
-  });
-  document.getElementById('btnFillDemoAdmin')?.addEventListener('click', () => {
-    document.getElementById('loginUsername').value = 'admin';
-    document.getElementById('loginPassword').value = 'admin-demo-2024';
-  });
+  async function initPublicConfig() {
+    try {
+      const res = await apiFetch('/config/');
+      if (!res.ok) return;
+      const cfg = await res.json();
+      setDeliveryFeeRate(cfg.taxa_entrega_padrao);
+
+      const demoBox = document.getElementById('demoAccountBox');
+      if (demoBox && cfg.demo === true && Array.isArray(cfg.demo_accounts) && cfg.demo_accounts.length > 0) {
+        demoBox.style.display = 'block';
+        demoBox.innerHTML = `
+          <p><strong>💡 Acesso rápido (populado via <code>seed_demo</code>):</strong></p>
+          <div class="demo-btn-row">
+            ${cfg.demo_accounts.map((acc, idx) => `
+              <button type="button" class="btn-link btnDemoQuickFill" data-idx="${idx}"><code>${escapeHtml(acc.label)}</code></button>
+            `).join(' • ')}
+          </div>
+        `;
+        demoBox.addEventListener('click', (e) => {
+          const btn = e.target.closest('.btnDemoQuickFill');
+          if (!btn) return;
+          const acc = cfg.demo_accounts[Number(btn.dataset.idx)];
+          if (acc) {
+            document.getElementById('loginUsername').value = acc.username;
+            document.getElementById('loginPassword').value = acc.password;
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  function handlePasswordResetHash() {
+    const hash = window.location.hash || '';
+    if (!hash.startsWith('#redefinir-senha')) return;
+    const queryIdx = hash.indexOf('?');
+    if (queryIdx === -1) return;
+    const params = new URLSearchParams(hash.slice(queryIdx + 1));
+    const uid = params.get('uid');
+    const token = params.get('token');
+    if (!uid || !token) return;
+
+    document.getElementById('resetUid').value = uid;
+    document.getElementById('resetToken').value = token;
+    const uidRow = document.getElementById('resetUidTokenRow');
+    const recForm = document.getElementById('recoverForm');
+    const heading = document.getElementById('resetFormHeading');
+    if (uidRow) uidRow.style.display = 'none';
+    if (recForm) recForm.style.display = 'none';
+    if (heading) heading.textContent = 'Defina sua nova senha';
+
+    switchAuthTab('recover');
+    openModal('authModalOverlay');
+    document.getElementById('resetNovaSenha')?.focus();
+    // Limpa o token da barra de endereços sem recarregar a página
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+  window.addEventListener('hashchange', handlePasswordResetHash);
+  initPublicConfig();
+  handlePasswordResetHash();
 
   document.querySelectorAll('input[name="regRole"]').forEach(radio => {
     radio.addEventListener('change', (e) => updateRegisterRoleFields(e.target.value));
@@ -457,7 +521,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('productsGrid')?.addEventListener('click', (e) => {
     const addBtn = e.target.closest('.btnAddToCart');
     if (addBtn) {
-      addToCart(Number(addBtn.dataset.id));
+      const { min } = getUnitStep(addBtn.dataset.unit);
+      addToCart(Number(addBtn.dataset.id), min);
       return;
     }
     const prodBtn = e.target.closest('.btnProducerDetail');
@@ -544,6 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.radio-card').forEach(c => {
         c.classList.toggle('active', c.querySelector('input')?.value === val);
       });
+      updateCheckoutSummary();
     });
   });
 
@@ -783,10 +849,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabBtn = e.target.closest('[data-admin-tab]');
     if (tabBtn) switchAdminTab(tabBtn.dataset.adminTab);
   });
+  document.getElementById('btnNewAdminCategory')?.addEventListener('click', () => openAdminCategoryForm(null));
+  document.getElementById('btnCancelAdminCategory')?.addEventListener('click', () => {
+    const wrap = document.getElementById('adminCategoryFormWrap');
+    if (wrap) wrap.style.display = 'none';
+  });
+  document.getElementById('adminCategoryForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveAdminCategory();
+  });
+  document.getElementById('adminOrderStatusFilter')?.addEventListener('change', () => loadAdminOrders(1));
+
   document.getElementById('adminPanelModalOverlay')?.addEventListener('click', (e) => {
     const actBtn = e.target.closest('.btnAdminAction');
     if (actBtn) {
       handleAdminAction(actBtn.dataset.resource, Number(actBtn.dataset.id), actBtn.dataset.action);
+      return;
+    }
+    const editCatBtn = e.target.closest('.btnEditAdminCat');
+    if (editCatBtn) {
+      openAdminCategoryForm(Number(editCatBtn.dataset.id));
+      return;
+    }
+    const toggleCatBtn = e.target.closest('.btnToggleAdminCat');
+    if (toggleCatBtn) {
+      toggleAdminCategory(Number(toggleCatBtn.dataset.id), toggleCatBtn.dataset.ativa === '1');
+      return;
+    }
+    const delCatBtn = e.target.closest('.btnDeleteAdminCat');
+    if (delCatBtn) {
+      deleteAdminCategory(Number(delCatBtn.dataset.id));
       return;
     }
     const saveCompBtn = e.target.closest('.btnSaveComplaint');

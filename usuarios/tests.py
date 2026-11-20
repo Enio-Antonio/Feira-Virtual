@@ -148,3 +148,26 @@ class UsuariosTests(APITestCase):
                 acao=LogAuditoria.Acao.EXCLUIR_CONTA_LGPD,
             ).exists()
         )
+
+    def test_config_publica_e_link_recuperacao_senha(self):
+        from django.core import mail
+        from django.test import override_settings
+
+        with override_settings(DEBUG=False, TAXA_ENTREGA_PADRAO="4.50"):
+            res = self.client.get("/api/config/")
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            data = res.json()
+            self.assertFalse(data["demo"])
+            self.assertNotIn("demo_accounts", data)
+            self.assertEqual(data["taxa_entrega_padrao"], "4.50")
+
+        with override_settings(DEBUG=True):
+            res_dev = self.client.get("/api/config/")
+            self.assertTrue(res_dev.json()["demo"])
+            self.assertIn("demo_accounts", res_dev.json())
+
+        res_rec = self.client.post("/api/auth/recuperar-senha/", {"email": "cliente@exemplo.com"}, format="json")
+        self.assertEqual(res_rec.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/#redefinir-senha?uid=", mail.outbox[0].body)
+        self.assertIn("&token=", mail.outbox[0].body)

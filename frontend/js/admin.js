@@ -1,8 +1,20 @@
 /**
- * Painel Administrativo de Moderação: Indicadores, Produtores, Produtos, Reclamações e Usuários.
+ * Painel Administrativo de Moderação: Indicadores, Produtores, Produtos, Categorias, Pedidos, Reclamações e Usuários.
  */
 import { apiFetch, parseError } from './api.js';
-import { escapeHtml, formatCurrency, openModal, showToast } from './ui.js';
+import { statusLabels } from './orders.js';
+import {
+  clearFormError,
+  escapeHtml,
+  formatCurrency,
+  formatDate,
+  openModal,
+  renderPaginationBar,
+  showFormError,
+  showToast,
+} from './ui.js';
+
+let adminCategoriesCache = [];
 
 export function openAdminPanel(initialTab = 'indicadores') {
   openModal('adminPanelModalOverlay');
@@ -10,7 +22,7 @@ export function openAdminPanel(initialTab = 'indicadores') {
 }
 
 export function switchAdminTab(tab) {
-  const tabs = ['indicadores', 'produtores', 'produtos', 'reclamacoes', 'usuarios'];
+  const tabs = ['indicadores', 'produtores', 'produtos', 'categorias', 'pedidos', 'reclamacoes', 'usuarios'];
   tabs.forEach(t => {
     const cap = t.charAt(0).toUpperCase() + t.slice(1);
     document.querySelector(`.panel-tab[data-admin-tab="${t}"]`)?.classList.toggle('active', t === tab);
@@ -19,10 +31,45 @@ export function switchAdminTab(tab) {
   });
 
   if (tab === 'indicadores') loadAdminIndicators();
-  else if (tab === 'produtores') loadAdminProducers();
-  else if (tab === 'produtos') loadAdminProducts();
-  else if (tab === 'reclamacoes') loadAdminComplaints();
-  else if (tab === 'usuarios') loadAdminUsers();
+  else if (tab === 'produtores') loadAdminProducers(1);
+  else if (tab === 'produtos') loadAdminProducts(1);
+  else if (tab === 'categorias') loadAdminCategories();
+  else if (tab === 'pedidos') loadAdminOrders(1);
+  else if (tab === 'reclamacoes') loadAdminComplaints(1);
+  else if (tab === 'usuarios') loadAdminUsers(1);
+}
+
+const USER_TYPE_LABELS = {
+  CLIENTE: 'Clientes',
+  PRODUTOR: 'Produtores',
+  ENTREGADOR: 'Entregadores',
+  ADMIN: 'Administradores',
+};
+
+const PRODUCER_STATUS_LABELS = {
+  PENDENTE: 'Pendentes',
+  APROVADO: 'Aprovados',
+  SUSPENSO: 'Suspensos',
+};
+
+function renderStatsTable(title, entries, labelMap) {
+  const keys = Object.keys(entries || {});
+  const rows = keys.length > 0
+    ? keys.map(k => `
+      <tr>
+        <td>${escapeHtml(labelMap[k]?.label || labelMap[k] || k)}</td>
+        <td class="admin-stat-num"><strong>${Number(entries[k]) || 0}</strong></td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="2" class="text-muted">Sem registros</td></tr>';
+  return `
+    <div class="admin-stat-card">
+      <h4>${escapeHtml(title)}</h4>
+      <table class="admin-stat-table">
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 async function loadAdminIndicators() {
@@ -42,10 +89,10 @@ async function loadAdminIndicators() {
         <div class="kpi-card"><span>Produtos Ativos</span><strong>${Number(d.produtos_ativos) || 0}</strong></div>
         <div class="kpi-card"><span>Reclamações Abertas</span><strong>${Number(d.reclamacoes_abertas) || 0}</strong></div>
       </div>
-      <div class="demo-box" style="margin-top: var(--space-4);">
-        <p><strong>Usuários:</strong> ${escapeHtml(JSON.stringify(d.usuarios_por_tipo || {}))}</p>
-        <p><strong>Produtores:</strong> ${escapeHtml(JSON.stringify(d.produtores_por_status || {}))}</p>
-        <p><strong>Pedidos:</strong> ${escapeHtml(JSON.stringify(d.pedidos_por_status || {}))}</p>
+      <div class="admin-stats-grid">
+        ${renderStatsTable('Usuários por tipo', d.usuarios_por_tipo, USER_TYPE_LABELS)}
+        ${renderStatsTable('Produtores por status', d.produtores_por_status, PRODUCER_STATUS_LABELS)}
+        ${renderStatsTable('Pedidos por status', d.pedidos_por_status, statusLabels)}
       </div>
     `;
   } catch (err) {
@@ -53,13 +100,15 @@ async function loadAdminIndicators() {
   }
 }
 
-async function loadAdminProducers() {
+async function loadAdminProducers(page = 1) {
   const el = document.getElementById('adminProducersList');
+  const pagEl = document.getElementById('adminProducersPagination');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
 
   try {
-    const res = await apiFetch('/admin/produtores/');
+    const res = await apiFetch(`/admin/produtores/?page=${page}`);
     const data = await res.json();
     const list = data.results || data || [];
     el.innerHTML = list.map(p => `
@@ -74,18 +123,21 @@ async function loadAdminProducers() {
         </div>
       </div>
     `).join('');
+    renderPaginationBar(pagEl, data, page, (p) => loadAdminProducers(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
-async function loadAdminProducts() {
+async function loadAdminProducts(page = 1) {
   const el = document.getElementById('adminProductsList');
+  const pagEl = document.getElementById('adminProductsPagination');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
 
   try {
-    const res = await apiFetch('/admin/produtos/');
+    const res = await apiFetch(`/admin/produtos/?page=${page}`);
     const data = await res.json();
     const list = data.results || data || [];
     el.innerHTML = list.map(p => `
@@ -101,18 +153,170 @@ async function loadAdminProducts() {
         </div>
       </div>
     `).join('');
+    renderPaginationBar(pagEl, data, page, (p) => loadAdminProducts(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
-async function loadAdminComplaints() {
-  const el = document.getElementById('adminComplaintsList');
+// ── Categorias (CRUD Admin) ───────────────────────────────────────────────
+export async function loadAdminCategories() {
+  const el = document.getElementById('adminCategoriesList');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
 
   try {
-    const res = await apiFetch('/admin/reclamacoes/');
+    const res = await apiFetch('/categorias/');
+    if (!res.ok) throw new Error('Falha ao carregar categorias.');
+    const data = await res.json();
+    adminCategoriesCache = data.results || data || [];
+
+    if (adminCategoriesCache.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>Nenhuma categoria cadastrada.</p></div>';
+      return;
+    }
+
+    el.innerHTML = adminCategoriesCache.map(c => `
+      <div class="panel-list-item">
+        <div class="panel-list-item__info">
+          <strong>${escapeHtml(c.nome)}</strong>
+          <span>${escapeHtml(c.descricao || 'Sem descrição')} • <span class="badge ${c.ativa ? 'badge--success' : 'badge--outline'}">${c.ativa ? 'Ativa' : 'Inativa'}</span></span>
+        </div>
+        <div class="panel-list-item__actions">
+          <button type="button" class="btn btn--outline btn--sm btnEditAdminCat" data-id="${c.id}">Editar</button>
+          <button type="button" class="btn btn--outline btn--sm btnToggleAdminCat" data-id="${c.id}" data-ativa="${c.ativa ? '0' : '1'}">${c.ativa ? 'Desativar' : 'Ativar'}</button>
+          <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminCat" data-id="${c.id}">Excluir</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+export function openAdminCategoryForm(catId = null) {
+  const wrap = document.getElementById('adminCategoryFormWrap');
+  const form = document.getElementById('adminCategoryForm');
+  if (!wrap || !form) return;
+  clearFormError('adminCategoryError');
+  form.reset();
+
+  if (catId) {
+    const c = adminCategoriesCache.find(x => String(x.id) === String(catId));
+    if (c) {
+      document.getElementById('adminCatId').value = String(c.id);
+      document.getElementById('adminCatNome').value = c.nome || '';
+      document.getElementById('adminCatDesc').value = c.descricao || '';
+      document.getElementById('adminCatAtiva').checked = Boolean(c.ativa);
+    }
+  } else {
+    document.getElementById('adminCatId').value = '';
+    document.getElementById('adminCatAtiva').checked = true;
+  }
+  wrap.style.display = 'block';
+}
+
+export async function saveAdminCategory() {
+  clearFormError('adminCategoryError');
+  const id = document.getElementById('adminCatId').value;
+  const payload = {
+    nome: document.getElementById('adminCatNome').value.trim(),
+    descricao: document.getElementById('adminCatDesc').value.trim(),
+    ativa: document.getElementById('adminCatAtiva').checked,
+  };
+  const endpoint = id ? `/categorias/${id}/` : '/categorias/';
+  const method = id ? 'PATCH' : 'POST';
+
+  const res = await apiFetch(endpoint, { method, body: JSON.stringify(payload) });
+  if (!res.ok) {
+    showFormError('adminCategoryError', await parseError(res));
+    return;
+  }
+  document.getElementById('adminCategoryFormWrap').style.display = 'none';
+  showToast(id ? 'Categoria atualizada!' : 'Categoria criada!', 'success');
+  await loadAdminCategories();
+  window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
+}
+
+export async function toggleAdminCategory(id, ativa) {
+  const res = await apiFetch(`/categorias/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ ativa }),
+  });
+  if (!res.ok) {
+    showToast(await parseError(res), 'error');
+    return;
+  }
+  showToast(ativa ? 'Categoria ativada.' : 'Categoria desativada.', 'success');
+  await loadAdminCategories();
+  window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
+}
+
+export async function deleteAdminCategory(id) {
+  if (!confirm('Deseja realmente excluir esta categoria?')) return;
+  const res = await apiFetch(`/categorias/${id}/`, { method: 'DELETE' });
+  if (!res.ok) {
+    showToast(await parseError(res), 'error');
+    return;
+  }
+  showToast('Categoria excluída.', 'info');
+  await loadAdminCategories();
+  window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
+}
+
+// ── Pedidos (Listagem Admin com Filtro por Status e Paginação) ────────────
+export async function loadAdminOrders(page = 1) {
+  const el = document.getElementById('adminOrdersList');
+  const pagEl = document.getElementById('adminOrdersPagination');
+  if (!el) return;
+  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
+
+  const statusFilter = document.getElementById('adminOrderStatusFilter')?.value || '';
+  const params = new URLSearchParams({ page: String(page) });
+  if (statusFilter) params.set('status', statusFilter);
+
+  try {
+    const res = await apiFetch(`/admin/pedidos/?${params.toString()}`);
+    if (!res.ok) throw new Error('Falha ao carregar pedidos.');
+    const data = await res.json();
+    const list = data.results || data || [];
+
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>Nenhum pedido encontrado para o filtro selecionado.</p></div>';
+      return;
+    }
+
+    el.innerHTML = list.map(o => {
+      const st = statusLabels[o.status] || { label: o.status, class: '' };
+      return `
+        <div class="panel-list-item">
+          <div class="panel-list-item__info">
+            <strong>${escapeHtml(o.numero_publico || `#${o.id}`)} • ${formatCurrency(o.total_com_frete || o.total)}</strong>
+            <span>Produtor: <strong>${escapeHtml(o.produtor_nome || '-')}</strong> • Cliente: ${escapeHtml(o.cliente_nome || '-')}</span>
+            <span class="text-muted">${formatDate(o.criado_em)} • ${escapeHtml(o.modalidade)} • ${escapeHtml(o.forma_pagamento)}</span>
+          </div>
+          <div class="panel-list-item__actions">
+            <span class="badge ${st.class}">${escapeHtml(st.label)}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    renderPaginationBar(pagEl, data, page, (p) => loadAdminOrders(p));
+  } catch (err) {
+    el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadAdminComplaints(page = 1) {
+  const el = document.getElementById('adminComplaintsList');
+  const pagEl = document.getElementById('adminComplaintsPagination');
+  if (!el) return;
+  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
+
+  try {
+    const res = await apiFetch(`/admin/reclamacoes/?page=${page}`);
     const data = await res.json();
     const list = data.results || data || [];
     if (list.length === 0) {
@@ -140,18 +344,21 @@ async function loadAdminComplaints() {
         <button type="button" class="btn btn--primary btn--sm btnSaveComplaint" data-id="${r.id}">Salvar Moderação</button>
       </div>
     `).join('');
+    renderPaginationBar(pagEl, data, page, (p) => loadAdminComplaints(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
-async function loadAdminUsers() {
+async function loadAdminUsers(page = 1) {
   const el = document.getElementById('adminUsersList');
+  const pagEl = document.getElementById('adminUsersPagination');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
 
   try {
-    const res = await apiFetch('/admin/usuarios/');
+    const res = await apiFetch(`/admin/usuarios/?page=${page}`);
     const data = await res.json();
     const list = data.results || data || [];
     el.innerHTML = list.map(u => `
@@ -167,6 +374,7 @@ async function loadAdminUsers() {
         </div>
       </div>
     `).join('');
+    renderPaginationBar(pagEl, data, page, (p) => loadAdminUsers(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }

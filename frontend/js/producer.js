@@ -3,12 +3,39 @@
  */
 import { apiFetch, parseError } from './api.js';
 import { statusLabels } from './orders.js';
-import { clearFormError, escapeHtml, formatCurrency, formatDate, openModal, safeUrl, showFormError, showToast } from './ui.js';
+import { clearFormError, escapeHtml, formatCurrency, formatDate, openModal, renderPaginationBar, safeUrl, showFormError, showToast } from './ui.js';
 
 let producerProductsCache = [];
 
+async function syncProducerStatusBanner() {
+  const badge = document.getElementById('producerStatusBadge');
+  const warn = document.getElementById('producerStatusWarning');
+  try {
+    const res = await apiFetch('/perfil/produtor/');
+    if (!res.ok) return;
+    const p = await res.json();
+    if (badge) {
+      badge.textContent = `Status: ${p.status}`;
+      badge.className = `badge ${p.status === 'APROVADO' ? 'badge--success' : 'badge--outline'}`;
+    }
+    if (warn) {
+      if (p.status === 'PENDENTE' || p.status === 'SUSPENSO') {
+        warn.textContent =
+          p.status === 'PENDENTE'
+            ? 'Seu cadastro de produtor está PENDENTE de aprovação. Você pode cadastrar seus produtos, mas eles só aparecerão no catálogo público após a aprovação do administrador.'
+            : 'Seu perfil de produtor está SUSPENSO. Seus produtos não aparecem no catálogo público até que o administrador reative sua conta.';
+        warn.style.display = 'block';
+      } else {
+        warn.textContent = '';
+        warn.style.display = 'none';
+      }
+    }
+  } catch (_) {}
+}
+
 export async function openProducerPanel(initialTab = 'produtos') {
   openModal('producerPanelModalOverlay');
+  syncProducerStatusBanner();
   switchProducerTab(initialTab);
 }
 
@@ -107,6 +134,7 @@ export function openProductForm(productId = null) {
     }
   } else {
     document.getElementById('prodId').value = '';
+    document.getElementById('prodTipo').value = 'CONVENCIONAL';
     document.getElementById('prodAtivo').checked = true;
   }
   wrap.style.display = 'block';
@@ -159,13 +187,15 @@ export async function deleteProducerProduct(id) {
 }
 
 // ── Pedidos Recebidos pelo Produtor ─────────────────────────────────────────
-export async function loadProducerOrders() {
+export async function loadProducerOrders(page = 1) {
   const container = document.getElementById('producerOrdersList');
+  const pagEl = document.getElementById('producerOrdersPagination');
   if (!container) return;
   container.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
 
   try {
-    const res = await apiFetch('/produtor/pedidos/');
+    const res = await apiFetch(`/produtor/pedidos/?page=${page}`);
     if (!res.ok) throw new Error('Falha ao carregar pedidos.');
     const data = await res.json();
     const orders = data.results || data || [];
@@ -215,6 +245,7 @@ export async function loadProducerOrders() {
         </div>
       `;
     }).join('');
+    renderPaginationBar(pagEl, data, page, (nextPage) => loadProducerOrders(nextPage));
   } catch (err) {
     container.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -229,7 +260,8 @@ export async function handleProducerOrderAction(orderId, action, nextStatus = ''
     if (previsao === null) return;
     body = { previsao_entrega: previsao };
   } else if (action === 'recusar') {
-    const motivo = prompt('Motivo da recusa:') || '';
+    const motivo = prompt('Motivo da recusa:');
+    if (motivo === null) return;
     body = { motivo };
   } else if (action === 'status') {
     endpoint = `/produtor/pedidos/${orderId}/status/`;

@@ -1345,6 +1345,82 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   color: #7ED93A;
 }
 .payment-option input { display: none; }
+.payment-option--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
+.payment-option--disabled:hover {
+  border-color: var(--border);
+  background: var(--bg-base);
+}
+.checkout-producers-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.checkout-producer-group {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-size: 0.8125rem;
+}
+.checkout-producer-group__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+.checkout-producer-group__items {
+  list-style: disc;
+  padding-left: var(--space-4);
+  color: var(--text-secondary);
+}
+.checkout-fee-breakdown {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-top: calc(-1 * var(--space-3));
+  margin-bottom: var(--space-4);
+  text-align: right;
+}
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.admin-stat-card {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.admin-stat-card h4 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+.admin-stat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.admin-stat-table td {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.admin-stat-table tr:last-child td {
+  border-bottom: none;
+}
+.admin-stat-num {
+  text-align: right;
+  color: var(--color-primary);
+}
 
 /* TOASTS */
 .toast-container {

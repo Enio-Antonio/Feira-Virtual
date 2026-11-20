@@ -1,230 +1,294 @@
-# 🌱 Feira Virtual — Plataforma de Venda Direta
+# 🌱 Feira Virtual — Plataforma de Venda Direta da Agricultura Familiar
 
-Plataforma completa (Backend API + Frontend integrado) para conexão direta entre **produtores rurais da agricultura familiar**, **entregadores parceiros** e **compradores finais**, eliminando atravessadores e garantindo alimentos frescos com preço justo.
+Plataforma full-stack (Backend API + Frontend modular integrado) para conexão direta entre **produtores rurais da agricultura familiar**, **entregadores parceiros**, **compradores finais** e **administradores**, eliminando atravessadores e promovendo alimentos frescos com preço justo.
 
 ---
 
 ## 📌 Sumário
 
 - [Visão Geral e Arquitetura](#-visão-geral-e-arquitetura)
-- [Histórico de Atualizações Recentes](#-histórico-de-atualizações-recentes)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Como Rodar o Projeto](#-como-rodar-o-projeto)
-  - [Opção 1: Inicialização Rápida (Recomendada)](#opção-1-inicialização-rápida-recomendada)
-  - [Opção 2: Com Banco MySQL Local ou Docker](#opção-2-com-banco-mysql-local-ou-docker)
-  - [Opção 3: Acesso Externo / Celular (via ngrok ou Cloudflare)](#opção-3-acesso-externo--celular-via-ngrok-ou-cloudflare)
-- [Contas de Teste Pré-Configuradas](#-contas-de-teste-pré-configuradas)
-- [Estrutura dos Módulos (Apps)](#-estrutura-dos-módulos-apps)
+- [Contas de Demonstração (`seed_demo`)](#-contas-de-demonstração-seed_demo)
+- [Variáveis de Ambiente](#-variáveis-de-ambiente)
+- [Identidade Visual e Paleta](#-identidade-visual-e-paleta)
 - [Principais Endpoints da API](#-principais-endpoints-da-api)
-- [Decisões e Regras de Negócio](#-decisões-e-regras-de-negócio)
-- [Design System & Frontend](#-design-system--frontend)
-- [Próximos Passos Sugeridos](#-próximos-passos-sugeridos)
+- [Fluxo de Pedido e Regras de Negócio](#-fluxo-de-pedido-e-regras-de-negócio)
+- [Decisões Técnicas Registradas](#-decisões-técnicas-registradas)
+- [Testes, Cobertura e CI](#-testes-cobertura-e-ci)
+- [Roadmap](#-roadmap)
 
 ---
 
 ## 🏗 Visão Geral e Arquitetura
 
-O sistema é composto por:
-- **Backend:** Python + Django 6.x + Django REST Framework + SimpleJWT.
-- **Frontend:** HTML5 semântico, CSS3 Moderno (Custom Properties) e Vanilla JavaScript, servido de forma unificada pelo próprio servidor Django na raiz (`/`).
-- **Banco de Dados:** Híbrido e flexível — roda imediatamente com SQLite para desenvolvimento ágil ou com MySQL 8.x para produção, configurável pelo arquivo `.env`.
-- **Documentação de API:** Swagger interativo gerado automaticamente via `drf-spectacular`.
+- **Backend:** Python + Django 6.x + Django REST Framework + SimpleJWT + `drf-spectacular`.
+- **Frontend:** HTML5 semântico, CSS3 moderno (Design Tokens + Dark Mode) e JavaScript puro em **ES Modules nativos** (`frontend/js/*.js`), sem dependência de bundlers ou frameworks pesados.
+- **Servimento de Estáticos e Mídia:**
+  - Arquivos estáticos do frontend (`style.css`, `main.js`, `js/*.js`, `assets/*`) são servidos pelo **WhiteNoise** (`CompressedManifestStaticFilesStorage`) com compressão e cache imutável em produção, enquanto `/` renderiza `frontend/index.html` via Django `TemplateView`.
+  - Uploads de imagem (`media/`) passam por validação de extensão, tamanho (máx. 5 MB) e assinatura binária via Pillow (`config/validators.py`) e são entregues em `/media/` por rota controlada contra *path traversal* (ou podem ser migrados para S3 / Cloudflare R2 via `django-storages`).
+- **Banco de Dados:** Suporte a **SQLite** (desenvolvimento ágil) e **MySQL 8.4** via **PyMySQL** puro (sem necessidade de compilar `gcc`/`libmysqlclient-dev`), alternável via `DB_ENGINE`.
+- **Segurança:** `DEBUG=0` por padrão (*fail-safe*), `DJANGO_SECRET_KEY` obrigatória fora de `DEBUG`, CSP restritivo (`ContentSecurityPolicyMiddleware`), throttles dedicados para autenticação (`login`, `registro`, `recuperar_senha`), cabeçalhos HSTS/SSL configurados para produção, logs de auditoria administrativa/LGPD e Swagger restrito a administradores por padrão (`ENABLE_SWAGGER=0`).
 
 ---
 
-## 🚀 Histórico de Atualizações Recentes
+## 📦 Estrutura do Projeto
 
-Abaixo estão as principais melhorias implementadas no projeto:
-
-### 1. Suporte Flexível a MySQL e SQLite
-- **Driver PyMySQL integrado:** Configurado hook de inicialização em `config/__init__.py` com `pymysql.install_as_MySQLdb()`, eliminando a necessidade de compilação de pacotes nativos em C (`mysqlclient`) e evitando erros de instalação.
-- **Alternância sem alterar código:** O motor de banco é escolhido via variável `DB_ENGINE` no `.env` (`DB_ENGINE=sqlite` para rodar sem banco externo ou `DB_ENGINE=mysql` para produção).
-
-### 2. Segurança e Produção
-- **CORS configurado:** Adicionado `django-cors-headers` com liberação de origens configurável.
-- **Arquivos Estáticos com WhiteNoise:** Arquivos CSS, JS e do painel administrativo são compactados e cacheados eficientemente em produção sem necessidade de Nginx exclusivo.
-- **Proteção contra Força Bruta (Throttling):** Rate limiting no DRF (100 req/min para anônimos e 1000 req/min para autenticados).
-- **Compatibilidade com Proxy Reverso e HTTPS:** Configurados `SECURE_PROXY_SSL_HEADER`, `USE_X_FORWARDED_HOST` e `CSRF_TRUSTED_ORIGINS` para aceitar domínios de nuvem e túneis HTTPS sem erro 403 CSRF.
-- **Upload de Mídia:** Adicionados campos `ImageField` para fotos de produtos e fotos das propriedades rurais.
-
-### 3. Frontend Completo Integrado na Raiz (`/`)
-- **Single-Server:** O próprio Django agora serve a interface na rota principal `http://127.0.0.1:8000/`.
-- **Paleta de Cores e Psicologia das Cores:** Baseada na regra 60-30-10:
-  - **60%** Fundos neutros (Off-white / Dark deep green).
-  - **30%** Verde Terra (`#3D8B37`) para cabeçalho, estrutura e identidade visual.
-  - **10%** Âmbar Vibrante (`#F59E0B`) restrito a botões de ação (CTA) e conversão.
-- **Light e Dark Mode:** Alternância com 1 clique e persistência de preferência no `localStorage`.
-- **Catálogo Conectado em Tempo Real:** Listagem dinâmica via `GET /api/produtos/`, busca instantânea com debounce e filtros de categoria e tipo de cultivo (Orgânico, Agroecológico, Convencional).
-- **Carrinho e Checkout Integrados:** Drawer lateral que consome `/api/carrinho/`, permite adicionar itens, alterar quantidades e submeter pedidos (`POST /api/pedidos/`).
-- **Autenticação Visual:** Modais de Login e Cadastro conectados aos endpoints JWT com botões de preenchimento rápido para testes.
+```text
+feira_virtual/
+├── .github/workflows/
+│   └── ci.yml                 # Pipeline CI: Ruff, Django check, check --deploy, collectstatic e coverage
+├── avaliacoes/                # Avaliações (produto/produtor após compra concluída) e reclamações
+├── catalogo/                  # Categorias, produtos, filtros, vitrine de produtores e estatísticas reais
+├── config/
+│   ├── middleware.py          # Content-Security-Policy (CSP)
+│   ├── settings.py            # Configurações híbridas, segurança, WhiteNoise, DRF, logging estruturado
+│   ├── urls.py                # Rotas da API, saúde (/api/health/), frontend (TemplateView) e /media/
+│   └── validators.py          # Validação binária e de tamanho de uploads de imagem (Pillow)
+├── frontend/
+│   ├── assets/                # Logos recortadas (PNG/WebP 1x/2x, variante branca), favicons, og-image e PWA manifest
+│   ├── js/
+│   │   ├── admin.js           # Painel de moderação (indicadores, aprovar/suspender, ocultar, reclamações, usuários)
+│   │   ├── api.js             # Cliente centralizado com auto-refresh JWT, fila 401 e loading bar
+│   │   ├── auth.js            # Login, registro multi-perfil, perfil, recuperação de senha e LGPD
+│   │   ├── cart.js            # Carrinho de compras, drawer lateral e checkout
+│   │   ├── delivery.js        # Painel do entregador (disponíveis, aceitar, saiu para entrega, confirmar, veículo)
+│   │   ├── orders.js          # Pedidos do cliente, timeline, Pix QR/copia-e-cola, avaliações, reclamações e ViaCEP
+│   │   ├── producer.js        # Painel do produtor (CRUD produtos + upload, pedidos, vendas e propriedade)
+│   │   ├── products.js        # Catálogo paginado, filtros, detalhes de produto/produtor e vitrine
+│   │   └── ui.js              # Toasts aria-live, focus trap/ESC nos modais, skeletons, máscaras e QR SVG
+│   ├── index.html             # Template único com {% static %} e sem requisições externas bloqueantes
+│   ├── main.js                # Orquestrador ES Module principal
+│   └── style.css              # Design System (regra 60-30-10, Light/Dark mode, prefers-reduced-motion)
+├── painel/                    # Indicadores administrativos, moderação e modelo LogAuditoria (admin/LGPD)
+├── pedidos/
+│   ├── notificacoes.py        # Camada abstrata de notificações (E-mail console/SMTP + interface WhatsApp)
+│   ├── pix.py                 # Gateway Pix abstrato (Mock dev + validação de assinatura HMAC de webhook)
+│   ├── services.py            # Checkout transacional com select_for_update(), estoque e máquina de estados
+│   └── ...
+├── usuarios/
+│   ├── management/commands/
+│   │   └── seed_demo.py       # Popula dados de demonstração (exclusivo com DEBUG=1)
+│   └── ...                    # Usuário customizado (4 perfis), endereços e endpoints LGPD
+├── Dockerfile                 # Imagem Python 3.12-slim não-root com collectstatic e HEALTHCHECK (/api/health/)
+├── docker-compose.yml         # MySQL 8.4 + App configurados via .env
+├── requirements.txt           # Dependências de produção
+└── requirements-dev.txt       # Ferramentas de desenvolvimento (pytest, coverage, ruff)
+```
 
 ---
 
 ## 💻 Como Rodar o Projeto
 
-### Opção 1: Inicialização Rápida (Recomendada)
-
-O projeto já vem com arquivo `.env` configurado em modo SQLite e dados de teste pré-carregados (produtos, categorias e usuários).
+### 1. Desenvolvimento Local (SQLite)
 
 ```bash
-# 1. Acesse a pasta do projeto
-cd ~/Downloads/feira_virtual
-
-# 2. Ative o ambiente virtual
+# 1. Acesse o projeto e crie/ative o ambiente virtual
+cd feira_virtual
+python3 -m venv .venv
 source .venv/bin/activate
 
-# 3. Inicie o servidor
-python manage.py runserver
+# 2. Instale as dependências
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# 3. Copie as variáveis de ambiente de exemplo (ajuste se desejar)
+cp .env.example .env
+
+# 4. Aplique as migrações e crie dados de demonstração (requer DJANGO_DEBUG=1)
+DJANGO_DEBUG=1 DB_ENGINE=sqlite python manage.py migrate
+DJANGO_DEBUG=1 DB_ENGINE=sqlite python manage.py seed_demo
+
+# 5. Inicie o servidor
+DJANGO_DEBUG=1 DB_ENGINE=sqlite python manage.py runserver
 ```
 
-Abra no seu navegador:
-- **Interface da Feira (Frontend):** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-- **Documentação da API (Swagger):** [http://127.0.0.1:8000/api/docs/](http://127.0.0.1:8000/api/docs/)
-- **Painel Administrativo:** [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
+Acesse:
+- **Aplicação Web:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Healthcheck API:** [http://127.0.0.1:8000/api/health/](http://127.0.0.1:8000/api/health/)
+- **Documentação Swagger:** [http://127.0.0.1:8000/api/docs/](http://127.0.0.1:8000/api/docs/) *(por padrão exige login admin ou `ENABLE_SWAGGER=1`)*
 
----
+### 2. Docker Compose (MySQL 8.4 + Aplicação)
 
-### Opção 2: Com Banco MySQL Local ou Docker
-
-Quando desejar utilizar o MySQL como banco oficial:
-
-#### Via Docker Compose (Mais simples):
 ```bash
-# Sobe o MySQL 8.4 em container
-docker compose up db -d
+# Configure suas senhas e DJANGO_SECRET_KEY no .env antes de subir
+cp .env.example .env
+
+# Suba o banco MySQL e a aplicação Gunicorn (executa como usuário não-root `appuser`)
+docker compose up --build -d
+
+# Execute migrações dentro do container
+docker compose exec web python manage.py migrate
 ```
 
-#### No MySQL Local instalado:
-```sql
-CREATE DATABASE IF NOT EXISTS feira_virtual CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'feira'@'%' IDENTIFIED BY 'feira123';
-GRANT ALL PRIVILEGES ON feira_virtual.* TO 'feira'@'%';
-FLUSH PRIVILEGES;
-```
+### 3. Produção (Checklist Essencial)
 
-No arquivo `.env`, altere:
-```env
-DB_ENGINE=mysql
-DB_NAME=feira_virtual
-DB_USER=feira
-DB_PASSWORD=feira123
-DB_HOST=127.0.0.1
-DB_PORT=3306
-```
-
-E execute as migrações:
-```bash
-python manage.py migrate
-python manage.py runserver
-```
-
----
-
-### Opção 3: Acesso Externo / Celular (via ngrok ou Cloudflare)
-
-Para acessar a Feira Virtual pelo celular ou compartilhar com outras pessoas sem expor portas do seu roteador:
-
-1. **Terminal 1:** Deixe o Django rodando normalmente:
+1. Defina `DJANGO_DEBUG=0` e uma `DJANGO_SECRET_KEY` aleatória com 50+ caracteres.
+2. Restrinja `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOW_ALL_ORIGINS=0`, `CORS_ALLOWED_ORIGINS` e `CSRF_TRUSTED_ORIGINS` ao domínio oficial.
+3. Configure `DB_ENGINE=mysql` e um servidor SMTP real em `EMAIL_*`.
+4. Gere os estáticos com cache de hash (`python manage.py collectstatic --no-input`) e valide a configuração de segurança:
    ```bash
-   python manage.py runserver
+   DJANGO_DEBUG=0 python manage.py check --deploy
    ```
-
-2. **Terminal 2:** Inicie o túnel ngrok na mesma porta:
-   ```bash
-   ngrok http 8000
-   ```
-   *(Ou usando Cloudflare Tunnel: `cloudflared tunnel --url http://localhost:8000`)*
-
-3. Copie a URL pública gerada (ex: `https://xxxx.ngrok-free.app`) e abra no celular. O Django já está configurado para aceitar requisições externas sem erro de CSRF.
+5. Suba via WSGI/Gunicorn (`gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3`).
+6. **Armazenamento de Mídia (`/media/`) em múltiplas instâncias:** Em single-server, o volume persistente `/app/media` + rota controlada `media_serve_view` atende aos uploads. Para escalar horizontalmente, configure `django-storages` com **Amazon S3** ou **Cloudflare R2**.
 
 ---
 
-## 👥 Contas de Teste e Demonstração (`seed_demo`)
+## 👥 Contas de Demonstração (`seed_demo`)
 
-Para popular o banco com dados de teste em ambiente de desenvolvimento (`DEBUG=True`), execute:
+Em ambiente de desenvolvimento (`DJANGO_DEBUG=1`), execute:
 
 ```bash
-python manage.py seed_demo
-# ou para recriar do zero:
-python manage.py seed_demo --reset
+DJANGO_DEBUG=1 python manage.py seed_demo
+# ou para recriar os dados de exemplo do zero:
+DJANGO_DEBUG=1 python manage.py seed_demo --reset
 ```
 
-> **Atenção:** Por segurança, este comando só roda com `DEBUG=True`. Credenciais reais nunca devem ser armazenadas em arquivos ou documentação pública.
+> O comando recusa execução quando `DJANGO_DEBUG=0`, evitando qualquer inserção acidental em produção. Credenciais reais jamais devem constar no repositório.
 
-Contas criadas pelo comando de demonstração:
+Contas de demonstração criadas localmente pelo `seed_demo`:
 
-| Perfil | Usuário / E-mail | Senha de Teste | O que pode fazer |
+| Perfil | Usuário | E-mail | Senha de Teste |
 |---|---|---|---|
-| **Cliente** | `cliente@demo.com` (`cliente_demo`) | `cliente-demo-2024` | Adicionar itens ao carrinho, simular checkout e fazer avaliações |
-| **Produtor** | `produtor@demo.com` (`produtor_demo`) | `produtor-demo-2024` | Gerenciar produtos, aceitar/recusar pedidos e ver vendas |
-| **Entregador** | `entregador@demo.com` (`entregador_demo`) | `entregador-demo-2024` | Ver entregas disponíveis, aceitar e confirmar entregas |
-| **Administrador** | `admin` | `admin-demo-2024` | Acesso completo ao painel Django Admin (`/admin/`) e moderação |
-
-> *Dica: No modal de login do frontend, existem atalhos de preenchimento em 1 clique para essas contas.*
+| **Cliente** | `cliente_demo` | `cliente@demo.com` | `cliente-demo-2024` |
+| **Produtor** | `produtor_demo` | `produtor@demo.com` | `produtor-demo-2024` |
+| **Entregador** | `entregador_demo` | `entregador@demo.com` | `entregador-demo-2024` |
+| **Administrador** | `admin` | `admin@demo.com` | `admin-demo-2024` |
 
 ---
 
-## 📦 Estrutura dos Módulos (Apps)
+## ⚙ Variáveis de Ambiente
 
-```
-feira_virtual/
-├── avaliacoes/    # Avaliações de produtos, produtores e registro de reclamações
-├── catalogo/      # Categorias, produtos, unidades de medida e tipos de cultivo
-├── config/        # Configurações do Django (settings, URLs, WSGI)
-├── frontend/      # Arquivos do frontend (index.html, style.css, main.js)
-├── painel/        # Endpoints administrativos, indicadores e métricas da feira
-├── pedidos/       # Carrinho, checkout, máquina de estados de pedidos e estoque
-└── usuarios/      # Usuários (4 perfis), endereços e autenticação JWT
-```
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `DJANGO_DEBUG` | `0` | Ativa modo debug (`1` em dev, `0` obrigatório em produção) |
+| `DJANGO_SECRET_KEY` | *(obrigatória se DEBUG=0)* | Chave criptográfica do Django (>= 50 caracteres em produção) |
+| `DJANGO_ALLOWED_HOSTS` | `*` (se DEBUG=1) / vazio | Lista separada por vírgula dos hosts permitidos |
+| `ENABLE_SWAGGER` | `0` | `1` libera `/api/docs/` publicamente; `0` restringe a administradores |
+| `SECURE_SSL_REDIRECT` | `1` (se DEBUG=0) | Redireciona HTTP para HTTPS fora do modo debug |
+| `LOG_LEVEL` | `INFO` | Nível dos logs estruturados em stdout |
+| `DB_ENGINE` | `sqlite` | `sqlite` ou `mysql` |
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` | — | Credenciais e endereço do banco MySQL |
+| `CORS_ALLOW_ALL_ORIGINS`, `CORS_ALLOWED_ORIGINS` | `1` (se DEBUG=1) / `0` | Controle de origens permitidas no CORS |
+| `CSRF_TRUSTED_ORIGINS` | localhost + túneis dev | Origens confiáveis para submissões CSRF |
+| `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL` | Console em DEBUG | Configuração de envio de e-mail |
+| `THROTTLE_ANON`, `THROTTLE_USER`, `THROTTLE_LOGIN`, `THROTTLE_REGISTRO`, `THROTTLE_RECUPERAR_SENHA` | `100/m`, `1000/m`, `10/m`, `5/m`, `5/m` | Limites de taxa por IP/usuário |
+| `PIX_WEBHOOK_SECRET` | Chave dev | Segredo HMAC-SHA256 para validar webhooks de confirmação Pix |
+
+---
+
+## 🎨 Identidade Visual e Paleta
+
+Os tokens visuais foram calibrados a partir das cores reais extraídas da logo oficial em `frontend/assets/`, respeitando a regra **60-30-10** e contraste **WCAG 2.1 AA**:
+
+| Token CSS | Hex | Aplicação |
+|---|---|---|
+| `--color-primary` | `#246F11` | Verde principal (cabeçalho, ações primárias, links ativos) |
+| `--color-primary-dark` | `#1B4312` | Hover primário e fundos de alto contraste |
+| `--color-primary-light` | `#67AE25` | Realces sutis e detalhes orgânicos |
+| `--color-primary-tint` | `#E8F5E0` | Fundos suaves para badges e cards selecionados |
+| `--color-cta` | `#F7990C` | Laranja CTA (botões de conversão, foco visível) |
+| `--bg-base` / `--bg-card` | `#FAFAF8` / `#FFFFFF` | Base neutra clara (`#141712` / `#272B23` no Dark Mode) |
+
+**Variantes da logo em `frontend/assets/`:**
+- `logo-horizontal.png` / `.webp` e `-2x.webp` — logo recortada com transparência para fundos claros;
+- `logo-horizontal-white.png` / `.webp` e `-2x.webp` — variante clara/monocromática ativada automaticamente quando `[data-theme="dark"]`;
+- `logo-icon.png` / `.webp` — apenas o símbolo da cesta e folhas (fallback de produto e ícone quadrado);
+- `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png` (180px), `icon-192.png`, `icon-512.png`, `manifest.webmanifest`, `og-image.png` (1200×630).
 
 ---
 
 ## 🔌 Principais Endpoints da API
 
-### Autenticação & Perfil
-- `POST /api/auth/login/` — Retorna tokens JWT (`access` e `refresh`).
-- `POST /api/auth/registro/cliente/` — Cadastro de comprador.
-- `POST /api/auth/registro/produtor/` — Cadastro de produtor rural.
-- `POST /api/auth/registro/entregador/` — Cadastro de entregador parceiro.
-- `GET/PATCH /api/perfil/` — Consulta e edição dos dados da conta autenticada.
+### Autenticação, Perfis & LGPD (`/api/`)
+- `POST /api/auth/login/` — Obtém tokens JWT (`access` e `refresh`) *(throttle dedicado)*.
+- `POST /api/auth/refresh/` — Renova `access` token.
+- `POST /api/auth/logout/` — Coloca `refresh` token na blacklist.
+- `POST /api/auth/registro/cliente/` | `/produtor/` | `/entregador/` — Cadastros específicos por perfil.
+- `POST /api/auth/recuperar-senha/` | `POST /api/auth/redefinir-senha/` — Fluxo completo de recuperação de senha.
+- `GET/PATCH /api/perfil/` — Dados do usuário autenticado.
+- `GET/PATCH /api/perfil/produtor/` | `/perfil/entregador/` — Gestão do perfil profissional (incluindo upload de foto da propriedade).
+- `GET /api/perfil/exportar-dados/` | `DELETE /api/perfil/excluir-conta/` — Portabilidade JSON e anonimização LGPD (com registro em `LogAuditoria`).
+- `CRUD /api/enderecos/` — Endereços de entrega do usuário.
 
-### Catálogo de Produtos
-- `GET /api/categorias/` — Lista categorias ativas.
-- `GET /api/produtos/` — Lista produtos públicos com filtros (`?search=`, `?categoria=`, `?tipo_producao=`, `?ordering=`).
-- `POST /api/produtor/produtos/` — Cadastro de novo produto pelo produtor.
+### Catálogo & Público (`/api/`)
+- `GET /api/categorias/` — Categorias ativas (admin também cria/edita).
+- `GET /api/produtos/` — Catálogo paginado (`?page=`, `?search=`, `?categoria=`, `?tipo_producao=`, `?produtor=`, `?ordering=`).
+- `GET /api/produtores/` — Vitrine pública dos produtores aprovados (sem expor chave Pix).
+- `GET /api/estatisticas/` — Contadores reais em tempo real (famílias atendidas na semana, produtores, produtos e pedidos concluídos).
+- `CRUD /api/produtor/produtos/` — Gestão dos próprios produtos pelo produtor (incluindo upload de foto validado).
 
-### Carrinho & Pedidos
-- `GET /api/carrinho/` — Consulta itens e total do carrinho do cliente.
-- `POST /api/carrinho/itens/` — Adiciona produto ao carrinho.
-- `PATCH /api/carrinho/itens/{id}/` — Atualiza quantidade.
-- `DELETE /api/carrinho/itens/{id}/` — Remove item.
-- `POST /api/pedidos/` — Finaliza o carrinho criando pedidos por produtor.
-- `GET /api/pedidos/` — Lista pedidos do cliente.
-- `POST /api/produtor/pedidos/{id}/aceitar/` — Produtor aceita o pedido e baixa estoque.
-- `POST /api/entregas/{id}/confirmar/` — Entregador confirma entrega do pedido.
+### Carrinho, Pedidos, Pix & Entregas (`/api/`)
+- `GET/DELETE /api/carrinho/` e `POST/PATCH/DELETE /api/carrinho/itens/` — Gestão do carrinho.
+- `GET/POST /api/pedidos/` — Histórico e checkout (divide automaticamente o carrinho por produtor).
+- `POST /api/pedidos/{id}/cancelar/` — Cancelamento pelo cliente (com motivo opcional).
+- `GET /api/pedidos/{id}/pix/` — Geração de cobrança Pix mock (chave e payload copia-e-cola).
+- `POST /api/pedidos/pix/webhook/` — Webhook com verificação de assinatura HMAC-SHA256 (`X-Signature`).
+- `GET /api/produtor/pedidos/`, `POST .../aceitar/`, `.../recusar/`, `.../status/`, `GET .../vendas/` — Fluxo operacional e faturamento do produtor.
+- `GET /api/entregas/?escopo=disponiveis|minhas`, `POST .../aceitar/`, `.../saiu-para-entrega/`, `.../confirmar/` — Fluxo do entregador.
 
----
-
-## ⚖️ Decisões e Regras de Negócio
-
-1. **Separação por Produtor:** O carrinho pode conter itens de produtores distintos; no momento do checkout, o sistema divide automaticamente a compra em um pedido independente para cada produtor rural.
-2. **Controle Estrito de Estoque:** O estoque é validado na inserção ao carrinho e no checkout. A baixa efetiva do estoque ocorre quando o produtor **aceita** o pedido. Se o pedido for cancelado ou recusado, o estoque é estornado automaticamente de forma transacional.
-3. **Moderação de Produtores:** Novos produtores iniciam com status `PENDENTE`. Seus produtos só ficam visíveis no catálogo público após aprovação de um Administrador.
-4. **Formas de Pagamento Dinâmicas:** Cada produtor define suas opções aceitas (Pix, Cartão com maquininha própria ou Dinheiro). O checkout valida e bloqueia opções incompatíveis.
-5. **Histórico Imutável:** Ao fechar o pedido, os preços unitários e nomes dos produtos são copiados para a tabela `ItemPedido`, garantindo que alterações futuras no catálogo não modifiquem pedidos passados.
-
----
-
-## 🎨 Design System & Frontend
-
-O frontend segue especificações modernas de usabilidade e acessibilidade (WCAG 2.1 AA):
-- **Tipografia:** `Inter` para legibilidade de dados e interface; `Fraunces` (serif) para títulos e destaques acolhedores.
-- **Componentes:** Carrinho lateral (Drawer) em CSS puro, modais acessíveis com foco visível, toasts de notificação assíncronos e badges de status.
-- **Tokens CSS:** Variáveis customizáveis centralizadas no topo de `frontend/style.css`.
+### Avaliações, Moderação Admin & Sistema
+- `GET/POST /api/avaliacoes/` e `GET /api/produtor/avaliacoes/` — Avaliação por item ou produtor (exclusivo após compra concluída).
+- `GET/POST /api/reclamacoes/` — Registro e acompanhamento de reclamações do cliente.
+- `GET /api/admin/indicadores/` e gestão em `/api/admin/{usuarios,produtores,produtos,pedidos,reclamacoes}/` — Moderação completa com `LogAuditoria`.
+- `GET /api/health/` — Healthcheck de aplicação e conectividade com banco de dados.
 
 ---
 
-## 🔮 Próximos Passos Sugeridos
+## ⚖️ Fluxo de Pedido e Regras de Negócio
 
-- Integração direta com gateway de pagamento Pix dinâmico (Mercado Pago / Efí / Asaas).
-- Notificações automáticas para produtores e clientes (WhatsApp / Push / E-mail via SendGrid).
-- Cálculo automatizado de taxa de frete por quilometragem ou CEP (ViaCEP).
+```text
+PENDENTE ──(produtor aceita)──▶ ACEITO ──▶ EM_PREPARO ──▶ PRONTO ──▶ EM_ENTREGA ──▶ CONCLUIDO
+   │                              │            │             │          (ou RETIRADA direto)
+   ├──(produtor recusa)──▶ RECUSADO            ▼             ▼
+   └──(cliente cancela)──────────────▶ CANCELADO (estorna estoque automaticamente)
+```
+
+1. **Separação por Produtor:** Itens de produtores distintos no mesmo carrinho geram um pedido independente para cada produtor.
+2. **Proteção de Concorrência & Estoque:** O checkout usa `transaction.atomic()` e `select_for_update()` nos produtos antes de criar os pedidos. A baixa efetiva ocorre no aceite do produtor e é estornada transacionalmente em caso de cancelamento ou recusa.
+3. **Privacidade Pix (LGPD):** A chave Pix do produtor não aparece na vitrine pública nem em pedidos cancelados/recusados; só fica acessível para o cliente com pedido ativo ou para o próprio produtor/admin.
+4. **Histórico Imutável:** `ItemPedido` congela nome, unidade e preço unitário no momento da compra.
+
+---
+
+## 📝 Decisões Técnicas Registradas
+
+- **`DEBUG=0` padrão + Parser `.env` próprio:** Garante comportamento *fail-safe* se `DJANGO_DEBUG` não for definida em produção, mantendo zero dependências extras de parsing mantendo compatibilidade total com variáveis de sistema/Docker.
+- **SQLite como padrão no desenvolvimento:** Facilita inicialização imediata com `.venv` e testes automatizados mantendo MySQL 8.4 + PyMySQL prontos para produção.
+- **JWT no cliente + CSP restritiva:** O frontend em ES Modules mantém autenticação via `Authorization: Bearer` (com auto-refresh centralizado) combinada com `Content-Security-Policy` estrita (`script-src 'self'`), sanitização via `escapeHtml()`/`safeUrl()` e ausência total de scripts inline. A migração para cookies `httpOnly` + CSRF duplo está mapeada no roadmap.
+- **Tipografia local sem requisições externas:** Removidas dependências externas de Google Fonts para maximizar desempenho e compatibilidade com CSP estrita (`font-src 'self'`). Arquivos `.woff2` (Inter/Fraunces) podem ser adicionados posteriormente em `frontend/assets/fonts/`.
+- **Pix Gateway & Notificações desacoplados:** Implementação funcional de `MockPixGateway` + `CentralNotificacoes` (e-mail console em dev + interface pronta para WhatsApp) para substituição direta por SDK/API oficial em produção.
+
+---
+
+## 🧪 Testes, Cobertura e CI
+
+A suíte conta com **23 testes automatizados** cobrindo todos os módulos (`usuarios`, `catalogo`, `pedidos`, `avaliacoes`, `painel`) e atingindo **89% de cobertura**:
+
+```bash
+# Executar testes padrão
+DB_ENGINE=sqlite .venv/bin/python manage.py test
+
+# Executar com relatório de cobertura
+DB_ENGINE=sqlite .venv/bin/coverage run manage.py test
+DB_ENGINE=sqlite .venv/bin/coverage report --omit='*/.venv/*,manage.py,config/wsgi.py,config/asgi.py,*/migrations/*,*/tests.py'
+
+# Checagens de estáticos, deploy e OpenAPI
+DB_ENGINE=sqlite .venv/bin/python manage.py collectstatic --no-input
+DJANGO_DEBUG=1 DB_ENGINE=sqlite .venv/bin/python manage.py check
+DJANGO_DEBUG=0 DJANGO_SECRET_KEY=chave-de-teste-com-mais-de-cinquenta-caracteres-1234567890 DB_ENGINE=sqlite .venv/bin/python manage.py check --deploy
+DJANGO_DEBUG=1 DB_ENGINE=sqlite .venv/bin/python manage.py spectacular --validate > /dev/null
+```
+
+O pipeline em `.github/workflows/ci.yml` executa Ruff (`ruff check .`), checagens do Django (`check` e `check --deploy`), `collectstatic` e testes com cobertura em todo `push`/`pull_request` para `main`.
+
+---
+
+## 🔮 Roadmap
+
+- Substituir `MockPixGateway` por integração real (Mercado Pago, Efí ou Asaas).
+- Ligar `NotificadorWhatsApp` a provedor oficial (Evolution API / Z-API / Twilio) e envio de e-mail transacional SMTP/SendGrid.
+- Migrar tokens JWT do `localStorage` para cookies `httpOnly; Secure; SameSite=Lax` com rotação automática.
+- Self-host opcional de fontes `.woff2` (`Inter` e `Fraunces`) em `frontend/assets/fonts/` e auditoria Lighthouse em produção.
+- Cálculo automático de frete por CEP/faixa de distância e upload de mídia em bucket S3 / Cloudflare R2 via `django-storages`.

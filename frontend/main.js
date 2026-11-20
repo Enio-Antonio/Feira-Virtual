@@ -339,6 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
       password: passwordInput.value,
     };
 
+    let registerData = payload;
     if (role === 'produtor') {
       payload.nome_propriedade = document.getElementById('regNomePropriedade').value.trim();
       payload.cidade = document.getElementById('regCidade').value.trim();
@@ -347,6 +348,16 @@ document.addEventListener('DOMContentLoaded', () => {
       payload.chave_pix = document.getElementById('regChavePix').value.trim();
       payload.possui_maquininha = document.getElementById('regPossuiMaquininha').checked;
       payload.aceita_dinheiro = document.getElementById('regAceitaDinheiro').checked;
+
+      const fotoInput = document.getElementById('regFotoPropriedade');
+      if (fotoInput?.files?.length > 0) {
+        const fd = new FormData();
+        Object.entries(payload).forEach(([k, v]) => {
+          fd.append(k, typeof v === 'boolean' ? (v ? 'true' : 'false') : v);
+        });
+        fd.append('foto_propriedade', fotoInput.files[0]);
+        registerData = fd;
+      }
     } else if (role === 'entregador') {
       payload.veiculo = document.getElementById('regVeiculo').value.trim();
       payload.placa = document.getElementById('regPlaca').value.trim().toUpperCase();
@@ -354,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      await register(payload, role);
+      await register(registerData, role);
       document.getElementById('loginUsername').value = payload.username;
       switchAuthTab('login');
     } catch (err) {

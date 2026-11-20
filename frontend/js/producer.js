@@ -309,6 +309,21 @@ async function loadProducerProperty() {
     document.getElementById('propChavePix').value = p.chave_pix || '';
     document.getElementById('propMaquininha').checked = Boolean(p.possui_maquininha);
     document.getElementById('propDinheiro').checked = Boolean(p.aceita_dinheiro);
+
+    const previewImg = document.getElementById('propFotoPreviewImg');
+    const previewText = document.getElementById('propFotoPreviewText');
+    const customFoto = p.foto_propriedade ? safeUrl(p.foto_propriedade, '') : '';
+    if (previewImg && previewText) {
+      if (customFoto) {
+        previewImg.src = customFoto;
+        previewImg.classList.remove('producer-card__img--default');
+        previewText.textContent = 'Foto atual da propriedade cadastrada. Selecione outro arquivo acima se quiser substituí-la.';
+      } else {
+        previewImg.src = '/static/assets/logo-icon.webp';
+        previewImg.classList.add('producer-card__img--default');
+        previewText.textContent = 'Usando logo padrão da Feira Virtual (envie uma foto para personalizar sua propriedade).';
+      }
+    }
   } catch (_) {}
 }
 
@@ -334,6 +349,8 @@ export async function saveProducerProperty() {
     showFormError('producerPropertyError', await parseError(res));
     return;
   }
+  if (foto) foto.value = '';
+  await loadProducerProperty();
   showToast('Dados da propriedade atualizados!', 'success');
   window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }

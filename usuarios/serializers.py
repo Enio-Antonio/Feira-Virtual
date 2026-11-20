@@ -80,12 +80,13 @@ class RegistroClienteSerializer(RegistroBaseSerializer):
 class RegistroProdutorSerializer(RegistroBaseSerializer):
     tipo_fixo = Usuario.Tipo.PRODUTOR
     campos_perfil = ("nome_propriedade", "descricao", "endereco_propriedade", "cidade", "estado",
-                     "chave_pix", "possui_maquininha", "aceita_dinheiro")
+                     "foto_propriedade", "chave_pix", "possui_maquininha", "aceita_dinheiro")
     nome_propriedade = serializers.CharField(write_only=True)
     descricao = serializers.CharField(write_only=True, required=False, allow_blank=True)
     endereco_propriedade = serializers.CharField(write_only=True, required=False, allow_blank=True)
     cidade = serializers.CharField(write_only=True, required=False, allow_blank=True)
     estado = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=2)
+    foto_propriedade = serializers.ImageField(write_only=True, required=False, allow_null=True)
     chave_pix = serializers.CharField(write_only=True, required=False, allow_blank=True)
     possui_maquininha = serializers.BooleanField(write_only=True, required=False)
     aceita_dinheiro = serializers.BooleanField(write_only=True, required=False)
@@ -93,7 +94,12 @@ class RegistroProdutorSerializer(RegistroBaseSerializer):
     class Meta(RegistroBaseSerializer.Meta):
         fields = RegistroBaseSerializer.Meta.fields + [
             "nome_propriedade", "descricao", "endereco_propriedade", "cidade", "estado",
-            "chave_pix", "possui_maquininha", "aceita_dinheiro"]
+            "foto_propriedade", "chave_pix", "possui_maquininha", "aceita_dinheiro"]
+
+    def validate_foto_propriedade(self, value):
+        if value is not None:
+            validar_imagem_upload(value)
+        return value
 
     def criar_perfil(self, user, dados):
         PerfilProdutor.objects.create(usuario=user, **dados)

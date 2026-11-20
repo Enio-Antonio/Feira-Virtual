@@ -120,8 +120,9 @@ function renderOrdersList(container, orders) {
           </div>
           <div class="order-card__actions">
             ${isPix ? `
-              <button type="button" class="btn btn--primary btn--sm btnShowPix" data-id="${o.id}">
-                📱 Ver Pix / QR Code
+              <button type="button" class="btn btn--primary btn--sm btnShowPix" data-id="${o.id}" style="display: inline-flex; align-items: center; gap: 6px;">
+                <img src="/static/assets/pix-icon.webp" alt="" class="pix-brand-icon" width="16" height="16" />
+                <span>Ver Pix / QR Code</span>
               </button>
             ` : ''}
             ${canCancel ? `

@@ -1,6 +1,9 @@
+from io import BytesIO
+from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
-from usuarios.models import Endereco, Usuario
+from usuarios.models import Endereco, PerfilProdutor, Usuario
 
 PW = "Senha-Forte-123!"
 
@@ -54,6 +57,33 @@ class UsuariosTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         user = Usuario.objects.get(username="sitio_novo")
         self.assertEqual(user.perfil_produtor.status, "PENDENTE")
+
+    def test_upload_foto_propriedade_produtor(self):
+        buf = BytesIO()
+        Image.new("RGB", (64, 64), color=(36, 111, 17)).save(buf, format="PNG")
+        foto = SimpleUploadedFile("sitio.png", buf.getvalue(), content_type="image/png")
+
+        dados = {
+            "username": "sitio_com_foto",
+            "email": "sitio_foto@exemplo.com",
+            "password": PW,
+            "nome_propriedade": "Sítio Recanto Verde",
+            "descricao": "Agrofloresta familiar",
+            "chave_pix": "recanto@pix",
+            "foto_propriedade": foto,
+        }
+        res = self.client.post("/api/auth/registro/produtor/", dados, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        user = Usuario.objects.get(username="sitio_com_foto")
+        self.assertTrue(bool(user.perfil_produtor.foto_propriedade))
+
+        # Aprovar e verificar retorno no endpoint público /api/produtores/
+        user.perfil_produtor.status = PerfilProdutor.Status.APROVADO
+        user.perfil_produtor.save(update_fields=["status"])
+
+        res_pub = self.client.get(f"/api/produtores/{user.perfil_produtor.id}/")
+        self.assertEqual(res_pub.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(res_pub.data["foto_propriedade"])
 
     def test_meu_perfil_e_atualizacao(self):
         self.login("cliente_teste")

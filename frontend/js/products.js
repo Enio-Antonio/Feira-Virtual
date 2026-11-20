@@ -112,10 +112,22 @@ export async function loadProducts(page = 1) {
 }
 
 const typeBadges = {
-  ORGANICO_CERTIFICADO: '<span class="badge badge--success">🌱 Orgânico</span>',
-  AGROECOLOGICO: '<span class="badge badge--outline">🍃 Agroecológico</span>',
-  CONVENCIONAL: '<span class="badge badge--outline">🌾 Convencional</span>',
+  ORGANICO_CERTIFICADO: '<span class="badge badge--cultivo badge--cultivo-organico">Orgânico</span>',
+  AGROECOLOGICO: '<span class="badge badge--cultivo badge--cultivo-agro">Agroecológico</span>',
+  CONVENCIONAL: '<span class="badge badge--cultivo badge--cultivo-conv">Convencional</span>',
 };
+
+const PIX_BADGE_HTML =
+  '<span class="payment-badge"><img src="/static/assets/pix-icon.webp" alt="" class="pix-brand-icon" width="16" height="16" /> Pix</span>';
+
+function renderProducerAvatarImg(p) {
+  const customUrl = p?.foto_propriedade ? safeUrl(p.foto_propriedade, '') : '';
+  const nome = escapeHtml(p?.nome_propriedade || 'Propriedade Rural');
+  if (customUrl) {
+    return `<img src="${escapeHtml(customUrl)}" alt="Propriedade ${nome}" class="producer-card__img" loading="lazy" />`;
+  }
+  return `<img src="/static/assets/logo-icon.webp" alt="Logo Feira Virtual — ${nome}" class="producer-card__img producer-card__img--default" loading="lazy" />`;
+}
 
 function hasValidRating(p) {
   if (!p) return false;
@@ -325,12 +337,11 @@ export async function openProducerDetail(producerId) {
     const p = await resProd.json();
     const avData = resAv.ok ? await resAv.json() : { results: [] };
     const avaliacoes = avData.results || [];
-    const imgUrl = p.foto_propriedade ? safeUrl(p.foto_propriedade, '') : '';
 
     body.innerHTML = `
       <div class="producer-detail-head">
         <div class="producer-card__avatar">
-          ${imgUrl ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.nome_propriedade)}" />` : '🏡'}
+          ${renderProducerAvatarImg(p)}
         </div>
         <div>
           <h3>${escapeHtml(p.nome_propriedade)}</h3>
@@ -339,7 +350,7 @@ export async function openProducerDetail(producerId) {
       </div>
       <p class="detail-desc">${escapeHtml(p.descricao || 'Produção rural familiar direta.')}</p>
       <div class="producer-card__badges" style="margin-bottom: var(--space-4);">
-        <span class="payment-badge">⚡ Pix</span>
+        ${PIX_BADGE_HTML}
         ${p.possui_maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
         ${p.aceita_dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}
         <span class="badge badge--produtos">${p.total_produtos || 0} produto(s) ativo(s)</span>
@@ -409,12 +420,11 @@ export async function loadProducers() {
     }
 
     container.innerHTML = produtores.map(p => {
-      const imgUrl = p.foto_propriedade ? safeUrl(p.foto_propriedade, '') : '';
       return `
         <article class="producer-card">
           <div class="producer-card__top">
             <div class="producer-card__avatar">
-              ${imgUrl ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.nome_propriedade)}" loading="lazy" />` : '🏡'}
+              ${renderProducerAvatarImg(p)}
             </div>
             <div class="producer-card__header">
               <h3>${escapeHtml(p.nome_propriedade)}</h3>
@@ -424,7 +434,7 @@ export async function loadProducers() {
           <p class="producer-card__desc">${escapeHtml(p.descricao || 'Produção familiar local e sustentável.')}</p>
           <div class="producer-card__footer">
             <div class="producer-card__badges">
-              <span class="payment-badge">⚡ Pix</span>
+              ${PIX_BADGE_HTML}
               ${p.possui_maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
               ${p.aceita_dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}
               <span class="badge badge--produtos">${Number(p.total_produtos) || 0} produto(s)</span>

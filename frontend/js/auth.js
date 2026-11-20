@@ -58,9 +58,10 @@ export async function register(payload, role = 'cliente') {
   if (role === 'produtor') endpoint = '/auth/registro/produtor/';
   else if (role === 'entregador') endpoint = '/auth/registro/entregador/';
 
+  const body = payload instanceof FormData ? payload : JSON.stringify(payload);
   const res = await apiFetch(endpoint, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body,
   });
 
   if (!res.ok) {

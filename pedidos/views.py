@@ -191,17 +191,17 @@ class EntregaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.
                                        ).update(entregador=request.user)
         if not ok:
             raise ValidationError("Entrega indisponível ou já atribuída a outro entregador.")
-        return Response(PedidoSerializer(_pedidos_qs.get(pk=pk)).data)
+        return Response(PedidoSerializer(_pedidos_qs.get(pk=pk), context={"request": request}).data)
 
     @action(detail=True, methods=["post"], url_path="saiu-para-entrega")
     def saiu_para_entrega(self, request, pk=None):
         pedido = services.mudar_status(self.get_object(), S.EM_ENTREGA, request.user)
-        return Response(PedidoSerializer(pedido).data)
+        return Response(PedidoSerializer(pedido, context={"request": request}).data)
 
     @action(detail=True, methods=["post"])
     def confirmar(self, request, pk=None):
         pedido = services.mudar_status(self.get_object(), S.CONCLUIDO, request.user)
-        return Response(PedidoSerializer(pedido).data)
+        return Response(PedidoSerializer(pedido, context={"request": request}).data)
 
 
 class PixWebhookView(APIView):

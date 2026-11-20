@@ -12,6 +12,7 @@ class ProdutorPublicoSerializer(serializers.ModelSerializer):
     """Vitrine pública de produtores: não expõe dados sensíveis como chave Pix ou telefones."""
     total_produtos = serializers.IntegerField(read_only=True, default=0)
     cidade_uf = serializers.SerializerMethodField()
+    aceita_pix = serializers.SerializerMethodField()
 
     class Meta:
         model = PerfilProdutor
@@ -23,6 +24,7 @@ class ProdutorPublicoSerializer(serializers.ModelSerializer):
             "estado",
             "cidade_uf",
             "foto_propriedade",
+            "aceita_pix",
             "possui_maquininha",
             "aceita_dinheiro",
             "total_produtos",
@@ -32,6 +34,10 @@ class ProdutorPublicoSerializer(serializers.ModelSerializer):
     def get_cidade_uf(self, obj):
         partes = [p for p in (obj.cidade, obj.estado) if p]
         return " / ".join(partes) if partes else ""
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_aceita_pix(self, obj) -> bool:
+        return bool((obj.chave_pix or "").strip())
 
 
 class EstatisticasPublicasSerializer(serializers.Serializer):

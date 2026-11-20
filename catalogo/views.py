@@ -1,9 +1,9 @@
 from datetime import timedelta
 
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, ProtectedError, Q
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -68,11 +68,33 @@ class EstatisticasPublicasView(APIView):
 
 
 class CategoriaViewSet(viewsets.ModelViewSet):
-    """Qualquer um lista; só o administrador cria/edita/remove."""
+    """Público lista apenas categorias ativas; administrador vê todas e gerencia CRUD."""
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
     permission_classes = [AdminEscreveTodosLeem]
     pagination_class = None
+
+    def get_queryset(self):
+        u = getattr(self.request, "user", None)
+        if u and u.is_authenticated and (getattr(u, "tipo", None) == Usuario.Tipo.ADMIN or u.is_superuser):
+            return Categoria.objects.all()
+        return Categoria.objects.filter(ativa=True)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "Não é possível excluir esta categoria pois existem produtos vinculados a ela. "
+                        "Desative a categoria em vez de excluí-la."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CatalogoViewSet(viewsets.ReadOnlyModelViewSet):

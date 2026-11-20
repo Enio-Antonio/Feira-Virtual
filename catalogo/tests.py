@@ -59,6 +59,40 @@ class CatalogoTests(APITestCase):
         r_admin = self.client.post("/api/categorias/", {"nome": "Frutas", "ativa": True}, format="json")
         self.assertEqual(r_admin.status_code, status.HTTP_201_CREATED)
 
+    def test_excluir_categoria_com_produtos_retorna_400(self):
+        self.login("admin_cat")
+        r = self.client.delete(f"/api/categorias/{self.categoria.id}/")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("desative", str(r.data).lower())
+
+    def test_categorias_publicas_so_ativas_e_admin_ve_todas(self):
+        Categoria.objects.create(nome="Inativa Teste", ativa=False)
+        self.client.credentials()
+        r_pub = self.client.get("/api/categorias/")
+        self.assertEqual(r_pub.status_code, status.HTTP_200_OK)
+        nomes_pub = [c["nome"] for c in r_pub.data]
+        self.assertIn("Hortaliças", nomes_pub)
+        self.assertNotIn("Inativa Teste", nomes_pub)
+
+        self.login("admin_cat")
+        r_adm = self.client.get("/api/categorias/")
+        nomes_adm = [c["nome"] for c in r_adm.data]
+        self.assertIn("Inativa Teste", nomes_adm)
+
+    def test_produtor_publico_expoe_aceita_pix_sem_chave(self):
+        self.perfil1.chave_pix = "verde@pix.com"
+        self.perfil1.save(update_fields=["chave_pix"])
+        self.perfil2.chave_pix = ""
+        self.perfil2.save(update_fields=["chave_pix"])
+
+        self.client.credentials()
+        r = self.client.get("/api/produtores/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        por_id = {p["id"]: p for p in r.data["results"]}
+        self.assertTrue(por_id[self.perfil1.id]["aceita_pix"])
+        self.assertFalse(por_id[self.perfil2.id]["aceita_pix"])
+        self.assertNotIn("chave_pix", por_id[self.perfil1.id])
+
     def test_filtros_e_busca_de_produtos(self):
         self.client.credentials()  # anônimo
         # Busca por texto

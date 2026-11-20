@@ -288,3 +288,68 @@ class FluxoCompletoTest(APITestCase):
         self.assertEqual(r_rec.status_code, 200)
         self.assertEqual(r_rec.data["status"], "RECUSADO")
         self.assertEqual(r_rec.data["motivo_cancelamento"], "Sem estoque fresco")
+
+    def test_patch_item_carrinho_nao_troca_produto_e_valida_unidade(self):
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "APROVADO"
+        p1_user.perfil_produtor.save()
+        prod_maco = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Coentro",
+                                           preco="3.00", estoque="10", unidade_medida="MACO")
+        prod_kg = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Batata Doce",
+                                         preco="6.00", estoque="10", unidade_medida="KG")
+
+        self.login("joao")
+        # Unidade inteira rejeita decimal
+        r_dec = self.client.post("/api/carrinho/itens/", {"produto": prod_maco.id, "quantidade": "1.5"}, format="json")
+        self.assertEqual(r_dec.status_code, 400)
+
+        # KG aceita decimal
+        r_kg = self.client.post("/api/carrinho/itens/", {"produto": prod_kg.id, "quantidade": "1.500"}, format="json")
+        self.assertEqual(r_kg.status_code, 201, r_kg.data)
+        self.assertEqual(r_kg.data["produtor"], p1_user.perfil_produtor.id)
+        self.assertEqual(r_kg.data["produtor_nome"], "Sítio Esperança")
+        self.assertTrue(r_kg.data["aceita_pix"])
+
+        # Adiciona segundo produto e tenta trocar produto via PATCH (não deve dar 500 nem trocar produto)
+        r_maco = self.client.post("/api/carrinho/itens/", {"produto": prod_maco.id, "quantidade": "2"}, format="json")
+        self.assertEqual(r_maco.status_code, 201)
+        item_id = r_maco.data["id"]
+
+        r_patch = self.client.patch(
+            f"/api/carrinho/itens/{item_id}/",
+            {"produto": prod_kg.id, "quantidade": "3"},
+            format="json",
+        )
+        self.assertEqual(r_patch.status_code, 200, r_patch.data)
+        self.assertEqual(r_patch.data["produto"], prod_maco.id)
+        self.assertEqual(Decimal(r_patch.data["quantidade"]), Decimal("3"))
+
+    def test_entregador_ve_endereco_resumido_antes_de_aceitar(self):
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "APROVADO"
+        p1_user.perfil_produtor.save()
+        prod = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Laranja",
+                                      preco="5.00", estoque="10", unidade_medida="KG")
+        self.login("joao")
+        end = self.client.post("/api/enderecos/", {
+            "logradouro": "Rua das Flores", "numero": "42", "bairro": "Lagoa Nova",
+            "cidade": "Natal", "estado": "RN", "cep": "59064-000"
+        }, format="json").data["id"]
+        self.client.post("/api/carrinho/itens/", {"produto": prod.id, "quantidade": "2"}, format="json")
+        pedido_id = self.client.post("/api/pedidos/", {
+            "modalidade": "ENTREGA", "forma_pagamento": "PIX", "endereco_id": end
+        }, format="json").data[0]["id"]
+
+        self.login("maria")
+        self.client.post(f"/api/produtor/pedidos/{pedido_id}/aceitar/")
+
+        self.login("zeca")
+        r_disp = self.client.get("/api/entregas/?escopo=disponiveis")
+        self.assertEqual(r_disp.status_code, 200)
+        end_antes = r_disp.data["results"][0]["endereco_entrega"]
+        self.assertNotIn("Rua das Flores", end_antes)
+        self.assertIn("Lagoa Nova", end_antes)
+
+        r_aceite = self.client.post(f"/api/entregas/{pedido_id}/aceitar/")
+        self.assertEqual(r_aceite.status_code, 200)
+        self.assertIn("Rua das Flores", r_aceite.data["endereco_entrega"])

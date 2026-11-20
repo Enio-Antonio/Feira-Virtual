@@ -124,6 +124,14 @@ class ReclamacaoAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, m
     filterset_fields = ["status"]
     http_method_names = ["get", "patch", "head", "options"]
 
+    def perform_update(self, serializer):
+        rec = serializer.save()
+        registrar_auditoria(
+            self.request,
+            LogAuditoria.Acao.MODERAR_RECLAMACAO,
+            f"Reclamação #{rec.pk} moderada para status {rec.status}",
+        )
+
 
 class IndicadoresView(APIView):
     permission_classes = [EhAdmin]

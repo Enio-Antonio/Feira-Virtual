@@ -93,3 +93,34 @@ class PainelAdminTests(APITestCase):
         self.assertEqual(r_reex.status_code, status.HTTP_200_OK)
         self.produto.refresh_from_db()
         self.assertTrue(self.produto.ativo)
+
+    def test_moderar_reclamacao_registra_auditoria(self):
+        from avaliacoes.models import Reclamacao
+        from pedidos.models import Pedido
+
+        pedido = Pedido.objects.create(
+            cliente=self.cliente,
+            produtor=self.perfil,
+            modalidade=Pedido.Modalidade.RETIRADA,
+            forma_pagamento=Pedido.FormaPagamento.DINHEIRO,
+            total=Decimal("10.00"),
+        )
+        rec = Reclamacao.objects.create(
+            pedido=pedido,
+            cliente=self.cliente,
+            assunto="Produto avariado",
+            descricao="Chegou amassado",
+        )
+        self.login("admin_pnl")
+        r = self.client.patch(
+            f"/api/admin/reclamacoes/{rec.id}/",
+            {"status": "RESOLVIDA", "resposta_admin": "Reembolso efetuado."},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            LogAuditoria.objects.filter(
+                usuario=self.admin,
+                acao=LogAuditoria.Acao.MODERAR_RECLAMACAO,
+            ).exists()
+        )

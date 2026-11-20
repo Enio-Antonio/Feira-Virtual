@@ -843,9 +843,16 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   text-align: center;
   gap: var(--space-6);
 }
+.footer__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 .footer__brand p { color: var(--text-secondary); font-size: 0.875rem; margin-top: 4px; }
-.footer__links { display: flex; gap: var(--space-6); flex-wrap: wrap; }
+.footer__links { display: flex; justify-content: center; gap: var(--space-6); flex-wrap: wrap; }
 .footer__links a { color: var(--color-primary); font-weight: 600; font-size: 0.9375rem; }
+[data-theme="dark"] .footer__links a { color: var(--color-primary-light); }
 .footer__links a:hover { text-decoration: underline; }
 .footer__copy { font-size: 0.8125rem; color: var(--text-disabled); }
 

@@ -1,11 +1,11 @@
 /**
- * Painel Administrativo de Moderação:
- * Visão geral, Produtos (pesquisa/filtro/edição/exclusão), Produtores (pesquisa/detalhes/aprovação/exclusão),
- * Clientes (pesquisa/detalhes/bloqueio/exclusão), Categorias, Pedidos, Avaliações, Reclamações e Usuários.
+ * Painel Administrativo Dedicado (#adminWorkspace):
+ * Dashboard com KPIs e fila de pendências, Produtos (pesquisa/filtro/edição/moderação/exclusão),
+ * Produtores, Clientes, Categorias, Pedidos, Avaliações (paginadas), Reclamações e Usuários.
  */
-import { apiFetch, parseError } from './api.js?v=20261120l';
-import { authState } from './auth.js?v=20261120l';
-import { statusLabels } from './orders.js?v=20261120l';
+import { apiFetch, parseError } from './api.js?v=20261121a';
+import { authState } from './auth.js?v=20261121a';
+import { statusLabels } from './orders.js?v=20261121a';
 import {
   clearFormError,
   closeModal,
@@ -15,9 +15,10 @@ import {
   formatUnitLabel,
   openModal,
   renderPaginationBar,
+  renderStars,
   showFormError,
   showToast,
-} from './ui.js?v=20261120l';
+} from './ui.js?v=20261121a';
 
 let adminCategoriesCache = [];
 let adminProductsCache = [];
@@ -26,8 +27,44 @@ let currentAdminTab = 'indicadores';
 let pendingDeleteAction = null;
 
 export function openAdminPanel(initialTab = 'indicadores') {
-  openModal('adminPanelModalOverlay');
+  const storefront = document.getElementById('publicStorefront');
+  const prodWs = document.getElementById('producerWorkspace');
+  const delivWs = document.getElementById('deliveryWorkspace');
+  const adminWs = document.getElementById('adminWorkspace');
+  const bar = document.getElementById('adminStorefrontBar');
+
+  if (storefront) storefront.style.display = 'none';
+  if (prodWs) prodWs.style.display = 'none';
+  if (delivWs) delivWs.style.display = 'none';
+  if (bar) bar.style.display = 'none';
+  if (adminWs) adminWs.style.display = 'block';
+
   switchAdminTab(initialTab);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+export function openAdminStorefrontPreview() {
+  const storefront = document.getElementById('publicStorefront');
+  const adminWs = document.getElementById('adminWorkspace');
+  const bar = document.getElementById('adminStorefrontBar');
+  const clientBanner = document.getElementById('clientWelcomeBanner');
+  const hero = document.getElementById('heroSection');
+  const trust = document.getElementById('trustBarSection');
+  const how = document.getElementById('como-funciona');
+
+  if (adminWs) adminWs.style.display = 'none';
+  if (clientBanner) clientBanner.style.display = 'none';
+  if (hero) hero.style.display = 'block';
+  if (trust) trust.style.display = 'block';
+  if (how) how.style.display = 'block';
+  if (bar) bar.style.display = 'block';
+  if (storefront) storefront.style.display = 'block';
+
+  document.querySelectorAll('[data-admin-nav]').forEach(el => {
+    el.classList.toggle('active', el.dataset.adminNav === 'vitrine');
+  });
+  window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 export function switchAdminTab(tab) {
@@ -45,7 +82,12 @@ export function switchAdminTab(tab) {
   ];
   tabs.forEach(t => {
     const cap = t.charAt(0).toUpperCase() + t.slice(1);
-    document.querySelector(`.panel-tab[data-admin-tab="${t}"]`)?.classList.toggle('active', t === tab);
+    const btn = document.querySelector(`.panel-tab[data-admin-tab="${t}"]`);
+    if (btn) {
+      btn.classList.toggle('active', t === tab);
+      btn.setAttribute('aria-selected', String(t === tab));
+    }
+    document.querySelectorAll(`[data-admin-nav="${t}"]`).forEach(el => el.classList.toggle('active', t === tab));
     const panel = document.getElementById(`adminTab${cap}`);
     if (panel) panel.style.display = t === tab ? 'block' : 'none';
   });
@@ -56,7 +98,7 @@ export function switchAdminTab(tab) {
   else if (tab === 'clientes') loadAdminClients(1);
   else if (tab === 'categorias') loadAdminCategories();
   else if (tab === 'pedidos') loadAdminOrders(1);
-  else if (tab === 'avaliacoes') loadAdminReviews(1);
+  else if (tab === 'avaliacoes') loadAdminReviews(1, 1);
   else if (tab === 'reclamacoes') loadAdminComplaints(1);
   else if (tab === 'usuarios') loadAdminUsers(1);
 }
@@ -103,6 +145,8 @@ async function loadAdminIndicators() {
     const res = await apiFetch('/admin/indicadores/');
     if (!res.ok) throw new Error('Acesso restrito a administradores.');
     const d = await res.json();
+    const pendentes = Number(d.produtores_por_status?.PENDENTE) || 0;
+    const reclamAbertas = Number(d.reclamacoes_abertas) || 0;
 
     el.innerHTML = `
       <div class="kpi-grid">
@@ -110,8 +154,26 @@ async function loadAdminIndicators() {
         <div class="kpi-card"><span>Vendas Concluídas</span><strong>${Number(d.vendas_concluidas) || 0}</strong></div>
         <div class="kpi-card"><span>Produtos Ativos</span><strong>${Number(d.produtos_ativos) || 0}</strong></div>
         <div class="kpi-card"><span>Avaliações Registradas</span><strong>${Number(d.total_avaliacoes) || 0}</strong></div>
-        <div class="kpi-card"><span>Reclamações Abertas</span><strong>${Number(d.reclamacoes_abertas) || 0}</strong></div>
+        <div class="kpi-card"><span>Reclamações Abertas</span><strong>${reclamAbertas}</strong></div>
       </div>
+
+      <div class="admin-pending-grid">
+        <div class="admin-pending-card ${pendentes === 0 ? 'admin-pending-card--ok' : ''}">
+          <div>
+            <h4>Produtores aguardando aprovação</h4>
+            <p class="text-muted">${pendentes > 0 ? `${pendentes} cadastro(s) aguardando moderação.` : 'Nenhum cadastro pendente no momento.'}</p>
+          </div>
+          <button type="button" class="btn btn--outline btn--sm" data-admin-nav="produtores">Gerenciar</button>
+        </div>
+        <div class="admin-pending-card ${reclamAbertas === 0 ? 'admin-pending-card--ok' : ''}">
+          <div>
+            <h4>Reclamações em aberto</h4>
+            <p class="text-muted">${reclamAbertas > 0 ? `${reclamAbertas} ocorrência(s) aguardando resposta.` : 'Todas as reclamações foram atendidas.'}</p>
+          </div>
+          <button type="button" class="btn btn--outline btn--sm" data-admin-nav="reclamacoes">Moderar</button>
+        </div>
+      </div>
+
       <div class="admin-stats-grid">
         ${renderStatsTable('Usuários por tipo', d.usuarios_por_tipo, USER_TYPE_LABELS)}
         ${renderStatsTable('Produtores por status', d.produtores_por_status, PRODUCER_STATUS_LABELS)}
@@ -123,16 +185,31 @@ async function loadAdminIndicators() {
   }
 }
 
-// ── Produtos (Pesquisa, Filtros, Edição, Ocultar/Reexibir, Exclusão/Desativação) ──
+// ── Produtos (Pesquisa, Filtros paginados, Edição, Moderação, Exclusão) ────
+async function fetchAllProducersForFilter() {
+  const all = [];
+  let page = 1;
+  while (page <= 10) {
+    const res = await apiFetch(`/admin/produtores/?page=${page}`);
+    if (!res.ok) break;
+    const data = await res.json();
+    const list = data.results || data || [];
+    all.push(...list);
+    if (!data.next) break;
+    page += 1;
+  }
+  return all;
+}
+
 async function populateAdminProductFilterOptions() {
   const catFilter = document.getElementById('adminProdCatFilter');
   const prodFilter = document.getElementById('adminProdProducerFilter');
   const editCat = document.getElementById('adminEditProdCategoria');
 
   try {
-    const [resCat, resProd] = await Promise.all([
+    const [resCat, produtores] = await Promise.all([
       apiFetch('/categorias/'),
-      apiFetch('/admin/produtores/?page=1'),
+      fetchAllProducersForFilter(),
     ]);
     if (resCat.ok) {
       const dataCat = await resCat.json();
@@ -151,15 +228,12 @@ async function populateAdminProductFilterOptions() {
         if (curEdit) editCat.value = curEdit;
       }
     }
-    if (resProd.ok) {
-      const dataProd = await resProd.json();
-      adminProducersFilterCache = dataProd.results || dataProd || [];
-      if (prodFilter) {
-        const cur = prodFilter.value;
-        prodFilter.innerHTML = '<option value="">Todos os produtores</option>'
-          + adminProducersFilterCache.map(p => `<option value="${p.id}">${escapeHtml(p.nome_propriedade)}</option>`).join('');
-        prodFilter.value = cur;
-      }
+    adminProducersFilterCache = produtores;
+    if (prodFilter) {
+      const cur = prodFilter.value;
+      prodFilter.innerHTML = '<option value="">Todos os produtores</option>'
+        + adminProducersFilterCache.map(p => `<option value="${p.id}">${escapeHtml(p.nome_propriedade)}</option>`).join('');
+      prodFilter.value = cur;
     }
   } catch (_) {}
 }
@@ -197,9 +271,13 @@ export async function loadAdminProducts(page = 1) {
     }
 
     el.innerHTML = list.map(p => {
-      const statusBadge = p.excluido_em
-        ? '<span class="badge status--cancelled">Desativado (histórico)</span>'
-        : `<span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Visível' : 'Oculto'}</span>`;
+      let statusBadge = `<span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Visível' : 'Oculto'}</span>`;
+      if (p.excluido_em) {
+        statusBadge = '<span class="badge status--cancelled">Desativado (histórico)</span>';
+      } else if (p.oculto_moderacao) {
+        statusBadge = '<span class="badge status--cancelled">Oculto pela moderação</span>';
+      }
+      const isHidden = !p.ativo || Boolean(p.oculto_moderacao);
       return `
         <div class="panel-list-item">
           <div class="panel-list-item__info">
@@ -212,7 +290,7 @@ export async function loadAdminProducts(page = 1) {
           </div>
           <div class="panel-list-item__actions">
             <button type="button" class="btn btn--outline btn--sm btnEditAdminProduct" data-id="${p.id}">Editar</button>
-            ${p.ativo
+            ${!isHidden
               ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="produtos" data-tab="produtos" data-id="${p.id}" data-action="ocultar">Ocultar</button>`
               : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtos" data-tab="produtos" data-id="${p.id}" data-action="reexibir">Reexibir</button>`}
             <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
@@ -248,7 +326,7 @@ export async function openAdminProductEdit(productId) {
   document.getElementById('adminEditProdEstoque').value = p.estoque ?? 0;
   document.getElementById('adminEditProdTipo').value = p.tipo_producao || 'CONVENCIONAL';
   document.getElementById('adminEditProdDesc').value = p.descricao || '';
-  document.getElementById('adminEditProdAtivo').checked = Boolean(p.ativo);
+  document.getElementById('adminEditProdAtivo').checked = Boolean(p.ativo) && !p.oculto_moderacao;
 
   wrap.style.display = 'block';
   wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -259,6 +337,7 @@ export async function saveAdminProductEdit() {
   const id = document.getElementById('adminEditProdId').value;
   if (!id) return;
 
+  const ativoMarcado = document.getElementById('adminEditProdAtivo').checked;
   const payload = {
     nome: document.getElementById('adminEditProdNome').value.trim(),
     categoria: Number(document.getElementById('adminEditProdCategoria').value),
@@ -267,7 +346,8 @@ export async function saveAdminProductEdit() {
     estoque: document.getElementById('adminEditProdEstoque').value,
     tipo_producao: document.getElementById('adminEditProdTipo').value,
     descricao: document.getElementById('adminEditProdDesc').value.trim(),
-    ativo: document.getElementById('adminEditProdAtivo').checked,
+    ativo: ativoMarcado,
+    oculto_moderacao: !ativoMarcado,
   };
 
   const res = await apiFetch(`/admin/produtos/${id}/`, {
@@ -285,7 +365,7 @@ export async function saveAdminProductEdit() {
   window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }
 
-// ── Produtores (Pesquisa, Filtro, Detalhes, Aprovar/Suspender, Exclusão) ──
+// ── Produtores ─────────────────────────────────────────────────────────────
 export async function loadAdminProducers(page = 1) {
   const el = document.getElementById('adminProducersList');
   const pagEl = document.getElementById('adminProducersPagination');
@@ -391,7 +471,7 @@ export async function openAdminProducerDetails(producerId) {
   }
 }
 
-// ── Clientes (Pesquisa, Filtro, Detalhes, Bloqueio/Reativação, Exclusão) ──
+// ── Clientes ───────────────────────────────────────────────────────────────
 export async function loadAdminClients(page = 1) {
   const el = document.getElementById('adminClientsList');
   const pagEl = document.getElementById('adminClientsPagination');
@@ -498,7 +578,7 @@ export async function openAdminClientDetails(userId) {
             <div class="review-card">
               <div class="review-card__top">
                 <strong>${escapeHtml(a.produto_nome || a.produtor_nome || 'Avaliação')}</strong>
-                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
+                <span>${renderStars(a.nota, 14)} (${Number(a.nota) || 0}/5)</span>
               </div>
               ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : ''}
               <span class="text-muted">${formatDate(a.criado_em)}${a.pedido_numero ? ` • Pedido ${escapeHtml(a.pedido_numero)}` : ''}</span>
@@ -609,7 +689,7 @@ export function deleteAdminCategory(id, label = '') {
   openAdminDeleteConfirm('categorias', id, label || cat?.nome || `#${id}`, 'categorias', 'categoria');
 }
 
-// ── Pedidos (Listagem Admin com Filtro por Status e Paginação) ────────────
+// ── Pedidos ────────────────────────────────────────────────────────────────
 export async function loadAdminOrders(page = 1) {
   const el = document.getElementById('adminOrdersList');
   const pagEl = document.getElementById('adminOrdersPagination');
@@ -653,18 +733,22 @@ export async function loadAdminOrders(page = 1) {
   }
 }
 
-// ── Avaliações (Visão Administrativa Completa) ────────────────────────────
-export async function loadAdminReviews(page = 1) {
+// ── Avaliações (com paginação independente para ambas as listas) ───────────
+export async function loadAdminReviews(pageAv = 1, pageCli = 1) {
   const el = document.getElementById('adminReviewsContent');
-  const pagEl = document.getElementById('adminReviewsPagination');
+  const pagAv = document.getElementById('adminReviewsPagination');
+  const elCli = document.getElementById('adminClientReviewsContent');
+  const pagCli = document.getElementById('adminClientReviewsPagination');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
-  if (pagEl) pagEl.innerHTML = '';
+  if (pagAv) pagAv.innerHTML = '';
+  if (elCli) elCli.innerHTML = '';
+  if (pagCli) pagCli.innerHTML = '';
 
   try {
     const [resAv, resCli] = await Promise.all([
-      apiFetch(`/admin/avaliacoes/?page=${page}`),
-      apiFetch('/admin/avaliacoes-clientes/?page=1'),
+      apiFetch(`/admin/avaliacoes/?page=${pageAv}`),
+      apiFetch(`/admin/avaliacoes-clientes/?page=${pageCli}`),
     ]);
     if (!resAv.ok) throw new Error('Falha ao carregar avaliações.');
     const dataAv = await resAv.json();
@@ -684,7 +768,7 @@ export async function loadAdminReviews(page = 1) {
                   <span class="badge badge--outline">${a.tipo_avaliacao === 'PRODUTO' ? 'Produto' : 'Produtor'}</span>
                   ${escapeHtml(a.produto_nome || a.produtor_nome || '-')}
                 </strong>
-                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
+                <span>${renderStars(a.nota, 14)} (${Number(a.nota) || 0}/5)</span>
               </div>
               <p>${a.comentario ? escapeHtml(a.comentario) : '<span class="text-muted">Sem comentário.</span>'}</p>
               <span class="text-muted">
@@ -695,28 +779,33 @@ export async function loadAdminReviews(page = 1) {
             </div>
           `).join('')}
       </div>
-
-      <div class="review-history-section">
-        <h4 class="review-history-section__title">Avaliações de Clientes feitas por Produtores (${dataCli.count ?? listCli.length})</h4>
-        ${listCli.length === 0
-          ? '<p class="text-muted">Nenhuma avaliação recíproca registrada até o momento.</p>'
-          : listCli.map(a => `
-            <div class="review-card">
-              <div class="review-card__top">
-                <strong>Cliente: ${escapeHtml(a.cliente_nome || '-')}</strong>
-                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
-              </div>
-              <p>${a.comentario ? escapeHtml(a.comentario) : '<span class="text-muted">Sem comentário.</span>'}</p>
-              <span class="text-muted">
-                Produtor: ${escapeHtml(a.produtor_nome || '-')}
-                ${a.pedido_numero ? ` • Pedido ${escapeHtml(a.pedido_numero)}` : ''}
-                • ${formatDate(a.criado_em)}
-              </span>
-            </div>
-          `).join('')}
-      </div>
     `;
-    renderPaginationBar(pagEl, dataAv, page, (p) => loadAdminReviews(p));
+    renderPaginationBar(pagAv, dataAv, pageAv, (p) => loadAdminReviews(p, pageCli));
+
+    if (elCli) {
+      elCli.innerHTML = `
+        <div class="review-history-section">
+          <h4 class="review-history-section__title">Avaliações de Clientes feitas por Produtores (${dataCli.count ?? listCli.length})</h4>
+          ${listCli.length === 0
+            ? '<p class="text-muted">Nenhuma avaliação recíproca registrada até o momento.</p>'
+            : listCli.map(a => `
+              <div class="review-card">
+                <div class="review-card__top">
+                  <strong>Cliente: ${escapeHtml(a.cliente_nome || '-')}</strong>
+                  <span>${renderStars(a.nota, 14)} (${Number(a.nota) || 0}/5)</span>
+                </div>
+                <p>${a.comentario ? escapeHtml(a.comentario) : '<span class="text-muted">Sem comentário.</span>'}</p>
+                <span class="text-muted">
+                  Produtor: ${escapeHtml(a.produtor_nome || '-')}
+                  ${a.pedido_numero ? ` • Pedido ${escapeHtml(a.pedido_numero)}` : ''}
+                  • ${formatDate(a.criado_em)}
+                </span>
+              </div>
+            `).join('')}
+        </div>
+      `;
+      renderPaginationBar(pagCli, dataCli, pageCli, (p) => loadAdminReviews(pageAv, p));
+    }
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -731,6 +820,7 @@ export async function loadAdminComplaints(page = 1) {
 
   try {
     const res = await apiFetch(`/admin/reclamacoes/?page=${page}`);
+    if (!res.ok) throw new Error('Falha ao carregar reclamações.');
     const data = await res.json();
     const list = data.results || data || [];
     if (list.length === 0) {

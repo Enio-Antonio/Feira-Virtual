@@ -1,8 +1,8 @@
 /**
  * Painel Dedicado do Entregador: Visão Geral, Entregas Disponíveis, Minhas Entregas, Histórico, Ganhos e Veículo.
  */
-import { apiFetch, parseError } from './api.js?v=20261120l';
-import { statusLabels } from './orders.js?v=20261120l';
+import { apiFetch, parseError } from './api.js?v=20261121a';
+import { statusLabels } from './orders.js?v=20261121a';
 import {
   clearFormError,
   escapeHtml,
@@ -11,7 +11,7 @@ import {
   renderPaginationBar,
   showFormError,
   showToast,
-} from './ui.js?v=20261120l';
+} from './ui.js?v=20261121a';
 
 let currentDeliveryTab = 'visao_geral';
 let currentDeliveryGroup = '';
@@ -115,8 +115,10 @@ export function openDeliveryPanel(initialTab = 'visao_geral') {
   const storefront = document.getElementById('publicStorefront');
   const prodWs = document.getElementById('producerWorkspace');
   const delivWs = document.getElementById('deliveryWorkspace');
+  const adminWs = document.getElementById('adminWorkspace');
   if (storefront) storefront.style.display = 'none';
   if (prodWs) prodWs.style.display = 'none';
+  if (adminWs) adminWs.style.display = 'none';
   if (delivWs) delivWs.style.display = 'block';
 
   switchDeliveryTab(initialTab);
@@ -134,7 +136,11 @@ export function switchDeliveryTab(tab) {
     veiculo: 'deliveryTabVeiculo',
   };
   Object.entries(map).forEach(([k, id]) => {
-    document.querySelector(`.panel-tab[data-delivery-tab="${k}"]`)?.classList.toggle('active', k === tab);
+    const tabBtn = document.querySelector(`.panel-tab[data-delivery-tab="${k}"]`);
+    if (tabBtn) {
+      tabBtn.classList.toggle('active', k === tab);
+      tabBtn.setAttribute('aria-selected', String(k === tab));
+    }
     document.querySelectorAll(`[data-delivery-nav="${k}"]`).forEach(el => el.classList.toggle('active', k === tab));
     const el = document.getElementById(id);
     if (el) el.style.display = k === tab ? 'block' : 'none';
@@ -144,7 +150,7 @@ export function switchDeliveryTab(tab) {
   else if (tab === 'disponiveis') loadDeliveries('disponiveis', 'deliveryAvailableList', 'deliveryAvailablePagination', 1);
   else if (tab === 'minhas') loadDeliveries('minhas', 'deliveryMineList', 'deliveryMinePagination', 1);
   else if (tab === 'historico') loadDeliveries('historico', 'deliveryHistoryList', 'deliveryHistoryPagination', 1);
-  else if (tab === 'ganhos') loadDeliveryEarnings();
+  else if (tab === 'ganhos') loadDeliveryEarnings(1);
   else if (tab === 'veiculo') loadDeliveryVehicle();
 }
 
@@ -257,15 +263,17 @@ async function loadDeliveries(escopo, containerId, paginationId, page = 1) {
   }
 }
 
-async function loadDeliveryEarnings() {
+async function loadDeliveryEarnings(page = 1) {
   const el = document.getElementById('deliveryEarningsContent');
+  const pagEl = document.getElementById('deliveryEarningsPagination');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
 
   try {
     const [resResumo, resHist] = await Promise.all([
       apiFetch('/entregas/resumo/'),
-      apiFetch('/entregas/?escopo=historico&page=1'),
+      apiFetch(`/entregas/?escopo=historico&page=${page}`),
     ]);
     if (!resResumo.ok) throw new Error('Erro ao consultar ganhos.');
     const r = await resResumo.json();
@@ -291,7 +299,7 @@ async function loadDeliveryEarnings() {
       <div class="workspace-card">
         <h2 class="workspace-card__title" style="margin-bottom: var(--space-3);">Extrato de Fretes Concluídos</h2>
         ${concluidas.length === 0
-          ? '<div class="empty-state"><p>Nenhuma entrega concluída registrada ainda.</p></div>'
+          ? '<div class="empty-state"><p>Nenhuma entrega concluída registrada nesta página.</p></div>'
           : `
             <div class="panel-list">
               ${concluidas.map(o => `
@@ -310,6 +318,7 @@ async function loadDeliveryEarnings() {
           `}
       </div>
     `;
+    renderPaginationBar(pagEl, histData, page, (nextPage) => loadDeliveryEarnings(nextPage));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -334,15 +343,18 @@ export async function handleDeliveryAction(orderId, action) {
   }
 }
 
-async function loadDeliveryVehicle() {
+export async function loadDeliveryVehicle() {
+  clearFormError('deliveryVehicleError');
   try {
     const res = await apiFetch('/perfil/entregador/');
-    if (!res.ok) return;
+    if (!res.ok) throw new Error('Não foi possível carregar os dados do seu veículo.');
     const d = await res.json();
     document.getElementById('delivVeiculo').value = d.veiculo || '';
     document.getElementById('delivPlaca').value = d.placa || '';
     document.getElementById('delivArea').value = d.area_atuacao || '';
-  } catch (_) {}
+  } catch (err) {
+    showFormError('deliveryVehicleError', err.message || 'Erro ao carregar dados do veículo. Tente atualizar o painel.');
+  }
 }
 
 export async function saveDeliveryVehicle() {

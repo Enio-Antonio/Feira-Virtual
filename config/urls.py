@@ -11,17 +11,17 @@ ASSETS_DIR = FRONTEND_DIR / "assets"
 
 
 def frontend_assets_view(request, filename):
-    """Serve arquivos da pasta frontend/assets/ com cache headers."""
-    asset_path = ASSETS_DIR / filename
-    if not asset_path.exists() or not asset_path.is_file():
-        from django.http import Http404
-        raise Http404(f"Asset '{filename}' não encontrado.")
-    # Garantia de que o path não escapa da pasta de assets (path traversal)
+    """Serve arquivos da pasta frontend/assets/ com cache headers e proteção contra path traversal."""
+    from django.http import Http404
+
+    base_dir = ASSETS_DIR.resolve()
+    asset_path = (ASSETS_DIR / filename).resolve()
     try:
-        asset_path.relative_to(ASSETS_DIR)
+        asset_path.relative_to(base_dir)
     except ValueError:
-        from django.http import Http404
         raise Http404("Caminho inválido.")
+    if not asset_path.exists() or not asset_path.is_file():
+        raise Http404(f"Asset '{filename}' não encontrado.")
     content_types = {
         ".png": "image/png",
         ".ico": "image/x-icon",
@@ -80,16 +80,17 @@ def media_serve_view(request, path):
 
 
 def config_publica_view(request):
-    """Configurações públicas leves para o frontend (sem credenciais em produção)."""
+    """Configurações públicas leves para o frontend (atalhos demo apenas quando SHOW_DEMO_SHORTCUTS=1)."""
     import json
     from decimal import Decimal
 
     taxa = max(Decimal("0.00"), Decimal(str(getattr(settings, "TAXA_ENTREGA_PADRAO", "0.00"))))
+    show_demo = bool(getattr(settings, "SHOW_DEMO_SHORTCUTS", False))
     payload = {
-        "demo": bool(settings.DEBUG),
+        "demo": show_demo,
         "taxa_entrega_padrao": f"{taxa:.2f}",
     }
-    if settings.DEBUG:
+    if show_demo:
         payload["demo_accounts"] = [
             {"label": "cliente_demo", "username": "cliente_demo", "password": "cliente-demo-2024"},
             {"label": "produtor_demo", "username": "produtor_demo", "password": "produtor-demo-2024"},

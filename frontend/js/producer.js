@@ -1,9 +1,9 @@
 /**
- * Painel Dedicado do Produtor Rural: Visão Geral, Meus Produtos (com pré-visualização),
- * Minhas Propriedades (com pré-visualização), Pedidos Recebidos, Avaliação de Clientes e Avaliações.
+ * Painel Dedicado do Produtor Rural: Visão Geral (com vendas concluídas), Meus Produtos (paginado + preview),
+ * Minhas Propriedades (preview), Pedidos Recebidos, Avaliação de Clientes e Avaliações (paginado + média do servidor).
  */
-import { apiFetch, parseError } from './api.js?v=20261120l';
-import { statusLabels } from './orders.js?v=20261120l';
+import { apiFetch, parseError } from './api.js?v=20261121a';
+import { statusLabels } from './orders.js?v=20261121a';
 import {
   clearFormError,
   closeModal,
@@ -13,16 +13,19 @@ import {
   formatUnitLabel,
   openModal,
   renderBrandLogoHtml,
+  renderIcon,
   renderPaginationBar,
+  renderStars,
   safeUrl,
   showFormError,
   showToast,
-} from './ui.js?v=20261120l';
+} from './ui.js?v=20261121a';
 
 let producerProductsCache = [];
 let producerOrdersCache = new Map();
 let producerCategoriesCache = [];
 let currentProducerOrderStatus = '';
+let currentProducerProductsPage = 1;
 let currentPropertyPhotoUrl = '';
 let currentEditingProductPhotoUrl = '';
 let tempProdPreviewObjectUrl = null;
@@ -71,8 +74,10 @@ export async function openProducerPanel(initialTab = 'visao_geral') {
   const storefront = document.getElementById('publicStorefront');
   const prodWs = document.getElementById('producerWorkspace');
   const delivWs = document.getElementById('deliveryWorkspace');
+  const adminWs = document.getElementById('adminWorkspace');
   if (storefront) storefront.style.display = 'none';
   if (delivWs) delivWs.style.display = 'none';
+  if (adminWs) adminWs.style.display = 'none';
   if (prodWs) prodWs.style.display = 'block';
 
   syncProducerStatusBanner();
@@ -90,7 +95,11 @@ export function switchProducerTab(tab) {
     avaliacoes: 'producerTabAvaliacoes',
   };
   Object.entries(map).forEach(([k, id]) => {
-    document.querySelector(`.panel-tab[data-producer-tab="${k}"]`)?.classList.toggle('active', k === normalized);
+    const tabBtn = document.querySelector(`.panel-tab[data-producer-tab="${k}"]`);
+    if (tabBtn) {
+      tabBtn.classList.toggle('active', k === normalized);
+      tabBtn.setAttribute('aria-selected', String(k === normalized));
+    }
     document.querySelectorAll(`[data-producer-nav="${k}"]`).forEach(el => el.classList.toggle('active', k === normalized));
     const panel = document.getElementById(id);
     if (panel) panel.style.display = k === normalized ? 'block' : 'none';
@@ -100,30 +109,35 @@ export function switchProducerTab(tab) {
     loadProducerOverview();
   } else if (normalized === 'produtos') {
     loadProducerCategoriesSelect();
-    loadProducerProducts();
+    loadProducerProducts(1);
   } else if (normalized === 'propriedade') {
     loadProducerProperty();
   } else if (normalized === 'pedidos') {
     loadProducerOrders(1);
   } else if (normalized === 'avaliacoes') {
-    loadProducerReviews();
+    loadProducerReviews(1, 1);
   }
 }
 
-// ── Visão Geral do Produtor ────────────────────────────────────────────────
+// ── Visão Geral do Produtor (com vendas concluídas de /vendas/) ────────────
 async function loadProducerOverview() {
   const el = document.getElementById('producerOverviewContent');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando indicadores da propriedade...</p></div>';
 
   try {
-    const res = await apiFetch('/produtor/pedidos/resumo/');
-    if (!res.ok) throw new Error('Falha ao carregar visão geral.');
-    const r = await res.json();
+    const [resResumo, resVendas] = await Promise.all([
+      apiFetch('/produtor/pedidos/resumo/'),
+      apiFetch('/produtor/pedidos/vendas/'),
+    ]);
+    if (!resResumo.ok) throw new Error('Falha ao carregar visão geral.');
+    const r = await resResumo.json();
+    const vendas = resVendas.ok ? await resVendas.json() : { pedidos: [] };
+    const pedidosConcluidos = (vendas.pedidos || []).slice(0, 10);
 
     const mediaTexto =
       r.total_avaliacoes_recebidas > 0 && r.media_avaliacoes_recebidas !== null
-        ? `${Number(r.media_avaliacoes_recebidas).toFixed(1)} (${r.total_avaliacoes_recebidas})`
+        ? `${Number(r.media_avaliacoes_recebidas).toFixed(1).replace('.', ',')} (${r.total_avaliacoes_recebidas})`
         : 'Sem avaliações';
 
     el.innerHTML = `
@@ -160,13 +174,32 @@ async function loadProducerOverview() {
         <button type="button" class="btn btn--outline btn--sm" data-producer-nav="propriedade">Editar minha propriedade</button>
         <button type="button" class="btn btn--outline btn--sm" data-producer-nav="avaliacoes">Ver avaliações (${Number(r.total_avaliacoes_recebidas) || 0})</button>
       </div>
+
+      <div class="workspace-card" style="margin-top: var(--space-6);">
+        <h2 class="workspace-card__title" style="margin-bottom: var(--space-3);">Vendas Concluídas Recentes (${Number(vendas.quantidade_vendas) || pedidosConcluidos.length})</h2>
+        ${pedidosConcluidos.length === 0
+          ? '<p class="text-muted">Nenhuma venda concluída registrada ainda.</p>'
+          : `
+            <div class="panel-list">
+              ${pedidosConcluidos.map(o => `
+                <div class="panel-list-item">
+                  <div class="panel-list-item__info">
+                    <strong>${escapeHtml(o.numero_publico || `#${o.id}`)} • ${escapeHtml(o.cliente_nome || 'Cliente')}</strong>
+                    <span class="text-muted">${formatDate(o.concluido_em || o.atualizado_em)} • ${escapeHtml(o.modalidade)} • ${escapeHtml(o.forma_pagamento)}</span>
+                  </div>
+                  <strong>${formatCurrency(o.total)}</strong>
+                </div>
+              `).join('')}
+            </div>
+          `}
+      </div>
     `;
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
-// ── Meus Produtos (CRUD + Pré-visualização antes de salvar) ────────────────
+// ── Meus Produtos (CRUD paginado + Pré-visualização antes de salvar) ───────
 async function loadProducerCategoriesSelect() {
   const sel = document.getElementById('prodCategoria');
   if (!sel) return;
@@ -181,13 +214,16 @@ async function loadProducerCategoriesSelect() {
   } catch (_) {}
 }
 
-export async function loadProducerProducts() {
+export async function loadProducerProducts(page = 1) {
   const list = document.getElementById('producerProductsList');
+  const pagEl = document.getElementById('producerProductsPagination');
   if (!list) return;
+  currentProducerProductsPage = page;
   list.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
 
   try {
-    const res = await apiFetch('/produtor/produtos/');
+    const res = await apiFetch(`/produtor/produtos/?page=${page}`);
     if (!res.ok) throw new Error('Falha ao carregar seus produtos.');
     const data = await res.json();
     producerProductsCache = data.results || data || [];
@@ -203,6 +239,9 @@ export async function loadProducerProducts() {
         ? `<img src="${escapeHtml(customImg)}" alt="${escapeHtml(p.nome)}" class="panel-thumb" />`
         : `<div class="panel-thumb--logo">${renderBrandLogoHtml(p.nome, 'product-card__img--default')}</div>`;
       const cult = CULTIVO_LABELS[p.tipo_producao] || CULTIVO_LABELS.CONVENCIONAL;
+      const statusBadges = p.oculto_moderacao
+        ? '<span class="badge status--cancelled">Oculto pela moderação</span>'
+        : `<span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Ativo' : 'Oculto'}</span>`;
       return `
         <div class="panel-list-item">
           ${thumbHtml}
@@ -210,9 +249,7 @@ export async function loadProducerProducts() {
             <strong>${escapeHtml(p.nome)}</strong>
             <span>${formatCurrency(p.preco)} / ${escapeHtml(formatUnitLabel(p.unidade_medida))} • Estoque: ${parseFloat(p.estoque)} • ${escapeHtml(cult.label)}</span>
             ${p.descricao ? `<span class="text-muted">${escapeHtml(p.descricao)}</span>` : ''}
-            <div>
-              <span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Ativo' : 'Oculto'}</span>
-            </div>
+            <div>${statusBadges}</div>
           </div>
           <div class="panel-list-item__actions">
             <button type="button" class="btn btn--outline btn--sm btnEditProdProduct" data-id="${p.id}">Editar</button>
@@ -221,6 +258,7 @@ export async function loadProducerProducts() {
         </div>
       `;
     }).join('');
+    renderPaginationBar(pagEl, data, page, (nextPage) => loadProducerProducts(nextPage));
   } catch (err) {
     list.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -342,7 +380,7 @@ export async function saveProducerProduct() {
 
   document.getElementById('producerProductFormWrap').style.display = 'none';
   showToast(id ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!', 'success');
-  await loadProducerProducts();
+  await loadProducerProducts(currentProducerProductsPage);
   window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }
 
@@ -354,7 +392,7 @@ export async function deleteProducerProduct(id) {
     return;
   }
   showToast('Produto excluído.', 'info');
-  await loadProducerProducts();
+  await loadProducerProducts(1);
   window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }
 
@@ -396,8 +434,8 @@ export async function loadProducerOrders(page = 1) {
       let actions = '';
       if (o.status === 'PENDENTE') {
         actions = `
-          <button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="aceitar">✓ Aceitar</button>
-          <button type="button" class="btn btn--outline btn--sm text-danger btnProdOrderAction" data-id="${o.id}" data-action="recusar">✕ Recusar</button>
+          <button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="aceitar">${renderIcon('check', 14)} Aceitar</button>
+          <button type="button" class="btn btn--outline btn--sm text-danger btnProdOrderAction" data-id="${o.id}" data-action="recusar">${renderIcon('x', 14)} Recusar</button>
         `;
       } else if (o.status === 'ACEITO') {
         actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="EM_PREPARO">Iniciar Preparo</button>`;
@@ -408,7 +446,7 @@ export async function loadProducerOrders(page = 1) {
       } else if (o.status === 'CONCLUIDO') {
         actions = o.cliente_avaliado
           ? '<span class="badge status--completed">Cliente avaliado</span>'
-          : `<button type="button" class="btn btn--outline btn--sm btnRateClient" data-id="${o.id}">Avaliar cliente</button>`;
+          : `<button type="button" class="btn btn--outline btn--sm btnRateClient" data-id="${o.id}">${renderIcon('star', 14)} Avaliar cliente</button>`;
       }
 
       return `
@@ -503,46 +541,50 @@ export async function submitClientReview() {
   await loadProducerOrders(1);
 }
 
-// ── Avaliações (Recebidas vs. Realizadas pelo Produtor) ────────────────────
-async function loadProducerReviews() {
+// ── Avaliações (Recebidas vs. Realizadas, paginadas + média real do servidor) ──
+async function loadProducerReviews(pageRec = 1, pageFeitas = 1) {
   const el = document.getElementById('producerReviewsContent');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
 
   try {
-    const [resRec, resFeitas] = await Promise.all([
-      apiFetch('/produtor/avaliacoes/'),
-      apiFetch('/produtor/avaliacoes-clientes/'),
+    const [resResumo, resRec, resFeitas] = await Promise.all([
+      apiFetch('/produtor/pedidos/resumo/'),
+      apiFetch(`/produtor/avaliacoes/?page=${pageRec}`),
+      apiFetch(`/produtor/avaliacoes-clientes/?page=${pageFeitas}`),
     ]);
+    const resumo = resResumo.ok ? await resResumo.json() : {};
     const recData = resRec.ok ? await resRec.json() : { results: [] };
     const feitasData = resFeitas.ok ? await resFeitas.json() : { results: [] };
     const recebidas = recData.results || recData || [];
     const feitas = feitasData.results || feitasData || [];
 
-    const mediaRecebidas =
-      recebidas.length > 0
-        ? (recebidas.reduce((acc, a) => acc + (Number(a.nota) || 0), 0) / recebidas.length).toFixed(1)
+    const totalRecebidas = Number(resumo.total_avaliacoes_recebidas ?? recData.count ?? recebidas.length) || 0;
+    const totalFeitas = Number(resumo.total_avaliacoes_clientes ?? feitasData.count ?? feitas.length) || 0;
+    const mediaSrv =
+      totalRecebidas > 0 && resumo.media_avaliacoes_recebidas !== null && resumo.media_avaliacoes_recebidas !== undefined
+        ? Number(resumo.media_avaliacoes_recebidas).toFixed(1).replace('.', ',')
         : null;
 
     el.innerHTML = `
       <div class="kpi-grid" style="margin-bottom: var(--space-5);">
         <div class="kpi-card">
           <span>Avaliações recebidas</span>
-          <strong>${recebidas.length}</strong>
+          <strong>${totalRecebidas}</strong>
         </div>
         <div class="kpi-card">
           <span>Média recebida</span>
-          <strong>${mediaRecebidas ? `${mediaRecebidas} / 5` : 'Sem avaliações'}</strong>
+          <strong>${mediaSrv ? `${mediaSrv} / 5` : 'Sem avaliações'}</strong>
         </div>
         <div class="kpi-card">
           <span>Clientes avaliados por você</span>
-          <strong>${feitas.length}</strong>
+          <strong>${totalFeitas}</strong>
         </div>
       </div>
 
       <div class="reviews-split">
         <div class="workspace-card">
-          <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Avaliações Recebidas dos Clientes (${recebidas.length})</h2>
+          <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Avaliações Recebidas dos Clientes (${totalRecebidas})</h2>
           ${recebidas.length === 0
             ? '<div class="empty-state"><p>Nenhuma avaliação recebida ainda.</p></div>'
             : recebidas.map(a => `
@@ -551,15 +593,16 @@ async function loadProducerReviews() {
                   <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
                   <span class="badge badge--outline">${a.tipo_avaliacao === 'PRODUTO' ? `Produto: ${escapeHtml(a.produto_nome || '')}` : 'Propriedade'}</span>
                 </div>
-                <div style="margin-bottom: 4px;">${'⭐'.repeat(Number(a.nota) || 0)} <strong>(${Number(a.nota) || 0}/5)</strong></div>
+                <div style="margin-bottom: 4px;">${renderStars(a.nota, 14)} <strong>(${Number(a.nota) || 0}/5)</strong></div>
                 ${a.comentario ? `<p style="margin-bottom: 4px;">${escapeHtml(a.comentario)}</p>` : ''}
                 <span class="text-muted">${formatDate(a.criado_em)}</span>
               </div>
             `).join('')}
+          <div id="producerRecReviewsPagination" class="pagination-wrap"></div>
         </div>
 
         <div class="workspace-card">
-          <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Avaliações de Clientes Realizadas (${feitas.length})</h2>
+          <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Avaliações de Clientes Realizadas (${totalFeitas})</h2>
           ${feitas.length === 0
             ? '<div class="empty-state"><p>Você ainda não avaliou nenhum cliente. Após concluir um pedido, clique em "Avaliar cliente" na aba Pedidos recebidos.</p></div>'
             : feitas.map(a => `
@@ -568,14 +611,28 @@ async function loadProducerReviews() {
                   <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
                   <span class="badge badge--outline">Pedido ${escapeHtml(a.pedido_numero || `#${a.pedido}`)}</span>
                 </div>
-                <div style="margin-bottom: 4px;">${'⭐'.repeat(Number(a.nota) || 0)} <strong>(${Number(a.nota) || 0}/5)</strong></div>
+                <div style="margin-bottom: 4px;">${renderStars(a.nota, 14)} <strong>(${Number(a.nota) || 0}/5)</strong></div>
                 ${a.comentario ? `<p style="margin-bottom: 4px;">${escapeHtml(a.comentario)}</p>` : ''}
                 <span class="text-muted">${formatDate(a.criado_em)}</span>
               </div>
             `).join('')}
+          <div id="producerClientReviewsPagination" class="pagination-wrap"></div>
         </div>
       </div>
     `;
+
+    renderPaginationBar(
+      document.getElementById('producerRecReviewsPagination'),
+      recData,
+      pageRec,
+      (nextPage) => loadProducerReviews(nextPage, pageFeitas),
+    );
+    renderPaginationBar(
+      document.getElementById('producerClientReviewsPagination'),
+      feitasData,
+      pageFeitas,
+      (nextPage) => loadProducerReviews(pageRec, nextPage),
+    );
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -614,15 +671,15 @@ export function updatePropertyPreview() {
       ${avatarHtml}
       <div class="producer-card__header">
         <h3>${escapeHtml(nome)}</h3>
-        <span class="producer-card__location">📍 ${escapeHtml(local)}</span>
+        <span class="producer-card__location">${renderIcon('map-pin', 14)} ${escapeHtml(local)}</span>
       </div>
     </div>
     <p class="producer-card__desc">${escapeHtml(desc)}</p>
     <div class="producer-card__footer">
       <div class="producer-card__badges">
         ${chavePix ? '<span class="payment-badge"><img src="/static/assets/pix-icon.webp" alt="" class="pix-brand-icon" width="16" height="16" /> Pix</span>' : ''}
-        ${maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
-        ${dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}
+        ${maquininha ? `<span class="payment-badge">${renderIcon('credit-card', 14)} Cartão</span>` : ''}
+        ${dinheiro ? `<span class="payment-badge">${renderIcon('banknote', 14)} Dinheiro</span>` : ''}
       </div>
     </div>
   `;

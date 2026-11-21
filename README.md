@@ -89,10 +89,10 @@ Principais melhorias implementadas até agora:
 - **UX e acessibilidade:** skeleton loading, estados vazios, toasts com `aria-live`, foco preso e `ESC` nos modais, máscaras (telefone, CEP), validação inline, Light/Dark mode e respeito a `prefers-reduced-motion`.
 
 ### 7. Qualidade e Automação
-- **23 testes automatizados** cobrindo usuários, catálogo, pedidos, avaliações e painel (**89% de cobertura**).
-- **Índices de banco** e consultas otimizadas contra N+1.
-- **CI no GitHub Actions** (Ruff, `check`, `check --deploy`, `collectstatic` e testes).
-- **Comando `seed_demo`** para popular dados de demonstração (apenas com `DEBUG=1`).
+- **42 testes automatizados** cobrindo usuários, catálogo, pedidos, entregas, avaliações, painel administrativo, LGPD e regressões de segurança.
+- **Índices de banco** e consultas otimizadas contra N+1, com constraints compatíveis com SQLite e MySQL 8.4.
+- **Ícones SVG locais (sprite Lucide)** e CSP estrita sem dependências externas.
+- **Comando `seed_demo`** para popular dados de demonstração com categorias limpas (apenas com `DEBUG=1`).
 
 ---
 
@@ -195,7 +195,7 @@ Criadas por `python manage.py seed_demo` (somente com `DJANGO_DEBUG=1`; use `--r
 | **Entregador** | `entregador_demo` | `entregador-demo-2024` | Aceitar e concluir entregas |
 | **Administrador** | `admin` | `admin-demo-2024` | Moderação e painel `/admin/` |
 
-> *Dica: no modal de login existem atalhos de preenchimento em 1 clique para essas contas. São credenciais apenas de demonstração — nunca use em produção.*
+> *Dica: defina `SHOW_DEMO_SHORTCUTS=1` no `.env` local caso queira exibir os atalhos de preenchimento em 1 clique no modal de login (desativado por padrão). São credenciais apenas de demonstração — nunca use em produção.*
 
 ---
 
@@ -208,13 +208,16 @@ Todas as opções estão em [`.env.example`](.env.example). As principais:
 | `DJANGO_DEBUG` | `0` | `1` apenas em desenvolvimento |
 | `DJANGO_SECRET_KEY` | — | Obrigatória quando `DEBUG=0` |
 | `DJANGO_ALLOWED_HOSTS` | vazio | Hosts permitidos (separados por vírgula) |
+| `SECURE_SSL_REDIRECT` | `1` (`0` no compose local) | Ativa redirecionamento HTTPS, HSTS e cookies seguros em produção atrás de TLS |
 | `DB_ENGINE` | `sqlite` | `sqlite` ou `mysql` (+ `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`) |
 | `ENABLE_SWAGGER` | `0` | `1` libera `/api/docs/` publicamente |
+| `SHOW_DEMO_SHORTCUTS` | `0` | `1` exibe atalhos de login demo no modal de autenticação (somente uso local) |
 | `CORS_ALLOW_ALL_ORIGINS` / `CORS_ALLOWED_ORIGINS` | `0` | Origens permitidas |
 | `CSRF_TRUSTED_ORIGINS` | localhost + túneis | Origens confiáveis para CSRF |
 | `EMAIL_*` | console | Envio de e-mail (SMTP em produção) |
 | `THROTTLE_*` | ver `.env.example` | Limites de requisições (geral, login, registro, recuperação de senha) |
-| `PIX_WEBHOOK_SECRET` | dev | Segredo HMAC do webhook Pix |
+| `PIX_WEBHOOK_SECRET` | dev | Segredo HMAC do webhook Pix (obrigatório quando `DEBUG=0`) |
+| `TAXA_ENTREGA_PADRAO` | `0.00` | Taxa padrão de entrega calculada exclusivamente no servidor |
 
 ---
 
@@ -226,11 +229,10 @@ feira_virtual/
 ├── usuarios/      # Usuários (4 perfis), endereços, autenticação JWT, LGPD e seed_demo
 ├── catalogo/      # Categorias, produtos, vitrine de produtores e estatísticas
 ├── pedidos/       # Carrinho, checkout, máquina de estados, notificações e Pix
-├── avaliacoes/    # Avaliações de produtos/produtores e reclamações
+├── avaliacoes/    # Avaliações de produtos/produtores/clientes e reclamações
 ├── painel/        # Moderação administrativa, indicadores e log de auditoria
-├── frontend/      # index.html, style.css, main.js, js/ (módulos ES) e assets/ (logos, favicons, PWA)
-├── Dockerfile · docker-compose.yml · requirements.txt · requirements-dev.txt
-└── .github/workflows/ci.yml
+├── frontend/      # index.html, style.css, main.js, js/ (módulos ES) e assets/ (logos, sprite SVG, favicons, PWA)
+└── Dockerfile · docker-compose.yml · requirements.txt · requirements-dev.txt
 ```
 
 ---
@@ -261,14 +263,14 @@ feira_virtual/
 - `POST /api/pedidos/pix/webhook/` — Confirmação de pagamento (assinatura HMAC).
 
 ### Produtor e Entregador
-- `GET /api/produtor/pedidos/` · `POST .../{id}/aceitar/` · `.../recusar/` · `.../status/` · `GET .../vendas/`
-- `GET /api/produtor/avaliacoes/` — Avaliações recebidas.
-- `GET /api/entregas/?escopo=disponiveis|minhas` · `POST .../{id}/aceitar/` · `.../saiu-para-entrega/` · `.../confirmar/`
+- `GET /api/produtor/pedidos/` · `POST .../{id}/aceitar/` · `.../recusar/` · `.../status/` · `GET .../vendas/` · `GET .../resumo/`
+- `GET /api/produtor/avaliacoes/` · `GET/POST /api/produtor/avaliacoes-clientes/`
+- `GET /api/entregas/?escopo=disponiveis|minhas|historico` · `GET /api/entregas/resumo/` · `POST .../{id}/aceitar/` · `.../saiu-para-entrega/` · `.../confirmar/`
 
 ### Avaliações, Administração e Sistema
-- `GET/POST /api/avaliacoes/` · `GET/POST /api/reclamacoes/`
-- `GET /api/admin/indicadores/` e gestão em `/api/admin/{usuarios,produtores,produtos,pedidos,reclamacoes}/`
-- `GET /api/health/` — Saúde da aplicação e do banco.
+- `GET/POST/PATCH/DELETE /api/avaliacoes/` · `GET /api/avaliacoes/minhas/` · `GET/POST /api/reclamacoes/`
+- `GET /api/admin/indicadores/` e gestão em `/api/admin/{usuarios,produtores,produtos,pedidos,reclamacoes,avaliacoes,avaliacoes-clientes}/`
+- `GET /api/config/` · `GET /api/health/` — Configurações públicas leves e saúde da aplicação/banco.
 
 ---
 
@@ -311,15 +313,13 @@ PENDENTE ─▶ ACEITO ─▶ EM_PREPARO ─▶ PRONTO ─▶ EM_ENTREGA ─▶ 
 
 ---
 
-## Testes e CI
+## Testes e Verificações
 
 ```bash
-python manage.py test                                  # 23 testes
-coverage run manage.py test && coverage report         # cobertura atual: 89%
-python manage.py check --deploy                        # com DEBUG=0 e SECRET_KEY definida
+python manage.py test                                  # 42 testes automatizados
+python manage.py check --deploy                        # com DEBUG=0 e DJANGO_SECRET_KEY definida
+python manage.py makemigrations --check --dry-run      # valida integridade das migrações
 python manage.py spectacular --validate > /dev/null    # valida o schema OpenAPI
 ```
-
-O GitHub Actions (`.github/workflows/ci.yml`) executa Ruff, `check`, `check --deploy`, `collectstatic` e testes com cobertura a cada push/PR na `main`.
 
 ---

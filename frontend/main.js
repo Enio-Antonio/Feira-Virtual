@@ -16,25 +16,28 @@ import {
   openAdminPanel,
   openAdminProducerDetails,
   openAdminProductEdit,
+  openAdminStorefrontPreview,
   saveAdminCategory,
   saveAdminComplaint,
   saveAdminProductEdit,
   switchAdminTab,
   toggleAdminCategory,
-} from './js/admin.js?v=20261120l';
-import { apiFetch } from './js/api.js?v=20261120l';
+} from './js/admin.js?v=20261121a';
+import { apiFetch } from './js/api.js?v=20261121a';
 import {
+  authState,
   checkAuth,
+  confirmDeleteUserAccount,
   confirmPasswordReset,
-  deleteUserAccount,
   exportUserData,
   loadProfileModal,
   login,
   logout,
+  openDeleteAccountModal,
   register,
   requestPasswordReset,
   updateProfile,
-} from './js/auth.js?v=20261120l';
+} from './js/auth.js?v=20261121a';
 import {
   addToCart,
   clearCart,
@@ -48,7 +51,7 @@ import {
   submitCheckout,
   updateCheckoutSummary,
   updateItemQuantity,
-} from './js/cart.js?v=20261120l';
+} from './js/cart.js?v=20261121a';
 import {
   handleDeliveryAction,
   openDeliveryPanel,
@@ -56,7 +59,7 @@ import {
   saveDeliveryVehicle,
   setDeliveryMineGroup,
   switchDeliveryTab,
-} from './js/delivery.js?v=20261120l';
+} from './js/delivery.js?v=20261121a';
 import {
   cancelOrder,
   createAddress,
@@ -64,16 +67,19 @@ import {
   deleteMyReview,
   fetchViaCEP,
   loadAddresses,
+  loadClientWelcomeBanner,
   loadMyOrders,
   openComplaintModalForOrder,
+  openEditAddress,
   openEditReviewModal,
   openMyReviews,
   openReviewModalForOrder,
+  resetAddressForm,
   showPixDetails,
   submitComplaint,
   submitReview,
   switchOrdersTab,
-} from './js/orders.js?v=20261120l';
+} from './js/orders.js?v=20261121a';
 import {
   deleteProducerProduct,
   handleProducerOrderAction,
@@ -87,17 +93,16 @@ import {
   switchProducerTab,
   updateProductPreview,
   updatePropertyPreview,
-} from './js/producer.js?v=20261120l';
+} from './js/producer.js?v=20261121a';
 import {
   catalogState,
   loadCategories,
   loadProducers,
   loadProducts,
-  loadStatistics,
   openProducerDetail,
   openProductDetail,
   renderCategoryPills,
-} from './js/products.js?v=20261120l';
+} from './js/products.js?v=20261121a';
 import {
   clearFormError,
   clearFormFieldErrors,
@@ -110,7 +115,22 @@ import {
   setFieldError,
   showFormError,
   showToast,
-} from './js/ui.js?v=20261120l';
+} from './js/ui.js?v=20261121a';
+
+function showRecoverRequestMode() {
+  const heading = document.getElementById('recoverModalHeading');
+  const subtitle = document.getElementById('recoverModalSubtitle');
+  const recForm = document.getElementById('recoverForm');
+  const sentBox = document.getElementById('recoverSentState');
+  const resetForm = document.getElementById('resetConfirmForm');
+  if (heading) heading.textContent = 'Recuperação de Senha';
+  if (subtitle) subtitle.textContent = 'Informe seu e-mail cadastrado e enviaremos um link seguro para você cadastrar uma nova senha.';
+  if (recForm) recForm.style.display = 'block';
+  if (sentBox) sentBox.style.display = 'none';
+  if (resetForm) resetForm.style.display = 'none';
+  clearFormError('recoverError');
+  clearFormError('resetError');
+}
 
 function switchAuthTab(tab) {
   const tabLogin = document.getElementById('tabLogin');
@@ -187,6 +207,7 @@ function handleUserAction(action) {
       openMyReviews();
       break;
     case 'my-addresses':
+      resetAddressForm();
       loadAddresses();
       openModal('addressesModalOverlay');
       break;
@@ -199,6 +220,9 @@ function handleUserAction(action) {
     case 'admin-panel':
       openAdminPanel('indicadores');
       break;
+    case 'admin-storefront':
+      openAdminStorefrontPreview();
+      break;
     case 'edit-profile':
       loadProfileModal();
       break;
@@ -206,7 +230,7 @@ function handleUserAction(action) {
       exportUserData().catch(err => showToast(err.message, 'error'));
       break;
     case 'delete-account':
-      deleteUserAccount().catch(err => showToast(err.message, 'error'));
+      openDeleteAccountModal();
       break;
     case 'logout':
       logout();
@@ -232,6 +256,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const storefront = document.getElementById('publicStorefront');
     const prodWs = document.getElementById('producerWorkspace');
     const delivWs = document.getElementById('deliveryWorkspace');
+    const adminWs = document.getElementById('adminWorkspace');
+    const adminBar = document.getElementById('adminStorefrontBar');
+    const hero = document.getElementById('heroSection');
+    const trust = document.getElementById('trustBarSection');
+    const how = document.getElementById('como-funciona');
+    const clientBanner = document.getElementById('clientWelcomeBanner');
 
     if (user?.tipo === 'PRODUTOR') {
       openProducerPanel('visao_geral');
@@ -241,13 +271,29 @@ document.addEventListener('DOMContentLoaded', () => {
       openDeliveryPanel('visao_geral');
       return;
     }
+    if (user?.tipo === 'ADMIN') {
+      openAdminPanel('indicadores');
+      return;
+    }
 
     if (prodWs) prodWs.style.display = 'none';
     if (delivWs) delivWs.style.display = 'none';
+    if (adminWs) adminWs.style.display = 'none';
+    if (adminBar) adminBar.style.display = 'none';
     if (storefront) storefront.style.display = 'block';
+
+    const isClient = user?.tipo === 'CLIENTE';
+    if (hero) hero.style.display = isClient ? 'none' : 'block';
+    if (trust) trust.style.display = isClient ? 'none' : 'block';
+    if (how) how.style.display = isClient ? 'none' : 'block';
+    if (clientBanner) {
+      clientBanner.style.display = isClient ? 'block' : 'none';
+      if (isClient) loadClientWelcomeBanner(user);
+    }
+
     loadCategories();
     loadProducts(1);
-    loadProducers();
+    loadProducers(1);
   }
 
   window.addEventListener('fv:auth-changed', (e) => {
@@ -260,9 +306,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   window.addEventListener('fv:catalog-updated', () => {
+    loadCategories();
     loadProducts(1);
-    loadProducers();
-    loadStatistics();
+    loadProducers(1);
+    if (authState.user?.tipo === 'CLIENTE') {
+      loadClientWelcomeBanner(authState.user);
+    }
   });
 
   window.addEventListener('fv:addresses-updated', () => {
@@ -294,8 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
     hamburger.setAttribute('aria-expanded', String(open));
   });
 
-  // ── Delegação da Navbar / Auth Area ────────────────────────────────────
-  const bindNavContainer = (el) => {
+  // ── Delegação da Navbar / Auth Area / Banner do Cliente ────────────────
+  const bindActionContainer = (el) => {
     el?.addEventListener('click', (e) => {
       const target = e.target;
       if (target.closest('#btnOpenLogin, #btnMobileLogin')) {
@@ -326,8 +375,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   };
-  bindNavContainer(document.getElementById('navAuthArea'));
-  bindNavContainer(document.getElementById('mobileAuthArea'));
+  bindActionContainer(document.getElementById('navAuthArea'));
+  bindActionContainer(document.getElementById('mobileAuthArea'));
+  bindActionContainer(document.getElementById('clientWelcomeBanner'));
 
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.user-menu-dropdown')) {
@@ -345,13 +395,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('tabLogin')?.addEventListener('click', () => switchAuthTab('login'));
   document.getElementById('tabRegister')?.addEventListener('click', () => switchAuthTab('register'));
   document.getElementById('tabRecover')?.addEventListener('click', () => {
-    const uidRow = document.getElementById('resetUidTokenRow');
-    const recForm = document.getElementById('recoverForm');
-    if (uidRow) uidRow.style.display = 'grid';
-    if (recForm) recForm.style.display = 'block';
+    showRecoverRequestMode();
     switchAuthTab('recover');
   });
-  document.getElementById('btnForgotPassword')?.addEventListener('click', () => switchAuthTab('recover'));
+  document.getElementById('btnForgotPassword')?.addEventListener('click', () => {
+    showRecoverRequestMode();
+    switchAuthTab('recover');
+  });
+  document.getElementById('btnRecoverSendAnother')?.addEventListener('click', () => {
+    showRecoverRequestMode();
+    document.getElementById('recoverEmail')?.focus();
+  });
 
   async function initPublicConfig() {
     try {
@@ -364,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (demoBox && cfg.demo === true && Array.isArray(cfg.demo_accounts) && cfg.demo_accounts.length > 0) {
         demoBox.style.display = 'block';
         demoBox.innerHTML = `
-          <p><strong>💡 Acesso rápido (populado via <code>seed_demo</code>):</strong></p>
+          <p><strong>Acesso rápido (ambiente local):</strong></p>
           <div class="demo-btn-row">
             ${cfg.demo_accounts.map((acc, idx) => `
               <button type="button" class="btn-link btnDemoQuickFill" data-idx="${idx}"><code>${escapeHtml(acc.label)}</code></button>
@@ -396,12 +450,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('resetUid').value = uid;
     document.getElementById('resetToken').value = token;
-    const uidRow = document.getElementById('resetUidTokenRow');
+    document.getElementById('resetNovaSenha').value = '';
+    document.getElementById('resetConfirmSenha').value = '';
+
+    const heading = document.getElementById('recoverModalHeading');
+    const subtitle = document.getElementById('recoverModalSubtitle');
     const recForm = document.getElementById('recoverForm');
-    const heading = document.getElementById('resetFormHeading');
-    if (uidRow) uidRow.style.display = 'none';
-    if (recForm) recForm.style.display = 'none';
+    const sentBox = document.getElementById('recoverSentState');
+    const resetForm = document.getElementById('resetConfirmForm');
     if (heading) heading.textContent = 'Defina sua nova senha';
+    if (subtitle) subtitle.textContent = 'Escolha uma senha segura com no mínimo 8 caracteres para sua conta.';
+    if (recForm) recForm.style.display = 'none';
+    if (sentBox) sentBox.style.display = 'none';
+    if (resetForm) resetForm.style.display = 'block';
 
     switchAuthTab('recover');
     openModal('authModalOverlay');
@@ -493,6 +554,10 @@ document.addEventListener('DOMContentLoaded', () => {
     clearFormError('recoverError');
     try {
       await requestPasswordReset(document.getElementById('recoverEmail').value.trim());
+      const recForm = document.getElementById('recoverForm');
+      const sentBox = document.getElementById('recoverSentState');
+      if (recForm) recForm.style.display = 'none';
+      if (sentBox) sentBox.style.display = 'flex';
     } catch (err) {
       showFormError('recoverError', err.message);
     }
@@ -501,15 +566,48 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('resetConfirmForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearFormError('resetError');
+    const nova = document.getElementById('resetNovaSenha').value;
+    const confirma = document.getElementById('resetConfirmSenha').value;
+    if (nova.length < 8) {
+      showFormError('resetError', 'A nova senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+    if (nova !== confirma) {
+      showFormError('resetError', 'A confirmação da senha não confere.');
+      return;
+    }
     try {
       await confirmPasswordReset({
         uid: document.getElementById('resetUid').value.trim(),
         token: document.getElementById('resetToken').value.trim(),
-        nova_senha: document.getElementById('resetNovaSenha').value,
+        nova_senha: nova,
       });
+      showRecoverRequestMode();
       switchAuthTab('login');
     } catch (err) {
       showFormError('resetError', err.message);
+    }
+  });
+
+  // ── Modal Exclusão de Conta (LGPD) ─────────────────────────────────────
+  const syncDeleteAccountBtn = () => {
+    const pw = document.getElementById('deleteAccountPassword')?.value || '';
+    const checked = Boolean(document.getElementById('deleteAccountConfirmCheck')?.checked);
+    const btn = document.getElementById('btnConfirmDeleteAccount');
+    if (btn) btn.disabled = !(checked && pw.length > 0);
+  };
+  document.getElementById('btnCloseDeleteAccountModal')?.addEventListener('click', () => closeModal('deleteAccountModalOverlay'));
+  document.getElementById('btnCancelDeleteAccount')?.addEventListener('click', () => closeModal('deleteAccountModalOverlay'));
+  document.getElementById('deleteAccountPassword')?.addEventListener('input', syncDeleteAccountBtn);
+  document.getElementById('deleteAccountConfirmCheck')?.addEventListener('change', syncDeleteAccountBtn);
+  document.getElementById('deleteAccountForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFormError('deleteAccountError');
+    const pw = document.getElementById('deleteAccountPassword')?.value || '';
+    try {
+      await confirmDeleteUserAccount(pw);
+    } catch (err) {
+      showFormError('deleteAccountError', err.message);
     }
   });
 
@@ -674,6 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btnQuickAddAddress')?.addEventListener('click', () => {
+    resetAddressForm();
     loadAddresses();
     openModal('addressesModalOverlay');
   });
@@ -796,7 +895,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('btnCloseAddressesModal')?.addEventListener('click', () => closeModal('addressesModalOverlay'));
+  document.getElementById('btnCloseAddressesModal')?.addEventListener('click', () => {
+    resetAddressForm();
+    closeModal('addressesModalOverlay');
+  });
+  document.getElementById('btnCancelAddressEdit')?.addEventListener('click', resetAddressForm);
+
   const cepInput = document.getElementById('addrCep');
   cepInput?.addEventListener('input', async (e) => {
     maskCEP(e.target);
@@ -822,6 +926,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('addressForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearFormError('addressError');
+    const editId = document.getElementById('addrEditId')?.value.trim() || null;
     const payload = {
       rotulo: document.getElementById('addrRotulo').value.trim() || 'Casa',
       cep: document.getElementById('addrCep').value.trim(),
@@ -833,14 +938,22 @@ document.addEventListener('DOMContentLoaded', () => {
       estado: document.getElementById('addrEstado').value.trim().toUpperCase(),
     };
     try {
-      await createAddress(payload);
-      e.target.reset();
+      await createAddress(payload, editId);
     } catch (err) {
       showFormError('addressError', err.message);
     }
   });
 
   document.getElementById('addressesList')?.addEventListener('click', (e) => {
+    if (e.target.closest('.btnRetryAddresses')) {
+      loadAddresses();
+      return;
+    }
+    const editBtn = e.target.closest('.btnEditAddress');
+    if (editBtn) {
+      openEditAddress(Number(editBtn.dataset.id));
+      return;
+    }
     const delBtn = e.target.closest('.btnDeleteAddress');
     if (delBtn) deleteAddress(Number(delBtn.dataset.id));
   });
@@ -874,6 +987,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (delivNav) {
       closeUserDropdownAndMobile();
       openDeliveryPanel(delivNav.dataset.deliveryNav);
+      return;
+    }
+    const adminNav = e.target.closest('[data-admin-nav]');
+    if (adminNav) {
+      closeUserDropdownAndMobile();
+      if (adminNav.dataset.adminNav === 'vitrine') {
+        openAdminStorefrontPreview();
+      } else {
+        openAdminPanel(adminNav.dataset.adminNav);
+      }
     }
   });
 
@@ -948,8 +1071,9 @@ document.addEventListener('DOMContentLoaded', () => {
     saveDeliveryVehicle();
   });
 
-  // ── Painel de Moderação Admin ──────────────────────────────────────────
-  document.getElementById('btnCloseAdminPanelModal')?.addEventListener('click', () => closeModal('adminPanelModalOverlay'));
+  // ── Painel Dedicado Administrativo (#adminWorkspace) ───────────────────
+  document.getElementById('btnAdminViewStorefront')?.addEventListener('click', openAdminStorefrontPreview);
+  document.getElementById('btnBackToAdminWorkspace')?.addEventListener('click', () => openAdminPanel('indicadores'));
   document.getElementById('btnCloseAdminDetailModal')?.addEventListener('click', () => closeModal('adminDetailModalOverlay'));
   document.getElementById('btnCloseAdminConfirmModal')?.addEventListener('click', () => closeModal('adminConfirmModalOverlay'));
   document.getElementById('btnCancelAdminConfirm')?.addEventListener('click', () => closeModal('adminConfirmModalOverlay'));
@@ -1000,7 +1124,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('adminOrderStatusFilter')?.addEventListener('change', () => loadAdminOrders(1));
 
-  document.getElementById('adminPanelModalOverlay')?.addEventListener('click', (e) => {
+  document.getElementById('adminWorkspace')?.addEventListener('click', (e) => {
     const editProdBtn = e.target.closest('.btnEditAdminProduct');
     if (editProdBtn) {
       openAdminProductEdit(Number(editProdBtn.dataset.id));
@@ -1060,7 +1184,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Inicialização de Dados ─────────────────────────────────────────────
   // checkAuth() dispara fv:auth-changed -> syncRoleWorkspace() carrega o painel
-  // dedicado (Produtor/Entregador) ou a vitrine pública (Visitante/Cliente/Admin).
+  // dedicado (Admin/Produtor/Entregador) ou a vitrine (Visitante/Cliente).
   checkAuth();
-  loadStatistics();
 });

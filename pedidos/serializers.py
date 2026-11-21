@@ -62,7 +62,14 @@ class ItemCarrinhoSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         produto = attrs.get("produto") or self.instance.produto
         qtd = attrs.get("quantidade", getattr(self.instance, "quantidade", Decimal("0")))
-        if not produto.ativo or produto.excluido_em is not None or produto.produtor.status != "APROVADO" or produto.produtor.excluido_em is not None:
+        if (
+            not produto.ativo
+            or produto.oculto_moderacao
+            or produto.excluido_em is not None
+            or not produto.categoria.ativa
+            or produto.produtor.status != "APROVADO"
+            or produto.produtor.excluido_em is not None
+        ):
             raise serializers.ValidationError("Produto indisponível.")
         if qtd is None or qtd <= 0:
             raise serializers.ValidationError({"quantidade": "A quantidade deve ser maior que zero."})

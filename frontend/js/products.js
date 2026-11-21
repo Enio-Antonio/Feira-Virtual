@@ -1,8 +1,8 @@
 /**
- * Catálogo de Produtos, Filtros, Busca, Paginação, Detalhes, Vitrine de Produtores e Estatísticas.
+ * Catálogo de Produtos, Filtros, Busca, Paginação, Detalhes e Vitrine de Produtores.
  */
-import { apiFetch } from './api.js?v=20261120l';
-import { addToCart } from './cart.js?v=20261120l';
+import { apiFetch } from './api.js?v=20261121a';
+import { addToCart } from './cart.js?v=20261121a';
 import {
   escapeHtml,
   formatCurrency,
@@ -11,9 +11,12 @@ import {
   getUnitStep,
   openModal,
   renderBrandLogoHtml,
+  renderIcon,
+  renderPaginationBar,
   renderProductSkeletons,
+  renderStars,
   safeUrl,
-} from './ui.js?v=20261120l';
+} from './ui.js?v=20261121a';
 
 export const catalogState = {
   categories: [],
@@ -50,7 +53,7 @@ export function renderCategoryPills() {
 
   const allPill = `
     <button type="button" class="pill ${!catalogState.selectedCategory ? 'active' : ''}" data-category="" role="tab" aria-selected="${!catalogState.selectedCategory}">
-      🌱 Todas as categorias
+      Todas as categorias
     </button>
   `;
 
@@ -114,7 +117,7 @@ export async function loadProducts(page = 1) {
   } catch (_) {
     grid.innerHTML = `
       <div class="catalog-empty">
-        <p style="font-size: 2.5rem; margin-bottom: 8px;">⚠️</p>
+        <span class="empty-state__icon" aria-hidden="true">${renderIcon('alert-triangle', 26)}</span>
         <p>Não foi possível carregar os produtos no momento.</p>
       </div>
     `;
@@ -158,7 +161,7 @@ function formatRatingCompact(p) {
   if (!hasValidRating(p)) return '';
   const mediaStr = Number(p.nota_media).toFixed(1).replace('.', ',');
   const total = Number(p.total_avaliacoes);
-  return `★ ${mediaStr} (${total})`;
+  return `${renderIcon('star-filled', 13, 'icon--star-filled')} ${mediaStr} (${total})`;
 }
 
 function formatRatingSummaryHtml(p) {
@@ -166,12 +169,10 @@ function formatRatingSummaryHtml(p) {
   const mediaNum = Number(p.nota_media);
   const mediaStr = mediaNum.toFixed(1).replace('.', ',');
   const total = Number(p.total_avaliacoes);
-  const filled = Math.max(1, Math.min(5, Math.round(mediaNum)));
-  const stars = '★'.repeat(filled) + '☆'.repeat(5 - filled);
   const label = total === 1 ? '1 avaliação' : `${total} avaliações`;
   return `
     <div class="rating-summary-inline" aria-label="Nota média ${mediaStr} de 5 com ${label}">
-      <span class="rating-summary-inline__stars" aria-hidden="true">${stars}</span>
+      ${renderStars(mediaNum, 15)}
       <strong>${mediaStr}</strong>
       <span class="text-muted">(${label})</span>
     </div>
@@ -192,9 +193,7 @@ function updateHeroProductRating(products) {
   if (hasValidRating(heroProd)) {
     const badge = document.createElement('div');
     badge.className = 'product-card-hero__badge';
-    const span = document.createElement('span');
-    span.textContent = formatRatingCompact(heroProd);
-    badge.appendChild(span);
+    badge.innerHTML = `<span>${formatRatingCompact(heroProd)}</span>`;
     header.appendChild(badge);
   }
 }
@@ -206,7 +205,7 @@ function renderProductsGrid(products) {
   if (products.length === 0) {
     grid.innerHTML = `
       <div class="catalog-empty">
-        <p style="font-size: 3rem; margin-bottom: 8px;">🔍</p>
+        <span class="empty-state__icon" aria-hidden="true">${renderIcon('search', 26)}</span>
         <p>Nenhum produto encontrado com os filtros selecionados.</p>
       </div>
     `;
@@ -257,7 +256,7 @@ function renderProductsGrid(products) {
             data-unit="${escapeHtml(p.unidade_medida)}"
             data-stock="${parseFloat(p.estoque)}"
             ${semEstoque ? 'disabled' : ''}>
-            ${semEstoque ? 'Esgotado' : '＋ Adicionar'}
+            ${semEstoque ? 'Esgotado' : `${renderIcon('plus', 14)} Adicionar`}
           </button>
         </div>
       </article>
@@ -277,28 +276,30 @@ function renderPagination() {
   container.innerHTML = `
     <div class="pagination">
       <button type="button" class="btn btn--outline btn--sm" id="btnPrevPage" ${catalogState.currentPage <= 1 ? 'disabled' : ''}>
-        ◀ Anterior
+        ${renderIcon('chevron-left', 15)} Anterior
       </button>
       <span class="pagination__info">Página ${catalogState.currentPage} de ${catalogState.totalPages} (${catalogState.totalCount} itens)</span>
       <button type="button" class="btn btn--outline btn--sm" id="btnNextPage" ${catalogState.currentPage >= catalogState.totalPages ? 'disabled' : ''}>
-        Próxima ▶
+        Próxima ${renderIcon('chevron-right', 15)}
       </button>
     </div>
   `;
 }
 
-// ── Detalhe do Produto e do Produtor ───────────────────────────────────────
-export async function openProductDetail(productId) {
+// ── Detalhe do Produto e do Produtor (com paginação de avaliações) ─────────
+export async function openProductDetail(productId, avPage = 1) {
   const body = document.getElementById('productDetailBody');
   if (!body) return;
 
-  body.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando detalhes...</p></div>';
-  openModal('productDetailModalOverlay');
+  if (avPage === 1) {
+    body.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando detalhes...</p></div>';
+    openModal('productDetailModalOverlay');
+  }
 
   try {
     const [resProd, resAv] = await Promise.all([
       apiFetch(`/produtos/${productId}/`),
-      apiFetch(`/avaliacoes/?produto=${productId}`),
+      apiFetch(`/avaliacoes/?produto=${productId}&page=${avPage}`),
     ]);
     if (!resProd.ok) throw new Error('Produto não encontrado.');
     const p = await resProd.json();
@@ -345,21 +346,29 @@ export async function openProductDetail(productId) {
       </div>
 
       <div class="detail-reviews">
-        <h4>⭐ Avaliações de Clientes (${Number(p.total_avaliacoes) || avaliacoes.length})</h4>
+        <h4>${renderIcon('star-filled', 16, 'icon--star-filled')} Avaliações de Clientes (${Number(p.total_avaliacoes) || avData.count || avaliacoes.length})</h4>
         ${avaliacoes.length === 0
           ? '<p class="text-muted">Ainda não há avaliações para este produto.</p>'
           : avaliacoes.map(a => `
             <div class="review-item">
               <div class="review-item__head">
                 <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
-                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
+                <span>${renderStars(a.nota, 14)} (${Number(a.nota) || 0}/5)</span>
               </div>
               ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : '<p class="text-muted">Sem comentário.</p>'}
               <span class="text-muted">${formatDate(a.criado_em)}</span>
             </div>
           `).join('')}
+        <div id="productReviewsPagination" class="pagination-wrap"></div>
       </div>
     `;
+
+    renderPaginationBar(
+      document.getElementById('productReviewsPagination'),
+      avData,
+      avPage,
+      (nextPage) => openProductDetail(productId, nextPage),
+    );
 
     document.getElementById('btnDetailAddToCart')?.addEventListener('click', () => {
       const { min } = getUnitStep(p.unidade_medida);
@@ -371,17 +380,19 @@ export async function openProductDetail(productId) {
   }
 }
 
-export async function openProducerDetail(producerId) {
+export async function openProducerDetail(producerId, avPage = 1) {
   const body = document.getElementById('producerDetailBody');
   if (!body) return;
 
-  body.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando produtor...</p></div>';
-  openModal('producerDetailModalOverlay');
+  if (avPage === 1) {
+    body.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando produtor...</p></div>';
+    openModal('producerDetailModalOverlay');
+  }
 
   try {
     const [resProd, resAv] = await Promise.all([
       apiFetch(`/produtores/${producerId}/`),
-      apiFetch(`/avaliacoes/?produtor=${producerId}`),
+      apiFetch(`/avaliacoes/?produtor=${producerId}&page=${avPage}`),
     ]);
     if (!resProd.ok) throw new Error('Produtor não encontrado.');
     const p = await resProd.json();
@@ -393,15 +404,15 @@ export async function openProducerDetail(producerId) {
         ${renderProducerAvatarHtml(p)}
         <div>
           <h3>${escapeHtml(p.nome_propriedade)}</h3>
-          <p class="producer-card__location">📍 ${escapeHtml(p.cidade_uf || 'Agricultura Familiar Local')}</p>
+          <p class="producer-card__location">${renderIcon('map-pin', 14)} ${escapeHtml(p.cidade_uf || 'Agricultura Familiar Local')}</p>
           ${formatRatingSummaryHtml(p)}
         </div>
       </div>
       <p class="detail-desc">${escapeHtml(p.descricao || 'Produção rural familiar direta.')}</p>
       <div class="producer-card__badges" style="margin-bottom: var(--space-4);">
         ${p.aceita_pix ? PIX_BADGE_HTML : ''}
-        ${p.possui_maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
-        ${p.aceita_dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}
+        ${p.possui_maquininha ? `<span class="payment-badge">${renderIcon('credit-card', 14)} Cartão</span>` : ''}
+        ${p.aceita_dinheiro ? `<span class="payment-badge">${renderIcon('banknote', 14)} Dinheiro</span>` : ''}
         <span class="badge badge--produtos">${p.total_produtos || 0} produto(s) ativo(s)</span>
       </div>
 
@@ -410,61 +421,51 @@ export async function openProducerDetail(producerId) {
       </button>
 
       <div class="detail-reviews">
-        <h4>⭐ Avaliações da Propriedade (${Number(p.total_avaliacoes) || avaliacoes.length})</h4>
+        <h4>${renderIcon('star-filled', 16, 'icon--star-filled')} Avaliações da Propriedade (${Number(p.total_avaliacoes) || avData.count || avaliacoes.length})</h4>
         ${avaliacoes.length === 0
           ? '<p class="text-muted">Ainda não há avaliações registradas para este produtor.</p>'
           : avaliacoes.map(a => `
             <div class="review-item">
               <div class="review-item__head">
                 <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
-                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
+                <span>${renderStars(a.nota, 14)} (${Number(a.nota) || 0}/5)</span>
               </div>
               ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : '<p class="text-muted">Sem comentário.</p>'}
               <span class="text-muted">${formatDate(a.criado_em)}</span>
             </div>
           `).join('')}
+        <div id="producerReviewsPagination" class="pagination-wrap"></div>
       </div>
     `;
+
+    renderPaginationBar(
+      document.getElementById('producerReviewsPagination'),
+      avData,
+      avPage,
+      (nextPage) => openProducerDetail(producerId, nextPage),
+    );
   } catch (err) {
     body.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
-// ── Estatísticas Públicas ──────────────────────────────────────────────────
-export async function loadStatistics() {
-  const statsEl = document.getElementById('heroSocialText');
-  if (!statsEl) return;
-
-  try {
-    const res = await apiFetch('/estatisticas/');
-    if (res.ok) {
-      const data = await res.json();
-      statsEl.innerHTML = `
-        <span class="hero__stat-item"><strong>${Number(data.familias_atendidas_semana) || 0}</strong> famílias atendidas esta semana</span>
-        <span class="hero__stat-sep" aria-hidden="true">•</span>
-        <span class="hero__stat-item"><strong>${Number(data.total_produtores) || 0}</strong> produtores cadastrados</span>
-        <span class="hero__stat-sep" aria-hidden="true">•</span>
-        <span class="hero__stat-item"><strong>${Number(data.total_produtos) || 0}</strong> produtos frescos</span>
-      `;
-    }
-  } catch (_) {}
-}
-
-// ── Vitrine dos Produtores ─────────────────────────────────────────────────
-export async function loadProducers() {
+// ── Vitrine dos Produtores (com paginação) ─────────────────────────────────
+export async function loadProducers(page = 1) {
   const container = document.getElementById('producerShowcase');
+  const pagEl = document.getElementById('producersPagination');
   if (!container) return;
+  if (pagEl) pagEl.innerHTML = '';
 
   try {
-    const res = await apiFetch('/produtores/');
-    if (!res.ok) return;
+    const res = await apiFetch(`/produtores/?page=${page}`);
+    if (!res.ok) throw new Error('Falha ao carregar produtores.');
 
     const data = await res.json();
     const produtores = data.results || data || [];
     if (produtores.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <span class="empty-state__icon">🚜</span>
+          <span class="empty-state__icon" aria-hidden="true">${renderIcon('wheat', 26)}</span>
           <p>Nenhum produtor aprovado cadastrado ainda.</p>
         </div>
       `;
@@ -479,7 +480,7 @@ export async function loadProducers() {
             ${renderProducerAvatarHtml(p)}
             <div class="producer-card__header">
               <h3>${escapeHtml(p.nome_propriedade)}</h3>
-              <span class="producer-card__location">📍 ${escapeHtml(p.cidade_uf || p.cidade || 'Região')}</span>
+              <span class="producer-card__location">${renderIcon('map-pin', 14)} ${escapeHtml(p.cidade_uf || p.cidade || 'Região')}</span>
             </div>
           </div>
           <p class="producer-card__desc">${escapeHtml(p.descricao || 'Produção familiar local e sustentável.')}</p>
@@ -487,8 +488,8 @@ export async function loadProducers() {
             <div class="producer-card__badges">
               ${ratingBadge ? `<span class="badge badge--outline">${ratingBadge}</span>` : ''}
               ${p.aceita_pix ? PIX_BADGE_HTML : ''}
-              ${p.possui_maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
-              ${p.aceita_dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}
+              ${p.possui_maquininha ? `<span class="payment-badge">${renderIcon('credit-card', 14)} Cartão</span>` : ''}
+              ${p.aceita_dinheiro ? `<span class="payment-badge">${renderIcon('banknote', 14)} Dinheiro</span>` : ''}
               <span class="badge badge--produtos">${Number(p.total_produtos) || 0} produto(s)</span>
             </div>
             <button type="button" class="btn btn--outline btn--sm btnProducerDetail" data-id="${p.id}">
@@ -498,5 +499,14 @@ export async function loadProducers() {
         </article>
       `;
     }).join('');
-  } catch (_) {}
+
+    renderPaginationBar(pagEl, data, page, (nextPage) => loadProducers(nextPage));
+  } catch (_) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state__icon" aria-hidden="true">${renderIcon('alert-triangle', 26)}</span>
+        <p>Não foi possível carregar os produtores no momento.</p>
+      </div>
+    `;
+  }
 }

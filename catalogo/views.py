@@ -36,6 +36,7 @@ class ProdutorPublicoViewSet(viewsets.ReadOnlyModelViewSet):
                         "produtos",
                         filter=Q(
                             produtos__ativo=True,
+                            produtos__oculto_moderacao=False,
                             produtos__excluido_em__isnull=True,
                             produtos__categoria__ativa=True,
                         ),
@@ -69,6 +70,7 @@ class EstatisticasPublicasView(APIView):
         ).count()
         total_produtos = Produto.objects.filter(
             ativo=True,
+            oculto_moderacao=False,
             excluido_em__isnull=True,
             categoria__ativa=True,
             produtor__status=PerfilProdutor.Status.APROVADO,
@@ -128,6 +130,7 @@ class CatalogoViewSet(viewsets.ReadOnlyModelViewSet):
         return (Produto.objects
                 .filter(
                     ativo=True,
+                    oculto_moderacao=False,
                     excluido_em__isnull=True,
                     categoria__ativa=True,
                     produtor__status=PerfilProdutor.Status.APROVADO,

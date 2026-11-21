@@ -21,23 +21,11 @@ class Avaliacao(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["cliente", "produto", "pedido"],
-                condition=Q(produto__isnull=False, pedido__isnull=False),
                 name="uma_avaliacao_por_cliente_produto_pedido",
             ),
             models.UniqueConstraint(
                 fields=["cliente", "produtor", "pedido"],
-                condition=Q(produtor__isnull=False, pedido__isnull=False),
                 name="uma_avaliacao_por_cliente_produtor_pedido",
-            ),
-            models.UniqueConstraint(
-                fields=["cliente", "produto"],
-                condition=Q(produto__isnull=False, pedido__isnull=True),
-                name="uma_avaliacao_legada_cliente_produto",
-            ),
-            models.UniqueConstraint(
-                fields=["cliente", "produtor"],
-                condition=Q(produtor__isnull=False, pedido__isnull=True),
-                name="uma_avaliacao_legada_cliente_produtor",
             ),
             models.CheckConstraint(
                 condition=(Q(produto__isnull=False, produtor__isnull=True) |

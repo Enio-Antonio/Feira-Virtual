@@ -35,20 +35,29 @@ class Command(BaseCommand):
                 self._reset()
             self._seed()
 
-        self.stdout.write(self.style.SUCCESS("✅  Seed concluído com sucesso!"))
+        self.stdout.write(self.style.SUCCESS("Seed concluído com sucesso!"))
         self.stdout.write("")
-        self.stdout.write("Contas criadas:")
-        self.stdout.write("  Admin   → admin / admin-demo-2024")
-        self.stdout.write("  Cliente → cliente@demo.com / cliente-demo-2024")
-        self.stdout.write("  Produtor→ produtor@demo.com / produtor-demo-2024")
-        self.stdout.write("  Entregad→ entregador@demo.com / entregador-demo-2024")
+        self.stdout.write("Contas criadas (use o usuário / senha no login):")
+        self.stdout.write("  Admin      → admin / admin-demo-2024")
+        self.stdout.write("  Cliente    → cliente_demo / cliente-demo-2024")
+        self.stdout.write("  Produtor   → produtor_demo / produtor-demo-2024")
+        self.stdout.write("  Entregador → entregador_demo / entregador-demo-2024")
 
     # ------------------------------------------------------------------ #
 
+    SEED_CATEGORIES = [
+        "Hortaliças",
+        "Frutas",
+        "Ovos e Laticínios",
+        "Grãos e Cereais",
+        "Verduras e Legumes",
+    ]
+
     def _reset(self):
         """Remove dados de demonstração anteriores."""
-        from catalogo.models import Categoria, Produto
-        from usuarios.models import PerfilProdutor, Usuario
+        from django.db.models import ProtectedError
+        from catalogo.models import Categoria
+        from usuarios.models import Usuario
 
         self.stdout.write("  Removendo dados anteriores …")
         emails = [
@@ -58,7 +67,11 @@ class Command(BaseCommand):
             "entregador@demo.com",
         ]
         Usuario.objects.filter(email__in=emails).delete()
-        Categoria.objects.filter(nome__startswith="[DEMO]").delete()
+        for cat in Categoria.objects.filter(nome__startswith="[DEMO]") | Categoria.objects.filter(nome__in=self.SEED_CATEGORIES):
+            try:
+                cat.delete()
+            except ProtectedError:
+                pass
 
     def _seed(self):
         from catalogo.models import Categoria, Produto
@@ -113,7 +126,7 @@ class Command(BaseCommand):
         perfil_prod, _ = PerfilProdutor.objects.get_or_create(
             usuario=produtor_user,
             defaults={
-                "nome_propriedade": "Sítio Esperança (Demo)",
+                "nome_propriedade": "Sítio Esperança",
                 "descricao": "Produção orgânica familiar desde 1998.",
                 "cidade": "Campinas",
                 "estado": "SP",
@@ -121,7 +134,7 @@ class Command(BaseCommand):
                 "chave_pix": "produtor@demo.com",
             },
         )
-        self._ok("Produtor aprovado (produtor@demo.com)")
+        self._ok("Produtor aprovado (produtor_demo)")
 
         # ── Entregador ──────────────────────────────────────────────────
         entregador_user, created = Usuario.objects.get_or_create(
@@ -145,32 +158,32 @@ class Command(BaseCommand):
                 "area_atuacao": "Campinas e Região",
             },
         )
-        self._ok("Entregador (entregador@demo.com)")
+        self._ok("Entregador (entregador_demo)")
 
-        # ── Categorias ──────────────────────────────────────────────────
+        # ── Categorias (sem prefixo [DEMO]) ─────────────────────────────
         categorias_data = [
-            ("Verduras e Legumes", "🥦"),
-            ("Frutas", "🍎"),
-            ("Ovos e Laticínios", "🥚"),
-            ("Grãos e Cereais", "🌾"),
+            "Hortaliças",
+            "Frutas",
+            "Ovos e Laticínios",
+            "Grãos e Cereais",
         ]
         cats = {}
-        for nome, icone in categorias_data:
+        for nome in categorias_data:
             cat, _ = Categoria.objects.get_or_create(
-                nome=f"[DEMO] {nome}",
+                nome=nome,
                 defaults={"descricao": f"Categoria de {nome.lower()}", "ativa": True},
             )
             cats[nome] = cat
-        self._ok(f"{len(cats)} categorias criadas")
+        self._ok(f"{len(cats)} categorias prontas")
 
         # ── Produtos ────────────────────────────────────────────────────
         produtos_data = [
-            ("Alface Crespa Orgânica", "Verduras e Legumes", "2.50", 100, Produto.Unidade.MACO, Produto.TipoProducao.ORGANICO_CERTIFICADO),
-            ("Tomate Cereja", "Verduras e Legumes", "8.90", 50, Produto.Unidade.KG, Produto.TipoProducao.ORGANICO_CERTIFICADO),
+            ("Alface Crespa Orgânica", "Hortaliças", "2.50", 100, Produto.Unidade.MACO, Produto.TipoProducao.ORGANICO_CERTIFICADO),
+            ("Tomate Cereja", "Hortaliças", "8.90", 50, Produto.Unidade.KG, Produto.TipoProducao.ORGANICO_CERTIFICADO),
             ("Banana Prata (cacho)", "Frutas", "6.00", 80, Produto.Unidade.KG, Produto.TipoProducao.AGROECOLOGICO),
             ("Ovos Caipiras (dúzia)", "Ovos e Laticínios", "12.00", 200, Produto.Unidade.UNIDADE, Produto.TipoProducao.AGROECOLOGICO),
             ("Feijão Carioca (1kg)", "Grãos e Cereais", "9.50", 60, Produto.Unidade.KG, Produto.TipoProducao.CONVENCIONAL),
-            ("Cenoura (1kg)", "Verduras e Legumes", "4.00", 90, Produto.Unidade.KG, Produto.TipoProducao.ORGANICO_CERTIFICADO),
+            ("Cenoura (1kg)", "Hortaliças", "4.00", 90, Produto.Unidade.KG, Produto.TipoProducao.ORGANICO_CERTIFICADO),
         ]
         criados = 0
         for nome, cat_nome, preco, estoque, un, tipo_prod in produtos_data:

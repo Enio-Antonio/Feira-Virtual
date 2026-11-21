@@ -74,8 +74,8 @@ class ProdutoProdutorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Produto
         fields = ["id", "nome", "descricao", "preco", "unidade_medida", "estoque", "tipo_producao", "imagem",
-                  "categoria", "ativo", "criado_em"]
-        read_only_fields = ["criado_em"]
+                  "categoria", "ativo", "oculto_moderacao", "criado_em"]
+        read_only_fields = ["criado_em", "oculto_moderacao"]
 
     def validate_categoria(self, value):
         if not value.ativa:

@@ -39,6 +39,23 @@ export function renderBrandLogoHtml(altText = 'Feira Virtual', imgClass = '') {
   `;
 }
 
+export function renderIcon(name, size = 18, extraClass = '') {
+  const safeName = escapeHtml(String(name || '').replace(/[^a-z0-9-]/gi, ''));
+  const px = Number(size) || 18;
+  const cls = escapeHtml(['icon', extraClass].filter(Boolean).join(' '));
+  return `<svg class="${cls}" width="${px}" height="${px}" aria-hidden="true" focusable="false"><use href="/static/assets/icons.svg#icon-${safeName}"></use></svg>`;
+}
+
+export function renderStars(nota, size = 14) {
+  const n = Math.max(0, Math.min(5, Math.round(Number(nota) || 0)));
+  let html = '<span class="stars-row" aria-hidden="true">';
+  for (let i = 1; i <= 5; i += 1) {
+    html += renderIcon(i <= n ? 'star-filled' : 'star', size, i <= n ? 'icon--star-filled' : 'icon--star-empty');
+  }
+  html += '</span>';
+  return html;
+}
+
 export function formatCurrency(value) {
   const num = parseFloat(value) || 0;
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -71,12 +88,13 @@ export function showToast(message, type = 'info') {
   toast.className = `toast toast--${type}`;
   toast.setAttribute('role', 'status');
 
-  const icon = type === 'success' ? '✓' : type === 'error' ? '⚠️' : 'ℹ️';
-  const iconSpan = document.createElement('span');
-  iconSpan.textContent = icon;
+  const iconName = type === 'success' ? 'check' : type === 'error' ? 'alert-triangle' : 'info';
+  const iconWrap = document.createElement('span');
+  iconWrap.className = 'toast__icon';
+  iconWrap.innerHTML = renderIcon(iconName, 16);
   const msgSpan = document.createElement('span');
   msgSpan.textContent = String(message || '');
-  toast.append(iconSpan, ' ', msgSpan);
+  toast.append(iconWrap, msgSpan);
 
   container.appendChild(toast);
   setTimeout(() => {
@@ -142,6 +160,19 @@ export function closeModal(overlayId) {
 document.addEventListener('click', (e) => {
   if (e.target.classList?.contains('modal-overlay') && e.target.id) {
     closeModal(e.target.id);
+    return;
+  }
+
+  const toggleBtn = e.target.closest?.('.password-toggle');
+  if (toggleBtn) {
+    const targetId = toggleBtn.dataset?.target;
+    const input = targetId ? document.getElementById(targetId) : toggleBtn.parentElement?.querySelector('input');
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    toggleBtn.setAttribute('aria-pressed', String(isPassword));
+    toggleBtn.setAttribute('aria-label', isPassword ? 'Ocultar senha' : 'Mostrar senha');
+    toggleBtn.innerHTML = renderIcon(isPassword ? 'eye-off' : 'eye', 18);
   }
 });
 
@@ -157,13 +188,32 @@ document.addEventListener('keydown', (e) => {
     if (drawer?.classList.contains('open')) {
       e.preventDefault();
       window.dispatchEvent(new CustomEvent('fv:close-drawer'));
+      return;
+    }
+    const userMenu = document.getElementById('userDropdownMenu');
+    if (userMenu && userMenu.style.display === 'block') {
+      userMenu.style.display = 'none';
+      document.getElementById('userMenuToggle')?.setAttribute('aria-expanded', 'false');
+      document.getElementById('userMenuToggle')?.focus();
+      return;
+    }
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenu?.classList.contains('active')) {
+      mobileMenu.classList.remove('active');
+      mobileMenu.setAttribute('aria-hidden', 'true');
+      const ham = document.getElementById('hamburger');
+      ham?.setAttribute('aria-expanded', 'false');
+      ham?.focus();
     }
     return;
   }
 
-  if (e.key === 'Tab' && modalStack.length > 0) {
-    const topModal = modalStack[modalStack.length - 1].modal;
-    const focusable = getFocusableElements(topModal);
+  if (e.key === 'Tab') {
+    const activeContainer = modalStack.length > 0
+      ? modalStack[modalStack.length - 1].modal
+      : (document.getElementById('cartDrawer')?.classList.contains('open') ? document.getElementById('cartDrawer') : null);
+    if (!activeContainer) return;
+    const focusable = getFocusableElements(activeContainer);
     if (focusable.length === 0) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -366,9 +416,9 @@ export function renderPaginationBar(container, data, currentPage, onPageChange, 
 
   container.innerHTML = `
     <div class="pagination">
-      <button type="button" class="btn btn--outline btn--sm btnPagPrev" ${hasPrev ? '' : 'disabled'}>◀ Anterior</button>
+      <button type="button" class="btn btn--outline btn--sm btnPagPrev" ${hasPrev ? '' : 'disabled'}>${renderIcon('chevron-left', 15)} Anterior</button>
       <span class="pagination__info">Página ${currentPage} de ${totalPages} (${totalCount} itens)</span>
-      <button type="button" class="btn btn--outline btn--sm btnPagNext" ${hasNext ? '' : 'disabled'}>Próxima ▶</button>
+      <button type="button" class="btn btn--outline btn--sm btnPagNext" ${hasNext ? '' : 'disabled'}>Próxima ${renderIcon('chevron-right', 15)}</button>
     </div>
   `;
 

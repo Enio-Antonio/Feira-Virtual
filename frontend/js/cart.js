@@ -1,8 +1,8 @@
 /**
  * Gerenciamento do Carrinho de Compras, Drawer Lateral e Checkout.
  */
-import { apiFetch, parseError } from './api.js?v=20261120l';
-import { authState } from './auth.js?v=20261120l';
+import { apiFetch, parseError } from './api.js?v=20261121a';
+import { authState } from './auth.js?v=20261121a';
 import {
   closeModal,
   escapeHtml,
@@ -11,8 +11,9 @@ import {
   formatUnitLabel,
   getUnitStep,
   openModal,
+  renderIcon,
   showToast,
-} from './ui.js?v=20261120l';
+} from './ui.js?v=20261121a';
 
 export const cartState = {
   items: [],
@@ -52,9 +53,10 @@ export async function loadCart() {
 export function renderCartBadge() {
   const badge = document.getElementById('cartBadge');
   if (!badge) return;
-  const count = cartState.items.reduce((acc, i) => acc + (parseFloat(i.quantidade) || 0), 0);
-  badge.textContent = count > 0 ? String(Math.round(count)) : '0';
+  const count = cartState.items.length;
+  badge.textContent = String(count);
   badge.style.display = count > 0 ? 'inline-flex' : 'none';
+  badge.setAttribute('aria-hidden', String(count === 0));
 }
 
 export async function addToCart(produtoId, quantidade = 1) {
@@ -145,7 +147,9 @@ export function openCartDrawer() {
   drawer?.classList.add('open');
   drawer?.setAttribute('aria-hidden', 'false');
   overlay?.classList.add('active');
-  document.getElementById('btnCloseCart')?.focus();
+  requestAnimationFrame(() => {
+    document.getElementById('btnCloseCart')?.focus();
+  });
 }
 
 export function closeCartDrawer() {
@@ -154,6 +158,7 @@ export function closeCartDrawer() {
   drawer?.classList.remove('open');
   drawer?.setAttribute('aria-hidden', 'true');
   overlay?.classList.remove('active');
+  document.getElementById('btnOpenCart')?.focus();
 }
 
 export function renderCartDrawer() {
@@ -165,7 +170,7 @@ export function renderCartDrawer() {
   if (cartState.items.length === 0) {
     container.innerHTML = `
       <div class="cart-empty">
-        <span class="cart-empty__icon">🧺</span>
+        <span class="cart-empty__icon" aria-hidden="true">${renderIcon('shopping-basket', 28)}</span>
         <p>Seu carrinho está vazio.</p>
         <a href="#produtos" class="btn btn--outline btn--sm" id="btnContinueShopping">Explorar produtos</a>
       </div>
@@ -197,7 +202,7 @@ export function renderCartDrawer() {
         <span class="qty-val">${escapeHtml(formatQuantity(qtd, item.unidade_medida))}</span>
         <button type="button" class="qty-btn btnInc" data-id="${item.id}" data-qtd="${nextQtd}" ${atMax ? 'disabled title="Estoque máximo atingido"' : ''} aria-label="Aumentar quantidade">+</button>
       </div>
-      <button type="button" class="cart-item__remove btnDel" data-id="${item.id}" title="Remover item" aria-label="Remover item">🗑️</button>
+      <button type="button" class="cart-item__remove btnDel" data-id="${item.id}" title="Remover item" aria-label="Remover item">${renderIcon('trash-2', 16)}</button>
     </div>
   `;
   }).join('');

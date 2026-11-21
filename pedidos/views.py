@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Avg, Count, Q, Sum
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -49,7 +50,7 @@ class ItemCarrinhoViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixi
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
             return ItemCarrinho.objects.none()
-        return ItemCarrinho.objects.filter(carrinho__cliente=self.request.user).select_related("produto__produtor")
+        return ItemCarrinho.objects.filter(carrinho__cliente=self.request.user).select_related("produto__produtor", "produto__categoria")
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
@@ -127,7 +128,10 @@ class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
             return Pedido.objects.none()
-        return _pedidos_qs.filter(produtor=self.request.user.perfil_produtor)
+        perfil = getattr(self.request.user, "perfil_produtor", None)
+        if not perfil:
+            return Pedido.objects.none()
+        return _pedidos_qs.filter(produtor=perfil)
 
     def _mudar(self, novo, motivo="", previsao_entrega=""):
         pedido = services.mudar_status(self.get_object(), novo, self.request.user, motivo=motivo, previsao_entrega=previsao_entrega)
@@ -167,20 +171,21 @@ class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
         """Indicadores operacionais reais do produtor para a visão geral do painel."""
         from avaliacoes.models import Avaliacao, AvaliacaoCliente
         from catalogo.models import Produto
+        from usuarios.models import PerfilProdutor
 
-        perfil = request.user.perfil_produtor
+        perfil = get_object_or_404(PerfilProdutor, usuario=request.user)
         qs = self.get_queryset()
         concluidos = qs.filter(status=S.CONCLUIDO)
         agg_vendas = concluidos.aggregate(qtd=Count("id"), fat=Sum("total"))
         av_recebidas = Avaliacao.objects.filter(Q(produtor=perfil) | Q(produto__produtor=perfil))
         agg_av = av_recebidas.aggregate(total=Count("id"), media=Avg("nota"))
-        prods = Produto.objects.filter(produtor=perfil)
+        prods = Produto.objects.filter(produtor=perfil, excluido_em__isnull=True)
 
         return Response({
             "status_produtor": perfil.status,
             "nome_propriedade": perfil.nome_propriedade,
             "total_produtos": prods.count(),
-            "produtos_ativos": prods.filter(ativo=True).count(),
+            "produtos_ativos": prods.filter(ativo=True, oculto_moderacao=False).count(),
             "pedidos_total": qs.count(),
             "pedidos_pendentes": qs.filter(status=S.PENDENTE).count(),
             "pedidos_em_andamento": qs.filter(status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO, S.EM_ENTREGA]).count(),
@@ -299,8 +304,12 @@ class PixWebhookView(APIView):
         import json
         try:
             dados = json.loads(payload.decode("utf-8"))
-            txid = dados.get("txid", "")
-            pedido = Pedido.objects.filter(numero_publico=f"PED-{txid}").first()
+            txid_raw = str(dados.get("txid", "")).strip().upper()
+            txid_clean = txid_raw.replace("-", "")
+            if not txid_clean:
+                return Response({"erro": "txid ausente."}, status=status.HTTP_400_BAD_REQUEST)
+            sufixo = txid_clean[3:] if txid_clean.startswith("PED") else txid_clean
+            pedido = Pedido.objects.filter(numero_publico=f"PED-{sufixo}").first()
             if pedido and dados.get("evento") == "PAGAMENTO_CONFIRMADO":
                 if pedido.status == Pedido.Status.PENDENTE:
                     services.mudar_status(pedido, Pedido.Status.ACEITO, pedido.produtor.usuario)

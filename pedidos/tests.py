@@ -135,11 +135,16 @@ class FluxoCompletoTest(APITestCase):
         r = self.client.post("/api/auth/refresh/", {"refresh": tokens["refresh"]}, format="json")
         self.assertEqual(r.status_code, 401)
         from django.core import mail
+        import re
+        from urllib.parse import parse_qs
         self.client.credentials()
         self.client.post("/api/auth/recuperar-senha/", {"email": "joao@ex.com"}, format="json")
         corpo = mail.outbox[0].body
-        uid = corpo.split("uid: ")[1].split()[0]
-        token = corpo.split("token: ")[1].split()[0]
+        match = re.search(r"#redefinir-senha\?([^\s]+)", corpo)
+        self.assertIsNotNone(match, corpo)
+        params = parse_qs(match.group(1))
+        uid = params["uid"][0]
+        token = params["token"][0]
         r = self.client.post("/api/auth/redefinir-senha/", {"uid": uid, "token": token, "nova_senha": "OutraSenha-987"},
                              format="json")
         self.assertEqual(r.status_code, 200, r.data)
@@ -191,11 +196,11 @@ class FluxoCompletoTest(APITestCase):
         self.assertTrue(r_pix.data.get("simulado"))
         self.assertNotIn("qr_code_url", r_pix.data)
 
-        # Simula Webhook com assinatura HMAC válida
+        # Simula Webhook usando EXATAMENTE o txid retornado por gerar_cobranca()
         import hashlib
         import hmac
         import json
-        txid = numero_publico.replace("PED-", "")
+        txid = r_pix.data["txid"]
         payload = json.dumps({"txid": txid, "evento": "PAGAMENTO_CONFIRMADO"}).encode("utf-8")
         sig = hmac.new(b"segredo-pix-teste-seguro-2026", payload, hashlib.sha256).hexdigest()
 
@@ -408,8 +413,11 @@ class FluxoCompletoTest(APITestCase):
         self.client.post(f"/api/produtor/pedidos/{pedido_id}/status/", {"status": "EM_PREPARO"}, format="json")
         self.client.post(f"/api/produtor/pedidos/{pedido_id}/status/", {"status": "PRONTO"}, format="json")
 
-        # Entregador 1 sai para entrega e conclui
+        # Entregador 1 NÃO pode confirmar direto de PRONTO sem marcar saiu-para-entrega (BE-04)
         self.login("zeca")
+        self.assertEqual(self.client.post(f"/api/entregas/{pedido_id}/confirmar/").status_code, 400)
+
+        # Entregador 1 sai para entrega e conclui
         self.assertEqual(self.client.post(f"/api/entregas/{pedido_id}/saiu-para-entrega/").status_code, 200)
         r_conf = self.client.post(f"/api/entregas/{pedido_id}/confirmar/")
         self.assertEqual(r_conf.status_code, 200)
@@ -447,3 +455,25 @@ class FluxoCompletoTest(APITestCase):
         self.assertEqual(r_resumo.status_code, 200)
         self.assertIsNone(r_resumo.data["media_avaliacoes_recebidas"])
         self.assertEqual(r_resumo.data["status_produtor"], "PENDENTE")
+
+    def test_categoria_inativa_bloqueada_no_carrinho_e_checkout(self):
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "APROVADO"
+        p1_user.perfil_produtor.save()
+        prod = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Cheiro Verde",
+                                      preco="3.00", estoque="10", unidade_medida="MACO")
+        self.login("joao")
+        r_add = self.client.post("/api/carrinho/itens/", {"produto": prod.id, "quantidade": "1"}, format="json")
+        self.assertEqual(r_add.status_code, 201)
+
+        # Admin desativa a categoria após item já estar no carrinho -> checkout deve bloquear
+        self.cat.ativa = False
+        self.cat.save(update_fields=["ativa"])
+        r_chk = self.client.post("/api/pedidos/", {"modalidade": "RETIRADA", "forma_pagamento": "PIX"}, format="json")
+        self.assertEqual(r_chk.status_code, 400)
+
+        # Novo item na categoria inativa também é bloqueado no carrinho
+        prod2 = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Salsa",
+                                       preco="2.50", estoque="5", unidade_medida="MACO")
+        r_add2 = self.client.post("/api/carrinho/itens/", {"produto": prod2.id, "quantidade": "1"}, format="json")
+        self.assertEqual(r_add2.status_code, 400)

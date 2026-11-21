@@ -81,18 +81,40 @@ class PainelAdminTests(APITestCase):
         self.assertEqual(self.perfil.status, PerfilProdutor.Status.SUSPENSO)
 
     def test_ocultar_e_reexibir_produto(self):
+        self.perfil.status = PerfilProdutor.Status.APROVADO
+        self.perfil.save(update_fields=["status"])
+
         self.login("admin_pnl")
-        # Ocultar
+        # Ocultar pela moderação
         r_ocult = self.client.post(f"/api/admin/produtos/{self.produto.id}/ocultar/")
         self.assertEqual(r_ocult.status_code, status.HTTP_200_OK)
         self.produto.refresh_from_db()
         self.assertFalse(self.produto.ativo)
+        self.assertTrue(self.produto.oculto_moderacao)
 
-        # Reexibir
+        # Produtor NÃO consegue desfazer a moderação administrativa via PATCH (BE-02)
+        self.login("prod_pnl")
+        r_try = self.client.patch(
+            f"/api/produtor/produtos/{self.produto.id}/",
+            {"ativo": True, "oculto_moderacao": False},
+            format="json",
+        )
+        self.assertEqual(r_try.status_code, status.HTTP_200_OK)
+        self.produto.refresh_from_db()
+        self.assertTrue(self.produto.oculto_moderacao)
+        # Continua invisível no catálogo público
+        self.client.credentials()
+        self.assertEqual(self.client.get("/api/produtos/").data["count"], 0)
+
+        # Somente o admin pode reexibir
+        self.login("admin_pnl")
         r_reex = self.client.post(f"/api/admin/produtos/{self.produto.id}/reexibir/")
         self.assertEqual(r_reex.status_code, status.HTTP_200_OK)
         self.produto.refresh_from_db()
         self.assertTrue(self.produto.ativo)
+        self.assertFalse(self.produto.oculto_moderacao)
+        self.client.credentials()
+        self.assertEqual(self.client.get("/api/produtos/").data["count"], 1)
 
     def test_moderar_reclamacao_registra_auditoria(self):
         from avaliacoes.models import Reclamacao

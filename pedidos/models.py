@@ -64,7 +64,7 @@ class Pedido(models.Model):
     forma_pagamento = models.CharField(max_length=10, choices=FormaPagamento.choices)
     endereco_entrega = models.TextField(blank=True, help_text="Cópia do endereço no momento da compra")
     observacao = models.CharField(max_length=255, blank=True)
-    numero_publico = models.CharField(max_length=24, blank=True, db_index=True)
+    numero_publico = models.CharField(max_length=24, blank=True, unique=True)
     taxa_entrega = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
     previsao_entrega = models.CharField(max_length=120, blank=True, help_text="Janela/data prevista para entrega ou retirada")
     motivo_cancelamento = models.TextField(blank=True, help_text="Motivo de cancelamento ou recusa do pedido")
@@ -75,7 +75,10 @@ class Pedido(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.numero_publico:
-            self.numero_publico = gerar_numero_publico()
+            codigo = gerar_numero_publico()
+            while Pedido.objects.filter(numero_publico=codigo).exists():
+                codigo = gerar_numero_publico()
+            self.numero_publico = codigo
         super().save(*args, **kwargs)
 
     @property
@@ -90,7 +93,6 @@ class Pedido(models.Model):
             models.Index(fields=["status", "criado_em"]),
             models.Index(fields=["cliente", "status"]),
             models.Index(fields=["produtor", "status"]),
-            models.Index(fields=["numero_publico"]),
         ]
 
 

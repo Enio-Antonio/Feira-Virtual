@@ -314,7 +314,7 @@ class ProdutoAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
     queryset = Produto.objects.select_related("produtor", "categoria").order_by("nome")
     serializer_class = ProdutoAdminSerializer
     permission_classes = [EhAdmin]
-    filterset_fields = ["ativo", "categoria", "produtor"]
+    filterset_fields = ["ativo", "oculto_moderacao", "categoria", "produtor"]
     search_fields = ["nome", "descricao", "produtor__nome_propriedade"]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -325,17 +325,19 @@ class ProdutoAdminViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
     @action(detail=True, methods=["post"])
     def ocultar(self, request, pk=None):
         p = self.get_object()
+        p.oculto_moderacao = True
         p.ativo = False
-        p.save(update_fields=["ativo"])
-        registrar_auditoria(request, LogAuditoria.Acao.OCULTAR_PRODUTO, f"Produto '{p.nome}' ocultado pelo admin")
+        p.save(update_fields=["oculto_moderacao", "ativo"])
+        registrar_auditoria(request, LogAuditoria.Acao.OCULTAR_PRODUTO, f"Produto '{p.nome}' ocultado pela moderação admin")
         return Response(ProdutoAdminSerializer(p).data)
 
     @action(detail=True, methods=["post"])
     def reexibir(self, request, pk=None):
         p = self.get_object()
+        p.oculto_moderacao = False
         p.ativo = True
         p.excluido_em = None
-        p.save(update_fields=["ativo", "excluido_em"])
+        p.save(update_fields=["oculto_moderacao", "ativo", "excluido_em"])
         registrar_auditoria(request, LogAuditoria.Acao.REEXIBIR_PRODUTO, f"Produto '{p.nome}' reexibido pelo admin")
         return Response(ProdutoAdminSerializer(p).data)
 
@@ -428,7 +430,9 @@ class IndicadoresView(APIView):
         return Response({
             "usuarios_por_tipo": dict(Usuario.objects.values_list("tipo").annotate(n=Count("id"))),
             "produtores_por_status": dict(PerfilProdutor.objects.values_list("status").annotate(n=Count("id"))),
-            "produtos_ativos": Produto.objects.filter(ativo=True, excluido_em__isnull=True).count(),
+            "produtos_ativos": Produto.objects.filter(
+                ativo=True, oculto_moderacao=False, excluido_em__isnull=True, categoria__ativa=True
+            ).count(),
             "pedidos_por_status": dict(Pedido.objects.values_list("status").annotate(n=Count("id"))),
             "vendas_concluidas": concluidos.count(),
             "faturamento_total": concluidos.aggregate(t=Sum("total"))["t"] or Decimal("0.00"),

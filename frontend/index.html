@@ -31,7 +31,7 @@
   <link rel="manifest" href="{% static 'assets/manifest.webmanifest' %}" />
 
   <!-- Estilos (servido pelo WhiteNoise com cache imutável, sem requisições externas) -->
-  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120k" />
+  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120l" />
 </head>
 
 <body>
@@ -187,12 +187,25 @@
         <div class="hero__visual" aria-hidden="true">
           <div class="product-card-hero">
             <div class="product-card-hero__header" id="heroProductHeader">
-              <div class="product-card-hero__img">
-                <img src="{% static 'assets/logo-icon.webp' %}" alt="Feira Virtual" class="product-card__img--default" width="104" height="104" />
+              <div class="product-card-hero__img product-card-hero__img--logo">
+                <picture class="brand-logo-picture brand-logo-picture--light">
+                  <source
+                    srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x"
+                    type="image/webp" />
+                  <img src="{% static 'assets/logo-horizontal.png' %}" alt="Feira Virtual"
+                    class="brand-logo-img product-card__img--default" width="160" height="70" />
+                </picture>
+                <picture class="brand-logo-picture brand-logo-picture--dark">
+                  <source
+                    srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x"
+                    type="image/webp" />
+                  <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Feira Virtual"
+                    class="brand-logo-img product-card__img--default" width="160" height="70" />
+                </picture>
               </div>
             </div>
             <div class="product-card-hero__body">
-              <span class="product-card-hero__category">🌿 Hortaliças · Orgânico</span>
+              <span class="product-card-hero__category">Hortaliças · Orgânico</span>
               <h3 class="product-card-hero__name">Alface Crespa</h3>
               <p class="product-card-hero__producer">📍 Sítio Esperança</p>
               <div class="product-card-hero__footer">
@@ -598,7 +611,22 @@
                 <label for="propFoto">Foto da propriedade (JPEG/PNG/WebP até 5MB):</label>
                 <input type="file" id="propFoto" accept="image/jpeg,image/png,image/webp" class="form-input" />
                 <div id="propFotoPreviewWrap" class="property-photo-preview">
-                  <img id="propFotoPreviewImg" src="{% static 'assets/logo-icon.webp' %}" alt="Imagem da propriedade" class="producer-card__img--default" />
+                  <div id="propFotoPreviewSlot" class="property-photo-preview__slot">
+                    <picture class="brand-logo-picture brand-logo-picture--light">
+                      <source
+                        srcset="{% static 'assets/logo-horizontal.webp' %} 1x, {% static 'assets/logo-horizontal-2x.webp' %} 2x"
+                        type="image/webp" />
+                      <img src="{% static 'assets/logo-horizontal.png' %}" alt="Imagem da propriedade"
+                        class="brand-logo-img producer-card__img--default" />
+                    </picture>
+                    <picture class="brand-logo-picture brand-logo-picture--dark">
+                      <source
+                        srcset="{% static 'assets/logo-horizontal-white.webp' %} 1x, {% static 'assets/logo-horizontal-white-2x.webp' %} 2x"
+                        type="image/webp" />
+                      <img src="{% static 'assets/logo-horizontal-white.png' %}" alt="Imagem da propriedade"
+                        class="brand-logo-img producer-card__img--default" />
+                    </picture>
+                  </div>
                   <span id="propFotoPreviewText" class="text-muted">Usando logo padrão da Feira Virtual (envie uma foto para personalizar sua propriedade).</span>
                 </div>
               </div>
@@ -1276,12 +1304,14 @@
               <div class="form-group">
                 <label for="adminEditProdUnidade">Unidade:</label>
                 <select id="adminEditProdUnidade" class="form-input">
-                  <option value="UNIDADE">Unidade</option>
-                  <option value="KG">Quilograma (kg)</option>
-                  <option value="MACO">Maço</option>
-                  <option value="LITRO">Litro</option>
-                  <option value="CAIXA">Caixa</option>
-                  <option value="SACO">Saco</option>
+                  <option value="UNIDADE">unidade</option>
+                  <option value="KG">kg</option>
+                  <option value="G">g</option>
+                  <option value="MACO">maço</option>
+                  <option value="L">L</option>
+                  <option value="ML">ml</option>
+                  <option value="CAIXA">caixa</option>
+                  <option value="SACO">saco</option>
                 </select>
               </div>
               <div class="form-group">
@@ -1447,7 +1477,7 @@
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="{% static 'main.js' %}?v=20261120k"></script>
+  <script type="module" src="{% static 'main.js' %}?v=20261120l"></script>
 </body>
 
 </html>

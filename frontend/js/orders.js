@@ -3,18 +3,19 @@
  * Avaliações de Produtos e Produtores (criação por pedido + histórico editável),
  * Reclamações e Endereços (ViaCEP).
  */
-import { apiFetch, parseError } from './api.js?v=20261120k';
+import { apiFetch, parseError } from './api.js?v=20261120l';
 import {
   clearFormError,
   closeModal,
   escapeHtml,
   formatCurrency,
   formatDate,
+  formatUnitLabel,
   generateSimpleQrSvg,
   openModal,
   renderPaginationBar,
   showToast,
-} from './ui.js?v=20261120k';
+} from './ui.js?v=20261120l';
 
 const ordersCache = new Map();
 const myReviewsCache = new Map();
@@ -171,7 +172,7 @@ function renderOrdersList(container, orders) {
 
           <ul class="order-items-list">
             ${(o.itens || []).map(it => `
-              <li>${escapeHtml(it.nome_produto)} (${parseFloat(it.quantidade)} ${escapeHtml(it.unidade_medida)}) — ${formatCurrency(it.subtotal)}</li>
+              <li>${escapeHtml(it.nome_produto)} (${parseFloat(it.quantidade)} ${escapeHtml(formatUnitLabel(it.unidade_medida))}) — ${formatCurrency(it.subtotal)}</li>
             `).join('')}
           </ul>
 

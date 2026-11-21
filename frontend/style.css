@@ -301,6 +301,26 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 [data-theme="dark"] .navbar__logo-img--light { display: none; }
 [data-theme="dark"] .navbar__logo-img--dark  { display: block; }
 
+/* Logo oficial reutilizável em cards e previews (mesmos arquivos do cabeçalho/rodapé, sem filtros escuros) */
+.brand-logo-picture {
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.brand-logo-picture--light { display: flex; }
+.brand-logo-picture--dark  { display: none; }
+[data-theme="dark"] .brand-logo-picture--light { display: none; }
+[data-theme="dark"] .brand-logo-picture--dark  { display: flex; }
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: none;
+  opacity: 1;
+}
+
 /* Fallback: texto (não exibido quando a imagem carrega) */
 .navbar__logo-text { display: flex; flex-direction: column; line-height: 1.2; }
 .navbar__logo-name {
@@ -495,11 +515,15 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   width: 130px; height: 130px; border-radius: var(--radius-lg); background: var(--bg-secondary);
   display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
+.product-card-hero__img--logo {
+  width: 100%;
+  height: 120px;
+}
 .product-card-hero__img img.product-card__img--default {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 16px;
+  padding: 16px 20px;
   display: block;
 }
 .product-card-hero__badge {
@@ -512,7 +536,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .product-card-hero__producer { display: flex; align-items: center; gap: var(--space-1); font-size: 0.8125rem; color: var(--text-secondary); }
 .product-card-hero__footer { display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--border); }
 .price-unit { font-size: 1.25rem; font-weight: 800; color: var(--color-primary); }
-.price-label { font-size: 0.8125rem; color: var(--text-disabled); margin-left: 2px; }
+.price-label { font-size: 0.8125rem; color: var(--text-secondary); margin-left: 4px; font-weight: 500; }
 
 .stats-card-hero {
   position: absolute; display: flex; flex-direction: column; justify-content: center; gap: 2px;
@@ -682,7 +706,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .product-card__thumb img.product-card__img--default {
   object-fit: contain;
-  padding: 20px;
+  padding: 36px 20px 28px;
 }
 .product-card__badges {
   position: absolute;
@@ -734,18 +758,32 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   background: var(--bg-secondary);
   border: 1px solid var(--border);
 }
-.property-photo-preview img {
-  width: 56px;
-  height: 56px;
+.property-photo-preview__slot {
+  width: 108px;
+  height: 58px;
   border-radius: var(--radius-md);
-  object-fit: cover;
   background: var(--bg-card);
   border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   flex-shrink: 0;
+  padding: 6px 8px;
+}
+.property-photo-preview__slot--photo {
+  width: 58px;
+  padding: 0;
+}
+.property-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .property-photo-preview img.producer-card__img--default {
   object-fit: contain;
-  padding: 4px;
+  padding: 0;
 }
 .product-card__stock-tag {
   position: absolute;
@@ -803,9 +841,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   border-top: 1px solid var(--border);
   gap: var(--space-2);
 }
-.product-card__price-wrap { display: flex; flex-direction: column; }
-.product-card__price { font-size: 1.25rem; font-weight: 800; color: var(--color-primary); line-height: 1.1; }
-.product-card__unit { font-size: 0.6875rem; color: var(--text-disabled); font-weight: 500; }
+.product-card__price-wrap { display: flex; flex-direction: column; gap: 2px; }
+.product-card__price { font-size: 1.25rem; font-weight: 800; color: var(--color-primary); line-height: 1.15; }
+.product-card__unit { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; line-height: 1.2; }
 
 .catalog-loading, .catalog-empty {
   grid-column: 1 / -1;
@@ -873,6 +911,11 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   flex-shrink: 0;
   overflow: hidden;
 }
+.producer-card__avatar--logo {
+  width: 124px;
+  height: 68px;
+  padding: 8px 10px;
+}
 .producer-card__avatar img {
   width: 100%;
   height: 100%;
@@ -881,7 +924,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .producer-card__avatar img.producer-card__img--default {
   object-fit: contain;
-  padding: 6px;
+  padding: 0;
 }
 .producer-card__header { flex: 1; }
 .producer-card__header h3 { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
@@ -1773,17 +1816,38 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   gap: var(--space-5);
   margin-bottom: var(--space-5);
 }
-.detail-img-wrap img {
-  width: 100%;
+.detail-img-wrap {
   height: 200px;
-  object-fit: cover;
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.detail-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-md);
   display: block;
 }
 .detail-img-wrap img.product-card__img--default {
   object-fit: contain;
-  padding: 24px;
+  padding: 24px 20px;
+}
+.panel-thumb--logo {
+  width: 88px;
+  height: 56px;
+  padding: 6px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 .panel-thumb.product-card__img--default {
   object-fit: contain;
@@ -2246,5 +2310,10 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 @media (max-width: 640px) {
   .admin-filter-bar {
     grid-template-columns: 1fr;
+  }
+  .producer-card__avatar--logo {
+    width: 104px;
+    height: 60px;
+    padding: 6px 8px;
   }
 }

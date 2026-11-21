@@ -21,8 +21,8 @@ import {
   saveAdminProductEdit,
   switchAdminTab,
   toggleAdminCategory,
-} from './js/admin.js?v=20261120k';
-import { apiFetch } from './js/api.js?v=20261120k';
+} from './js/admin.js?v=20261120l';
+import { apiFetch } from './js/api.js?v=20261120l';
 import {
   checkAuth,
   confirmPasswordReset,
@@ -34,7 +34,7 @@ import {
   register,
   requestPasswordReset,
   updateProfile,
-} from './js/auth.js?v=20261120k';
+} from './js/auth.js?v=20261120l';
 import {
   addToCart,
   clearCart,
@@ -48,7 +48,7 @@ import {
   submitCheckout,
   updateCheckoutSummary,
   updateItemQuantity,
-} from './js/cart.js?v=20261120k';
+} from './js/cart.js?v=20261120l';
 import {
   handleDeliveryAction,
   openDeliveryPanel,
@@ -56,7 +56,7 @@ import {
   saveDeliveryVehicle,
   setDeliveryMineGroup,
   switchDeliveryTab,
-} from './js/delivery.js?v=20261120k';
+} from './js/delivery.js?v=20261120l';
 import {
   cancelOrder,
   createAddress,
@@ -73,7 +73,7 @@ import {
   submitComplaint,
   submitReview,
   switchOrdersTab,
-} from './js/orders.js?v=20261120k';
+} from './js/orders.js?v=20261120l';
 import {
   deleteProducerProduct,
   handleProducerOrderAction,
@@ -87,7 +87,7 @@ import {
   switchProducerTab,
   updateProductPreview,
   updatePropertyPreview,
-} from './js/producer.js?v=20261120k';
+} from './js/producer.js?v=20261120l';
 import {
   catalogState,
   loadCategories,
@@ -97,7 +97,7 @@ import {
   openProducerDetail,
   openProductDetail,
   renderCategoryPills,
-} from './js/products.js?v=20261120k';
+} from './js/products.js?v=20261120l';
 import {
   clearFormError,
   clearFormFieldErrors,
@@ -110,7 +110,7 @@ import {
   setFieldError,
   showFormError,
   showToast,
-} from './js/ui.js?v=20261120k';
+} from './js/ui.js?v=20261120l';
 
 function switchAuthTab(tab) {
   const tabLogin = document.getElementById('tabLogin');

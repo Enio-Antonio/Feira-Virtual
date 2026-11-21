@@ -1,8 +1,8 @@
 /**
  * Painel Dedicado do Entregador: Visão Geral, Entregas Disponíveis, Minhas Entregas, Histórico, Ganhos e Veículo.
  */
-import { apiFetch, parseError } from './api.js?v=20261120k';
-import { statusLabels } from './orders.js?v=20261120k';
+import { apiFetch, parseError } from './api.js?v=20261120l';
+import { statusLabels } from './orders.js?v=20261120l';
 import {
   clearFormError,
   escapeHtml,
@@ -11,7 +11,7 @@ import {
   renderPaginationBar,
   showFormError,
   showToast,
-} from './ui.js?v=20261120k';
+} from './ui.js?v=20261120l';
 
 let currentDeliveryTab = 'visao_geral';
 let currentDeliveryGroup = '';

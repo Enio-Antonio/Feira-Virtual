@@ -3,20 +3,21 @@
  * Visão geral, Produtos (pesquisa/filtro/edição/exclusão), Produtores (pesquisa/detalhes/aprovação/exclusão),
  * Clientes (pesquisa/detalhes/bloqueio/exclusão), Categorias, Pedidos, Avaliações, Reclamações e Usuários.
  */
-import { apiFetch, parseError } from './api.js?v=20261120k';
-import { authState } from './auth.js?v=20261120k';
-import { statusLabels } from './orders.js?v=20261120k';
+import { apiFetch, parseError } from './api.js?v=20261120l';
+import { authState } from './auth.js?v=20261120l';
+import { statusLabels } from './orders.js?v=20261120l';
 import {
   clearFormError,
   closeModal,
   escapeHtml,
   formatCurrency,
   formatDate,
+  formatUnitLabel,
   openModal,
   renderPaginationBar,
   showFormError,
   showToast,
-} from './ui.js?v=20261120k';
+} from './ui.js?v=20261120l';
 
 let adminCategoriesCache = [];
 let adminProductsCache = [];
@@ -205,7 +206,7 @@ export async function loadAdminProducts(page = 1) {
             <strong>${escapeHtml(p.nome)}</strong>
             <span>
               ${escapeHtml(p.produtor_nome || 'Produtor')} • ${escapeHtml(p.categoria_nome || 'Sem categoria')}
-              • ${formatCurrency(p.preco)} / ${escapeHtml(p.unidade_medida)} • Estoque: ${parseFloat(p.estoque)}
+              • ${formatCurrency(p.preco)} / ${escapeHtml(formatUnitLabel(p.unidade_medida))} • Estoque: ${parseFloat(p.estoque)}
             </span>
             <span>${statusBadge}</span>
           </div>

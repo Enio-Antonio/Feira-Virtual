@@ -1,9 +1,19 @@
 /**
  * Catálogo de Produtos, Filtros, Busca, Paginação, Detalhes, Vitrine de Produtores e Estatísticas.
  */
-import { apiFetch } from './api.js?v=20261120k';
-import { addToCart } from './cart.js?v=20261120k';
-import { escapeHtml, formatCurrency, formatDate, getUnitStep, openModal, renderProductSkeletons, safeUrl } from './ui.js?v=20261120k';
+import { apiFetch } from './api.js?v=20261120l';
+import { addToCart } from './cart.js?v=20261120l';
+import {
+  escapeHtml,
+  formatCurrency,
+  formatDate,
+  formatUnitLabel,
+  getUnitStep,
+  openModal,
+  renderBrandLogoHtml,
+  renderProductSkeletons,
+  safeUrl,
+} from './ui.js?v=20261120l';
 
 export const catalogState = {
   categories: [],
@@ -120,13 +130,21 @@ const typeBadges = {
 const PIX_BADGE_HTML =
   '<span class="payment-badge"><img src="/static/assets/pix-icon.webp" alt="" class="pix-brand-icon" width="16" height="16" /> Pix</span>';
 
-function renderProducerAvatarImg(p) {
+function renderProducerAvatarHtml(p) {
   const customUrl = p?.foto_propriedade ? safeUrl(p.foto_propriedade, '') : '';
-  const nome = escapeHtml(p?.nome_propriedade || 'Propriedade Rural');
+  const nome = p?.nome_propriedade || 'Propriedade Rural';
   if (customUrl) {
-    return `<img src="${escapeHtml(customUrl)}" alt="Propriedade ${nome}" class="producer-card__img" loading="lazy" />`;
+    return `
+      <div class="producer-card__avatar">
+        <img src="${escapeHtml(customUrl)}" alt="Propriedade ${escapeHtml(nome)}" class="producer-card__img" loading="lazy" />
+      </div>
+    `;
   }
-  return `<img src="/static/assets/logo-icon.webp" alt="Logo Feira Virtual — ${nome}" class="producer-card__img producer-card__img--default" loading="lazy" />`;
+  return `
+    <div class="producer-card__avatar producer-card__avatar--logo">
+      ${renderBrandLogoHtml(`Logo Feira Virtual — ${nome}`, 'producer-card__img producer-card__img--default')}
+    </div>
+  `;
 }
 
 function hasValidRating(p) {
@@ -199,14 +217,16 @@ function renderProductsGrid(products) {
     const semEstoque = parseFloat(p.estoque) <= 0;
     const produtorNome = p.produtor_nome || 'Produtor Parceiro';
     const customImgUrl = p.imagem ? safeUrl(p.imagem, '') : '';
-    const imgUrl = customImgUrl || '/static/assets/logo-icon.webp';
-    const imgClass = customImgUrl ? 'product-card__img' : 'product-card__img product-card__img--default';
+    const thumbMedia = customImgUrl
+      ? `<img src="${escapeHtml(customImgUrl)}" alt="${escapeHtml(p.nome)}" class="product-card__img" loading="lazy" />`
+      : renderBrandLogoHtml(p.nome, 'product-card__img product-card__img--default');
     const nota = formatRatingCompact(p);
+    const unidadeLabel = formatUnitLabel(p.unidade_medida);
 
     return `
       <article class="product-card ${semEstoque ? 'card--out-of-stock' : ''}">
         <div class="product-card__thumb btnProductDetail" data-id="${p.id}" role="button" tabindex="0" aria-label="Ver detalhes de ${escapeHtml(p.nome)}">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.nome)}" class="${imgClass}" loading="lazy" />
+          ${thumbMedia}
           <div class="product-card__badges">
             ${typeBadges[p.tipo_producao] || ''}
             ${nota ? `<span class="badge badge--outline">${nota}</span>` : ''}
@@ -228,7 +248,7 @@ function renderProductsGrid(products) {
         <div class="product-card__action-row">
           <div class="product-card__price-wrap">
             <span class="product-card__price">${formatCurrency(p.preco)}</span>
-            <span class="product-card__unit">/ ${escapeHtml(p.unidade_medida)}</span>
+            <span class="product-card__unit">/ ${escapeHtml(unidadeLabel)}</span>
           </div>
           <button
             type="button"
@@ -286,13 +306,15 @@ export async function openProductDetail(productId) {
     const avaliacoes = avData.results || [];
     const semEstoque = parseFloat(p.estoque) <= 0;
     const customImgUrl = p.imagem ? safeUrl(p.imagem, '') : '';
-    const imgUrl = customImgUrl || '/static/assets/logo-icon.webp';
-    const imgClass = customImgUrl ? '' : 'product-card__img--default';
+    const detailMedia = customImgUrl
+      ? `<img src="${escapeHtml(customImgUrl)}" alt="${escapeHtml(p.nome)}" />`
+      : renderBrandLogoHtml(p.nome, 'product-card__img--default');
+    const unidadeLabel = formatUnitLabel(p.unidade_medida);
 
     body.innerHTML = `
       <div class="detail-grid">
         <div class="detail-img-wrap">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.nome)}" class="${imgClass}" />
+          ${detailMedia}
         </div>
         <div class="detail-info">
           <div class="detail-badges">
@@ -309,7 +331,7 @@ export async function openProductDetail(productId) {
           <div class="detail-price-row">
             <div>
               <strong class="detail-price">${formatCurrency(p.preco)}</strong>
-              <span class="text-muted">/ ${escapeHtml(p.unidade_medida)}</span>
+              <span class="text-muted">/ ${escapeHtml(unidadeLabel)}</span>
             </div>
             <span class="text-muted">Disponível: ${parseFloat(p.estoque)}</span>
           </div>
@@ -368,9 +390,7 @@ export async function openProducerDetail(producerId) {
 
     body.innerHTML = `
       <div class="producer-detail-head">
-        <div class="producer-card__avatar">
-          ${renderProducerAvatarImg(p)}
-        </div>
+        ${renderProducerAvatarHtml(p)}
         <div>
           <h3>${escapeHtml(p.nome_propriedade)}</h3>
           <p class="producer-card__location">📍 ${escapeHtml(p.cidade_uf || 'Agricultura Familiar Local')}</p>
@@ -456,9 +476,7 @@ export async function loadProducers() {
       return `
         <article class="producer-card">
           <div class="producer-card__top">
-            <div class="producer-card__avatar">
-              ${renderProducerAvatarImg(p)}
-            </div>
+            ${renderProducerAvatarHtml(p)}
             <div class="producer-card__header">
               <h3>${escapeHtml(p.nome_propriedade)}</h3>
               <span class="producer-card__location">📍 ${escapeHtml(p.cidade_uf || p.cidade || 'Região')}</span>

@@ -2,20 +2,22 @@
  * Painel Dedicado do Produtor Rural: Visão Geral, Meus Produtos (com pré-visualização),
  * Minhas Propriedades (com pré-visualização), Pedidos Recebidos, Avaliação de Clientes e Avaliações.
  */
-import { apiFetch, parseError } from './api.js?v=20261120k';
-import { statusLabels } from './orders.js?v=20261120k';
+import { apiFetch, parseError } from './api.js?v=20261120l';
+import { statusLabels } from './orders.js?v=20261120l';
 import {
   clearFormError,
   closeModal,
   escapeHtml,
   formatCurrency,
   formatDate,
+  formatUnitLabel,
   openModal,
+  renderBrandLogoHtml,
   renderPaginationBar,
   safeUrl,
   showFormError,
   showToast,
-} from './ui.js?v=20261120k';
+} from './ui.js?v=20261120l';
 
 let producerProductsCache = [];
 let producerOrdersCache = new Map();
@@ -197,15 +199,16 @@ export async function loadProducerProducts() {
 
     list.innerHTML = producerProductsCache.map(p => {
       const customImg = p.imagem ? safeUrl(p.imagem, '') : '';
-      const img = customImg || '/static/assets/logo-icon.webp';
-      const thumbClass = customImg ? 'panel-thumb' : 'panel-thumb product-card__img--default';
+      const thumbHtml = customImg
+        ? `<img src="${escapeHtml(customImg)}" alt="${escapeHtml(p.nome)}" class="panel-thumb" />`
+        : `<div class="panel-thumb--logo">${renderBrandLogoHtml(p.nome, 'product-card__img--default')}</div>`;
       const cult = CULTIVO_LABELS[p.tipo_producao] || CULTIVO_LABELS.CONVENCIONAL;
       return `
         <div class="panel-list-item">
-          <img src="${escapeHtml(img)}" alt="${escapeHtml(p.nome)}" class="${thumbClass}" />
+          ${thumbHtml}
           <div class="panel-list-item__info">
             <strong>${escapeHtml(p.nome)}</strong>
-            <span>${formatCurrency(p.preco)} / ${escapeHtml(p.unidade_medida)} • Estoque: ${parseFloat(p.estoque)} • ${escapeHtml(cult.label)}</span>
+            <span>${formatCurrency(p.preco)} / ${escapeHtml(formatUnitLabel(p.unidade_medida))} • Estoque: ${parseFloat(p.estoque)} • ${escapeHtml(cult.label)}</span>
             ${p.descricao ? `<span class="text-muted">${escapeHtml(p.descricao)}</span>` : ''}
             <div>
               <span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Ativo' : 'Oculto'}</span>
@@ -237,7 +240,7 @@ export function updateProductPreview() {
   const desc = document.getElementById('prodDescricao')?.value.trim() || 'A descrição do seu produto aparecerá aqui.';
   const fileInput = document.getElementById('prodImagem');
 
-  let imgSrc = currentEditingProductPhotoUrl || '/static/assets/logo-icon.webp';
+  let imgSrc = currentEditingProductPhotoUrl || '';
   let isDefault = !currentEditingProductPhotoUrl;
   if (fileInput?.files?.length > 0) {
     if (tempProdPreviewObjectUrl) URL.revokeObjectURL(tempProdPreviewObjectUrl);
@@ -247,10 +250,13 @@ export function updateProductPreview() {
   }
 
   const cult = CULTIVO_LABELS[tipo] || CULTIVO_LABELS.CONVENCIONAL;
+  const thumbMedia = isDefault
+    ? renderBrandLogoHtml(nome, 'product-card__img product-card__img--default')
+    : `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(nome)}" class="product-card__img" />`;
 
   preview.innerHTML = `
     <div class="product-card__thumb">
-      <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(nome)}" class="product-card__img ${isDefault ? 'product-card__img--default' : ''}" />
+      ${thumbMedia}
       <div class="product-card__badges">
         <span class="badge badge--cultivo ${cult.cls}">${escapeHtml(cult.label)}</span>
       </div>
@@ -262,7 +268,7 @@ export function updateProductPreview() {
     <div class="product-card__action-row">
       <div class="product-card__price-wrap">
         <span class="product-card__price">${formatCurrency(preco)}</span>
-        <span class="product-card__unit">/ ${escapeHtml(unidade)}</span>
+        <span class="product-card__unit">/ ${escapeHtml(formatUnitLabel(unidade))}</span>
       </div>
     </div>
   `;
@@ -420,7 +426,7 @@ export async function loadProducerOrders(page = 1) {
             ${o.previsao_entrega ? `<p><strong>Previsão:</strong> ${escapeHtml(o.previsao_entrega)}</p>` : ''}
             ${o.observacao ? `<p><strong>Obs.:</strong> ${escapeHtml(o.observacao)}</p>` : ''}
             <ul class="order-items-list">
-              ${(o.itens || []).map(it => `<li>${escapeHtml(it.nome_produto)} × ${parseFloat(it.quantidade)} ${escapeHtml(it.unidade_medida)}</li>`).join('')}
+              ${(o.itens || []).map(it => `<li>${escapeHtml(it.nome_produto)} × ${parseFloat(it.quantidade)} ${escapeHtml(formatUnitLabel(it.unidade_medida))}</li>`).join('')}
             </ul>
           </div>
           <div class="order-card__footer">
@@ -590,7 +596,7 @@ export function updatePropertyPreview() {
   const dinheiro = Boolean(document.getElementById('propDinheiro')?.checked);
   const fileInput = document.getElementById('propFoto');
 
-  let imgSrc = currentPropertyPhotoUrl || '/static/assets/logo-icon.webp';
+  let imgSrc = currentPropertyPhotoUrl || '';
   let isDefault = !currentPropertyPhotoUrl;
   if (fileInput?.files?.length > 0) {
     if (tempPropPreviewObjectUrl) URL.revokeObjectURL(tempPropPreviewObjectUrl);
@@ -599,11 +605,13 @@ export function updatePropertyPreview() {
     isDefault = false;
   }
 
+  const avatarHtml = isDefault
+    ? `<div class="producer-card__avatar producer-card__avatar--logo">${renderBrandLogoHtml(nome, 'producer-card__img producer-card__img--default')}</div>`
+    : `<div class="producer-card__avatar"><img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(nome)}" class="producer-card__img" /></div>`;
+
   card.innerHTML = `
     <div class="producer-card__top">
-      <div class="producer-card__avatar">
-        <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(nome)}" class="producer-card__img ${isDefault ? 'producer-card__img--default' : ''}" />
-      </div>
+      ${avatarHtml}
       <div class="producer-card__header">
         <h3>${escapeHtml(nome)}</h3>
         <span class="producer-card__location">📍 ${escapeHtml(local)}</span>
@@ -634,17 +642,17 @@ async function loadProducerProperty() {
     document.getElementById('propMaquininha').checked = Boolean(p.possui_maquininha);
     document.getElementById('propDinheiro').checked = Boolean(p.aceita_dinheiro);
 
-    const previewImg = document.getElementById('propFotoPreviewImg');
+    const previewSlot = document.getElementById('propFotoPreviewSlot');
     const previewText = document.getElementById('propFotoPreviewText');
     currentPropertyPhotoUrl = p.foto_propriedade ? safeUrl(p.foto_propriedade, '') : '';
-    if (previewImg && previewText) {
+    if (previewSlot && previewText) {
       if (currentPropertyPhotoUrl) {
-        previewImg.src = currentPropertyPhotoUrl;
-        previewImg.classList.remove('producer-card__img--default');
+        previewSlot.classList.add('property-photo-preview__slot--photo');
+        previewSlot.innerHTML = `<img src="${escapeHtml(currentPropertyPhotoUrl)}" alt="Foto atual da propriedade" />`;
         previewText.textContent = 'Foto atual da propriedade cadastrada. Selecione outro arquivo acima se quiser substituí-la.';
       } else {
-        previewImg.src = '/static/assets/logo-icon.webp';
-        previewImg.classList.add('producer-card__img--default');
+        previewSlot.classList.remove('property-photo-preview__slot--photo');
+        previewSlot.innerHTML = renderBrandLogoHtml('Imagem da propriedade', 'producer-card__img--default');
         previewText.textContent = 'Usando logo padrão da Feira Virtual (envie uma foto para personalizar sua propriedade).';
       }
     }

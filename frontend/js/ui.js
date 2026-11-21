@@ -9,7 +9,7 @@ export function escapeHtml(str) {
   return div.innerHTML;
 }
 
-export function safeUrl(url, fallback = '/static/assets/logo-icon.webp') {
+export function safeUrl(url, fallback = '/static/assets/logo-horizontal.webp') {
   if (!url || typeof url !== 'string') return fallback;
   const trimmed = url.trim();
   if (
@@ -22,6 +22,21 @@ export function safeUrl(url, fallback = '/static/assets/logo-icon.webp') {
     return trimmed;
   }
   return fallback;
+}
+
+export function renderBrandLogoHtml(altText = 'Feira Virtual', imgClass = '') {
+  const safeAlt = escapeHtml(altText || 'Feira Virtual');
+  const cls = escapeHtml(['brand-logo-img', imgClass].filter(Boolean).join(' '));
+  return `
+    <picture class="brand-logo-picture brand-logo-picture--light">
+      <source srcset="/static/assets/logo-horizontal.webp 1x, /static/assets/logo-horizontal-2x.webp 2x" type="image/webp" />
+      <img src="/static/assets/logo-horizontal.png" alt="${safeAlt}" class="${cls}" loading="lazy" />
+    </picture>
+    <picture class="brand-logo-picture brand-logo-picture--dark">
+      <source srcset="/static/assets/logo-horizontal-white.webp 1x, /static/assets/logo-horizontal-white-2x.webp 2x" type="image/webp" />
+      <img src="/static/assets/logo-horizontal-white.png" alt="${safeAlt}" class="${cls}" loading="lazy" />
+    </picture>
+  `;
 }
 
 export function formatCurrency(value) {
@@ -297,6 +312,30 @@ export function generateSimpleQrSvg(text) {
 }
 
 // ── Passo e Formatação de Quantidade por Unidade de Medida ────────────────
+const UNIT_DISPLAY_LABELS = {
+  KG: 'kg',
+  G: 'g',
+  L: 'L',
+  LITRO: 'L',
+  ML: 'ml',
+  UNIDADE: 'unidade',
+  CAIXA: 'caixa',
+  SACO: 'saco',
+  MACO: 'maço',
+  'MAÇO': 'maço',
+};
+
+export function formatUnitLabel(unidade) {
+  if (unidade === null || unidade === undefined) return '';
+  const raw = String(unidade).trim();
+  if (!raw) return '';
+  const key = raw.toUpperCase();
+  if (Object.prototype.hasOwnProperty.call(UNIT_DISPLAY_LABELS, key)) {
+    return UNIT_DISPLAY_LABELS[key];
+  }
+  return raw.toLowerCase();
+}
+
 export function getUnitStep(unidade) {
   const u = String(unidade || '').toUpperCase();
   if (u === 'KG' || u === 'L') return { step: 0.5, min: 0.5, integer: false };

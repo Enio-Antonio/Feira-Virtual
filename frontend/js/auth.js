@@ -1,8 +1,8 @@
 /**
  * Gerenciamento de Autenticação, Perfis de Usuário (Multi-perfil) e LGPD.
  */
-import { apiFetch, parseError, tokens } from './api.js?v=20261120k';
-import { escapeHtml, openModal, showToast } from './ui.js?v=20261120k';
+import { apiFetch, parseError, tokens } from './api.js?v=20261120l';
+import { escapeHtml, openModal, showToast } from './ui.js?v=20261120l';
 
 export const authState = {
   user: null,

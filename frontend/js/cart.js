@@ -1,9 +1,18 @@
 /**
  * Gerenciamento do Carrinho de Compras, Drawer Lateral e Checkout.
  */
-import { apiFetch, parseError } from './api.js?v=20261120k';
-import { authState } from './auth.js?v=20261120k';
-import { closeModal, escapeHtml, formatCurrency, formatQuantity, getUnitStep, openModal, showToast } from './ui.js?v=20261120k';
+import { apiFetch, parseError } from './api.js?v=20261120l';
+import { authState } from './auth.js?v=20261120l';
+import {
+  closeModal,
+  escapeHtml,
+  formatCurrency,
+  formatQuantity,
+  formatUnitLabel,
+  getUnitStep,
+  openModal,
+  showToast,
+} from './ui.js?v=20261120l';
 
 export const cartState = {
   items: [],
@@ -180,7 +189,7 @@ export function renderCartDrawer() {
     <div class="cart-item">
       <div class="cart-item__info">
         <div class="cart-item__name">${escapeHtml(item.produto_nome)}</div>
-        <div class="cart-item__price">${formatCurrency(item.preco_unitario)} / ${escapeHtml(item.unidade_medida)}</div>
+        <div class="cart-item__price">${formatCurrency(item.preco_unitario)} / ${escapeHtml(formatUnitLabel(item.unidade_medida))}</div>
         <div class="cart-item__subtotal">${formatCurrency(item.subtotal)}</div>
       </div>
       <div class="cart-item__qty">
@@ -248,7 +257,7 @@ export function updateCheckoutSummary() {
           <span>${formatCurrency(g.subtotal)}</span>
         </div>
         <ul class="checkout-producer-group__items">
-          ${g.items.map(it => `<li>${escapeHtml(it.produto_nome)} × ${escapeHtml(formatQuantity(it.quantidade, it.unidade_medida))} ${escapeHtml(it.unidade_medida)}</li>`).join('')}
+          ${g.items.map(it => `<li>${escapeHtml(it.produto_nome)} × ${escapeHtml(formatQuantity(it.quantidade, it.unidade_medida))} ${escapeHtml(formatUnitLabel(it.unidade_medida))}</li>`).join('')}
         </ul>
       </div>
     `).join('');

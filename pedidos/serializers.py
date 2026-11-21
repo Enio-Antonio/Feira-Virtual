@@ -62,7 +62,7 @@ class ItemCarrinhoSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         produto = attrs.get("produto") or self.instance.produto
         qtd = attrs.get("quantidade", getattr(self.instance, "quantidade", Decimal("0")))
-        if not produto.ativo or produto.produtor.status != "APROVADO":
+        if not produto.ativo or produto.excluido_em is not None or produto.produtor.status != "APROVADO" or produto.produtor.excluido_em is not None:
             raise serializers.ValidationError("Produto indisponível.")
         if qtd is None or qtd <= 0:
             raise serializers.ValidationError({"quantidade": "A quantidade deve ser maior que zero."})
@@ -115,6 +115,7 @@ class PedidoSerializer(serializers.ModelSerializer):
     local_retirada = serializers.SerializerMethodField()
     concluido_em = serializers.SerializerMethodField()
     cliente_avaliado = serializers.SerializerMethodField()
+    avaliacoes_feitas = serializers.SerializerMethodField()
 
     class Meta:
         model = Pedido
@@ -124,7 +125,7 @@ class PedidoSerializer(serializers.ModelSerializer):
             "observacao", "total", "taxa_entrega", "total_com_frete",
             "previsao_entrega", "motivo_cancelamento", "produtor", "produtor_nome",
             "cliente", "cliente_nome", "entregador", "chave_pix",
-            "concluido_em", "cliente_avaliado",
+            "concluido_em", "cliente_avaliado", "avaliacoes_feitas",
             "itens", "historico", "criado_em", "atualizado_em"
         ]
         read_only_fields = fields
@@ -169,6 +170,16 @@ class PedidoSerializer(serializers.ModelSerializer):
             return obj.avaliacao_cliente is not None
         except Exception:
             return False
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_avaliacoes_feitas(self, obj) -> dict:
+        if obj.status != Pedido.Status.CONCLUIDO:
+            return {"produtor": False, "produtos": []}
+        avs = list(obj.avaliacoes.all())
+        return {
+            "produtor": any(a.produtor_id == obj.produtor_id for a in avs),
+            "produtos": [a.produto_id for a in avs if a.produto_id is not None],
+        }
 
     def get_chave_pix(self, obj) -> str | None:
         request = self.context.get("request")

@@ -2,17 +2,27 @@
  * Orquestrador principal da aplicação (ES Module — sem estado global solto).
  */
 import {
+  confirmAdminDelete,
   deleteAdminCategory,
   handleAdminAction,
+  loadAdminClients,
   loadAdminOrders,
+  loadAdminProducers,
+  loadAdminProducts,
+  loadAdminUsers,
   openAdminCategoryForm,
+  openAdminClientDetails,
+  openAdminDeleteConfirm,
   openAdminPanel,
+  openAdminProducerDetails,
+  openAdminProductEdit,
   saveAdminCategory,
   saveAdminComplaint,
+  saveAdminProductEdit,
   switchAdminTab,
   toggleAdminCategory,
-} from './js/admin.js?v=20261120j';
-import { apiFetch } from './js/api.js?v=20261120j';
+} from './js/admin.js?v=20261120k';
+import { apiFetch } from './js/api.js?v=20261120k';
 import {
   checkAuth,
   confirmPasswordReset,
@@ -24,7 +34,7 @@ import {
   register,
   requestPasswordReset,
   updateProfile,
-} from './js/auth.js?v=20261120j';
+} from './js/auth.js?v=20261120k';
 import {
   addToCart,
   clearCart,
@@ -38,7 +48,7 @@ import {
   submitCheckout,
   updateCheckoutSummary,
   updateItemQuantity,
-} from './js/cart.js?v=20261120j';
+} from './js/cart.js?v=20261120k';
 import {
   handleDeliveryAction,
   openDeliveryPanel,
@@ -46,21 +56,24 @@ import {
   saveDeliveryVehicle,
   setDeliveryMineGroup,
   switchDeliveryTab,
-} from './js/delivery.js?v=20261120j';
+} from './js/delivery.js?v=20261120k';
 import {
   cancelOrder,
   createAddress,
   deleteAddress,
+  deleteMyReview,
   fetchViaCEP,
   loadAddresses,
   loadMyOrders,
   openComplaintModalForOrder,
+  openEditReviewModal,
+  openMyReviews,
   openReviewModalForOrder,
   showPixDetails,
   submitComplaint,
   submitReview,
   switchOrdersTab,
-} from './js/orders.js?v=20261120j';
+} from './js/orders.js?v=20261120k';
 import {
   deleteProducerProduct,
   handleProducerOrderAction,
@@ -74,7 +87,7 @@ import {
   switchProducerTab,
   updateProductPreview,
   updatePropertyPreview,
-} from './js/producer.js?v=20261120j';
+} from './js/producer.js?v=20261120k';
 import {
   catalogState,
   loadCategories,
@@ -84,7 +97,7 @@ import {
   openProducerDetail,
   openProductDetail,
   renderCategoryPills,
-} from './js/products.js?v=20261120j';
+} from './js/products.js?v=20261120k';
 import {
   clearFormError,
   clearFormFieldErrors,
@@ -97,7 +110,7 @@ import {
   setFieldError,
   showFormError,
   showToast,
-} from './js/ui.js?v=20261120j';
+} from './js/ui.js?v=20261120k';
 
 function switchAuthTab(tab) {
   const tabLogin = document.getElementById('tabLogin');
@@ -169,6 +182,9 @@ function handleUserAction(action) {
   switch (action) {
     case 'my-orders':
       loadMyOrders();
+      break;
+    case 'my-reviews':
+      openMyReviews();
       break;
     case 'my-addresses':
       loadAddresses();
@@ -689,6 +705,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Pedidos, Pix, Avaliações, Reclamações, Endereços e Perfil ──────────
   document.getElementById('btnCloseMyOrdersModal')?.addEventListener('click', () => closeModal('myOrdersModalOverlay'));
   document.getElementById('tabOrdersList')?.addEventListener('click', () => switchOrdersTab('pedidos'));
+  document.getElementById('tabMyReviews')?.addEventListener('click', () => switchOrdersTab('avaliacoes'));
   document.getElementById('tabMyComplaints')?.addEventListener('click', () => switchOrdersTab('reclamacoes'));
 
   document.getElementById('myOrdersList')?.addEventListener('click', (e) => {
@@ -704,12 +721,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const reviewBtn = e.target.closest('.btnOpenReview');
     if (reviewBtn) {
-      openReviewModalForOrder(Number(reviewBtn.dataset.id));
+      openReviewModalForOrder(Number(reviewBtn.dataset.id), reviewBtn.dataset.mode || 'all');
       return;
     }
     const compBtn = e.target.closest('.btnOpenComplaint');
     if (compBtn) {
       openComplaintModalForOrder(Number(compBtn.dataset.id));
+    }
+  });
+
+  document.getElementById('myReviewsList')?.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.btnEditMyReview');
+    if (editBtn) {
+      openEditReviewModal(Number(editBtn.dataset.id));
+      return;
+    }
+    const delBtn = e.target.closest('.btnDeleteMyReview');
+    if (delBtn) {
+      deleteMyReview(Number(delBtn.dataset.id));
     }
   });
 
@@ -730,17 +759,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearFormError('reviewError');
-    const targetVal = document.getElementById('reviewTarget')?.value || '';
-    const [kind, idStr] = targetVal.split(':');
+    const editId = document.getElementById('reviewEditId')?.value.trim() || '';
+    const orderIdStr = document.getElementById('reviewOrderId')?.value.trim() || '';
     const nota = Number(document.querySelector('input[name="reviewNota"]:checked')?.value || 5);
     const comentario = document.getElementById('reviewComment')?.value.trim() || '';
 
     const payload = { nota, comentario };
-    if (kind === 'produto') payload.produto = Number(idStr);
-    else payload.produtor = Number(idStr);
+    if (!editId) {
+      const targetVal = document.getElementById('reviewTarget')?.value || '';
+      const [kind, idStr] = targetVal.split(':');
+      if (orderIdStr) payload.pedido = Number(orderIdStr);
+      if (kind === 'produto') payload.produto = Number(idStr);
+      else payload.produtor = Number(idStr);
+    }
 
     try {
-      await submitReview(payload);
+      await submitReview(payload, editId || null);
     } catch (err) {
       showFormError('reviewError', err.message);
     }
@@ -916,10 +950,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Painel de Moderação Admin ──────────────────────────────────────────
   document.getElementById('btnCloseAdminPanelModal')?.addEventListener('click', () => closeModal('adminPanelModalOverlay'));
+  document.getElementById('btnCloseAdminDetailModal')?.addEventListener('click', () => closeModal('adminDetailModalOverlay'));
+  document.getElementById('btnCloseAdminConfirmModal')?.addEventListener('click', () => closeModal('adminConfirmModalOverlay'));
+  document.getElementById('btnCancelAdminConfirm')?.addEventListener('click', () => closeModal('adminConfirmModalOverlay'));
+  document.getElementById('btnProceedAdminConfirm')?.addEventListener('click', () => confirmAdminDelete());
+
   document.getElementById('adminPanelTabs')?.addEventListener('click', (e) => {
     const tabBtn = e.target.closest('[data-admin-tab]');
     if (tabBtn) switchAdminTab(tabBtn.dataset.adminTab);
   });
+
+  // Filtros e edição de produtos (Admin)
+  let adminSearchTimer = null;
+  const bindDebouncedAdminSearch = (elId, callback) => {
+    document.getElementById(elId)?.addEventListener('input', () => {
+      clearTimeout(adminSearchTimer);
+      adminSearchTimer = setTimeout(() => callback(1), 300);
+    });
+  };
+  bindDebouncedAdminSearch('adminProdSearch', loadAdminProducts);
+  document.getElementById('adminProdCatFilter')?.addEventListener('change', () => loadAdminProducts(1));
+  document.getElementById('adminProdProducerFilter')?.addEventListener('change', () => loadAdminProducts(1));
+  document.getElementById('adminProdStatusFilter')?.addEventListener('change', () => loadAdminProducts(1));
+  document.getElementById('btnCancelAdminProductEdit')?.addEventListener('click', () => {
+    const wrap = document.getElementById('adminProductEditWrap');
+    if (wrap) wrap.style.display = 'none';
+  });
+  document.getElementById('adminProductEditForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveAdminProductEdit();
+  });
+
+  // Filtros de Produtores, Clientes e Usuários (Admin)
+  bindDebouncedAdminSearch('adminProducerSearch', loadAdminProducers);
+  document.getElementById('adminProducerStatusFilter')?.addEventListener('change', () => loadAdminProducers(1));
+  bindDebouncedAdminSearch('adminClientSearch', loadAdminClients);
+  document.getElementById('adminClientStatusFilter')?.addEventListener('change', () => loadAdminClients(1));
+  bindDebouncedAdminSearch('adminUserSearch', loadAdminUsers);
+  document.getElementById('adminUserTypeFilter')?.addEventListener('change', () => loadAdminUsers(1));
+
   document.getElementById('btnNewAdminCategory')?.addEventListener('click', () => openAdminCategoryForm(null));
   document.getElementById('btnCancelAdminCategory')?.addEventListener('click', () => {
     const wrap = document.getElementById('adminCategoryFormWrap');
@@ -932,9 +1001,40 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('adminOrderStatusFilter')?.addEventListener('change', () => loadAdminOrders(1));
 
   document.getElementById('adminPanelModalOverlay')?.addEventListener('click', (e) => {
+    const editProdBtn = e.target.closest('.btnEditAdminProduct');
+    if (editProdBtn) {
+      openAdminProductEdit(Number(editProdBtn.dataset.id));
+      return;
+    }
+    const prodDetailBtn = e.target.closest('.btnAdminProducerDetail');
+    if (prodDetailBtn) {
+      openAdminProducerDetails(Number(prodDetailBtn.dataset.id));
+      return;
+    }
+    const clientDetailBtn = e.target.closest('.btnAdminClientDetail');
+    if (clientDetailBtn) {
+      openAdminClientDetails(Number(clientDetailBtn.dataset.id));
+      return;
+    }
+    const delEntityBtn = e.target.closest('.btnDeleteAdminEntity');
+    if (delEntityBtn) {
+      openAdminDeleteConfirm(
+        delEntityBtn.dataset.resource,
+        Number(delEntityBtn.dataset.id),
+        delEntityBtn.dataset.label || '',
+        delEntityBtn.dataset.tab || null,
+        delEntityBtn.dataset.kind || 'registro',
+      );
+      return;
+    }
     const actBtn = e.target.closest('.btnAdminAction');
     if (actBtn) {
-      handleAdminAction(actBtn.dataset.resource, Number(actBtn.dataset.id), actBtn.dataset.action);
+      handleAdminAction(
+        actBtn.dataset.resource,
+        Number(actBtn.dataset.id),
+        actBtn.dataset.action,
+        actBtn.dataset.tab || null,
+      );
       return;
     }
     const editCatBtn = e.target.closest('.btnEditAdminCat');
@@ -949,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const delCatBtn = e.target.closest('.btnDeleteAdminCat');
     if (delCatBtn) {
-      deleteAdminCategory(Number(delCatBtn.dataset.id));
+      deleteAdminCategory(Number(delCatBtn.dataset.id), delCatBtn.dataset.label || '');
       return;
     }
     const saveCompBtn = e.target.closest('.btnSaveComplaint');

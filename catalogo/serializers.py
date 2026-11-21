@@ -13,6 +13,8 @@ class ProdutorPublicoSerializer(serializers.ModelSerializer):
     total_produtos = serializers.IntegerField(read_only=True, default=0)
     cidade_uf = serializers.SerializerMethodField()
     aceita_pix = serializers.SerializerMethodField()
+    nota_media = serializers.FloatField(read_only=True, default=None)
+    total_avaliacoes = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = PerfilProdutor
@@ -28,6 +30,8 @@ class ProdutorPublicoSerializer(serializers.ModelSerializer):
             "possui_maquininha",
             "aceita_dinheiro",
             "total_produtos",
+            "nota_media",
+            "total_avaliacoes",
         ]
 
     @extend_schema_field(OpenApiTypes.STR)

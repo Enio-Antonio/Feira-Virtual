@@ -2,8 +2,8 @@
  * Painel Dedicado do Produtor Rural: Visão Geral, Meus Produtos (com pré-visualização),
  * Minhas Propriedades (com pré-visualização), Pedidos Recebidos, Avaliação de Clientes e Avaliações.
  */
-import { apiFetch, parseError } from './api.js?v=20261120j';
-import { statusLabels } from './orders.js?v=20261120j';
+import { apiFetch, parseError } from './api.js?v=20261120k';
+import { statusLabels } from './orders.js?v=20261120k';
 import {
   clearFormError,
   closeModal,
@@ -15,7 +15,7 @@ import {
   safeUrl,
   showFormError,
   showToast,
-} from './ui.js?v=20261120j';
+} from './ui.js?v=20261120k';
 
 let producerProductsCache = [];
 let producerOrdersCache = new Map();

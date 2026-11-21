@@ -1,10 +1,14 @@
 /**
- * Painel Administrativo de Moderação: Indicadores, Produtores, Produtos, Categorias, Pedidos, Reclamações e Usuários.
+ * Painel Administrativo de Moderação:
+ * Visão geral, Produtos (pesquisa/filtro/edição/exclusão), Produtores (pesquisa/detalhes/aprovação/exclusão),
+ * Clientes (pesquisa/detalhes/bloqueio/exclusão), Categorias, Pedidos, Avaliações, Reclamações e Usuários.
  */
-import { apiFetch, parseError } from './api.js?v=20261120j';
-import { statusLabels } from './orders.js?v=20261120j';
+import { apiFetch, parseError } from './api.js?v=20261120k';
+import { authState } from './auth.js?v=20261120k';
+import { statusLabels } from './orders.js?v=20261120k';
 import {
   clearFormError,
+  closeModal,
   escapeHtml,
   formatCurrency,
   formatDate,
@@ -12,9 +16,13 @@ import {
   renderPaginationBar,
   showFormError,
   showToast,
-} from './ui.js?v=20261120j';
+} from './ui.js?v=20261120k';
 
 let adminCategoriesCache = [];
+let adminProductsCache = [];
+let adminProducersFilterCache = [];
+let currentAdminTab = 'indicadores';
+let pendingDeleteAction = null;
 
 export function openAdminPanel(initialTab = 'indicadores') {
   openModal('adminPanelModalOverlay');
@@ -22,7 +30,18 @@ export function openAdminPanel(initialTab = 'indicadores') {
 }
 
 export function switchAdminTab(tab) {
-  const tabs = ['indicadores', 'produtores', 'produtos', 'categorias', 'pedidos', 'reclamacoes', 'usuarios'];
+  currentAdminTab = tab;
+  const tabs = [
+    'indicadores',
+    'produtos',
+    'produtores',
+    'clientes',
+    'categorias',
+    'pedidos',
+    'avaliacoes',
+    'reclamacoes',
+    'usuarios',
+  ];
   tabs.forEach(t => {
     const cap = t.charAt(0).toUpperCase() + t.slice(1);
     document.querySelector(`.panel-tab[data-admin-tab="${t}"]`)?.classList.toggle('active', t === tab);
@@ -31,10 +50,12 @@ export function switchAdminTab(tab) {
   });
 
   if (tab === 'indicadores') loadAdminIndicators();
-  else if (tab === 'produtores') loadAdminProducers(1);
   else if (tab === 'produtos') loadAdminProducts(1);
+  else if (tab === 'produtores') loadAdminProducers(1);
+  else if (tab === 'clientes') loadAdminClients(1);
   else if (tab === 'categorias') loadAdminCategories();
   else if (tab === 'pedidos') loadAdminOrders(1);
+  else if (tab === 'avaliacoes') loadAdminReviews(1);
   else if (tab === 'reclamacoes') loadAdminComplaints(1);
   else if (tab === 'usuarios') loadAdminUsers(1);
 }
@@ -87,6 +108,7 @@ async function loadAdminIndicators() {
         <div class="kpi-card"><span>Faturamento Total</span><strong>${formatCurrency(d.faturamento_total)}</strong></div>
         <div class="kpi-card"><span>Vendas Concluídas</span><strong>${Number(d.vendas_concluidas) || 0}</strong></div>
         <div class="kpi-card"><span>Produtos Ativos</span><strong>${Number(d.produtos_ativos) || 0}</strong></div>
+        <div class="kpi-card"><span>Avaliações Registradas</span><strong>${Number(d.total_avaliacoes) || 0}</strong></div>
         <div class="kpi-card"><span>Reclamações Abertas</span><strong>${Number(d.reclamacoes_abertas) || 0}</strong></div>
       </div>
       <div class="admin-stats-grid">
@@ -100,62 +122,391 @@ async function loadAdminIndicators() {
   }
 }
 
-async function loadAdminProducers(page = 1) {
-  const el = document.getElementById('adminProducersList');
-  const pagEl = document.getElementById('adminProducersPagination');
-  if (!el) return;
-  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
-  if (pagEl) pagEl.innerHTML = '';
+// ── Produtos (Pesquisa, Filtros, Edição, Ocultar/Reexibir, Exclusão/Desativação) ──
+async function populateAdminProductFilterOptions() {
+  const catFilter = document.getElementById('adminProdCatFilter');
+  const prodFilter = document.getElementById('adminProdProducerFilter');
+  const editCat = document.getElementById('adminEditProdCategoria');
 
   try {
-    const res = await apiFetch(`/admin/produtores/?page=${page}`);
-    const data = await res.json();
-    const list = data.results || data || [];
-    el.innerHTML = list.map(p => `
-      <div class="panel-list-item">
-        <div class="panel-list-item__info">
-          <strong>${escapeHtml(p.nome_propriedade)}</strong>
-          <span>${escapeHtml(p.cidade || '')}/${escapeHtml(p.estado || '')} • <span class="badge badge--outline">${escapeHtml(p.status)}</span></span>
-        </div>
-        <div class="panel-list-item__actions">
-          ${p.status !== 'APROVADO' ? `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtores" data-id="${p.id}" data-action="aprovar">Aprovar</button>` : ''}
-          ${p.status !== 'SUSPENSO' ? `<button type="button" class="btn btn--outline btn--sm text-danger btnAdminAction" data-resource="produtores" data-id="${p.id}" data-action="suspender">Suspender</button>` : ''}
-        </div>
-      </div>
-    `).join('');
-    renderPaginationBar(pagEl, data, page, (p) => loadAdminProducers(p));
-  } catch (err) {
-    el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
-  }
+    const [resCat, resProd] = await Promise.all([
+      apiFetch('/categorias/'),
+      apiFetch('/admin/produtores/?page=1'),
+    ]);
+    if (resCat.ok) {
+      const dataCat = await resCat.json();
+      adminCategoriesCache = dataCat.results || dataCat || [];
+      if (catFilter) {
+        const cur = catFilter.value;
+        catFilter.innerHTML = '<option value="">Todas as categorias</option>'
+          + adminCategoriesCache.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+        catFilter.value = cur;
+      }
+      if (editCat) {
+        const curEdit = editCat.value;
+        editCat.innerHTML = adminCategoriesCache
+          .map(c => `<option value="${c.id}">${escapeHtml(c.nome)}${c.ativa ? '' : ' (inativa)'}</option>`)
+          .join('');
+        if (curEdit) editCat.value = curEdit;
+      }
+    }
+    if (resProd.ok) {
+      const dataProd = await resProd.json();
+      adminProducersFilterCache = dataProd.results || dataProd || [];
+      if (prodFilter) {
+        const cur = prodFilter.value;
+        prodFilter.innerHTML = '<option value="">Todos os produtores</option>'
+          + adminProducersFilterCache.map(p => `<option value="${p.id}">${escapeHtml(p.nome_propriedade)}</option>`).join('');
+        prodFilter.value = cur;
+      }
+    }
+  } catch (_) {}
 }
 
-async function loadAdminProducts(page = 1) {
+export async function loadAdminProducts(page = 1) {
   const el = document.getElementById('adminProductsList');
   const pagEl = document.getElementById('adminProductsPagination');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
   if (pagEl) pagEl.innerHTML = '';
 
+  await populateAdminProductFilterOptions();
+
+  const search = document.getElementById('adminProdSearch')?.value.trim() || '';
+  const categoria = document.getElementById('adminProdCatFilter')?.value || '';
+  const produtor = document.getElementById('adminProdProducerFilter')?.value || '';
+  const ativo = document.getElementById('adminProdStatusFilter')?.value || '';
+
+  const params = new URLSearchParams({ page: String(page) });
+  if (search) params.set('search', search);
+  if (categoria) params.set('categoria', categoria);
+  if (produtor) params.set('produtor', produtor);
+  if (ativo) params.set('ativo', ativo);
+
   try {
-    const res = await apiFetch(`/admin/produtos/?page=${page}`);
+    const res = await apiFetch(`/admin/produtos/?${params.toString()}`);
+    if (!res.ok) throw new Error('Falha ao carregar produtos.');
     const data = await res.json();
     const list = data.results || data || [];
-    el.innerHTML = list.map(p => `
-      <div class="panel-list-item">
-        <div class="panel-list-item__info">
-          <strong>${escapeHtml(p.nome)}</strong>
-          <span>${formatCurrency(p.preco)} • <span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Visível' : 'Oculto'}</span></span>
+    adminProductsCache = list;
+
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>Nenhum produto encontrado com os filtros aplicados.</p></div>';
+      return;
+    }
+
+    el.innerHTML = list.map(p => {
+      const statusBadge = p.excluido_em
+        ? '<span class="badge status--cancelled">Desativado (histórico)</span>'
+        : `<span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Visível' : 'Oculto'}</span>`;
+      return `
+        <div class="panel-list-item">
+          <div class="panel-list-item__info">
+            <strong>${escapeHtml(p.nome)}</strong>
+            <span>
+              ${escapeHtml(p.produtor_nome || 'Produtor')} • ${escapeHtml(p.categoria_nome || 'Sem categoria')}
+              • ${formatCurrency(p.preco)} / ${escapeHtml(p.unidade_medida)} • Estoque: ${parseFloat(p.estoque)}
+            </span>
+            <span>${statusBadge}</span>
+          </div>
+          <div class="panel-list-item__actions">
+            <button type="button" class="btn btn--outline btn--sm btnEditAdminProduct" data-id="${p.id}">Editar</button>
+            ${p.ativo
+              ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="produtos" data-tab="produtos" data-id="${p.id}" data-action="ocultar">Ocultar</button>`
+              : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtos" data-tab="produtos" data-id="${p.id}" data-action="reexibir">Reexibir</button>`}
+            <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
+              data-resource="produtos" data-tab="produtos" data-kind="produto"
+              data-id="${p.id}" data-label="${escapeHtml(p.nome)}">Excluir</button>
+          </div>
         </div>
-        <div class="panel-list-item__actions">
-          ${p.ativo
-            ? `<button type="button" class="btn btn--outline btn--sm text-danger btnAdminAction" data-resource="produtos" data-id="${p.id}" data-action="ocultar">Ocultar</button>`
-            : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtos" data-id="${p.id}" data-action="reexibir">Reexibir</button>`}
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
     renderPaginationBar(pagEl, data, page, (p) => loadAdminProducts(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+export async function openAdminProductEdit(productId) {
+  const wrap = document.getElementById('adminProductEditWrap');
+  const form = document.getElementById('adminProductEditForm');
+  if (!wrap || !form) return;
+
+  clearFormError('adminProductEditError');
+  if (adminCategoriesCache.length === 0) {
+    await populateAdminProductFilterOptions();
+  }
+  const p = adminProductsCache.find(x => String(x.id) === String(productId));
+  if (!p) return;
+
+  document.getElementById('adminEditProdId').value = String(p.id);
+  document.getElementById('adminEditProdNome').value = p.nome || '';
+  document.getElementById('adminEditProdCategoria').value = String(p.categoria || '');
+  document.getElementById('adminEditProdPreco').value = p.preco ?? '';
+  document.getElementById('adminEditProdUnidade').value = p.unidade_medida || 'UNIDADE';
+  document.getElementById('adminEditProdEstoque').value = p.estoque ?? 0;
+  document.getElementById('adminEditProdTipo').value = p.tipo_producao || 'CONVENCIONAL';
+  document.getElementById('adminEditProdDesc').value = p.descricao || '';
+  document.getElementById('adminEditProdAtivo').checked = Boolean(p.ativo);
+
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+export async function saveAdminProductEdit() {
+  clearFormError('adminProductEditError');
+  const id = document.getElementById('adminEditProdId').value;
+  if (!id) return;
+
+  const payload = {
+    nome: document.getElementById('adminEditProdNome').value.trim(),
+    categoria: Number(document.getElementById('adminEditProdCategoria').value),
+    preco: document.getElementById('adminEditProdPreco').value,
+    unidade_medida: document.getElementById('adminEditProdUnidade').value,
+    estoque: document.getElementById('adminEditProdEstoque').value,
+    tipo_producao: document.getElementById('adminEditProdTipo').value,
+    descricao: document.getElementById('adminEditProdDesc').value.trim(),
+    ativo: document.getElementById('adminEditProdAtivo').checked,
+  };
+
+  const res = await apiFetch(`/admin/produtos/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    showFormError('adminProductEditError', await parseError(res));
+    return;
+  }
+
+  document.getElementById('adminProductEditWrap').style.display = 'none';
+  showToast('Produto atualizado pelo administrador!', 'success');
+  await loadAdminProducts(1);
+  window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
+}
+
+// ── Produtores (Pesquisa, Filtro, Detalhes, Aprovar/Suspender, Exclusão) ──
+export async function loadAdminProducers(page = 1) {
+  const el = document.getElementById('adminProducersList');
+  const pagEl = document.getElementById('adminProducersPagination');
+  if (!el) return;
+  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
+
+  const search = document.getElementById('adminProducerSearch')?.value.trim() || '';
+  const statusVal = document.getElementById('adminProducerStatusFilter')?.value || '';
+  const params = new URLSearchParams({ page: String(page) });
+  if (search) params.set('search', search);
+  if (statusVal) params.set('status', statusVal);
+
+  try {
+    const res = await apiFetch(`/admin/produtores/?${params.toString()}`);
+    if (!res.ok) throw new Error('Falha ao carregar produtores.');
+    const data = await res.json();
+    const list = data.results || data || [];
+
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>Nenhum produtor encontrado.</p></div>';
+      return;
+    }
+
+    el.innerHTML = list.map(p => {
+      const deactivatedBadge = p.excluido_em ? ' <span class="badge status--cancelled">Desativado</span>' : '';
+      return `
+        <div class="panel-list-item">
+          <div class="panel-list-item__info">
+            <strong>${escapeHtml(p.nome_propriedade)}</strong>
+            <span>
+              ${escapeHtml(p.cidade || '-')}/${escapeHtml(p.estado || '-')}
+              • @${escapeHtml(p.usuario_username || '-')} (${escapeHtml(p.usuario_email || '-')})
+            </span>
+            <span class="text-muted">
+              ${Number(p.total_produtos) || 0} produto(s) • ${Number(p.total_pedidos) || 0} pedido(s) • ${Number(p.total_avaliacoes) || 0} avaliação(ões)
+              • <span class="badge badge--outline">${escapeHtml(p.status)}</span>${deactivatedBadge}
+            </span>
+          </div>
+          <div class="panel-list-item__actions">
+            <button type="button" class="btn btn--outline btn--sm btnAdminProducerDetail" data-id="${p.id}">Detalhes</button>
+            ${p.status !== 'APROVADO'
+              ? `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtores" data-tab="produtores" data-id="${p.id}" data-action="aprovar">Aprovar</button>`
+              : ''}
+            ${p.status !== 'SUSPENSO'
+              ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="produtores" data-tab="produtores" data-id="${p.id}" data-action="suspender">Suspender</button>`
+              : ''}
+            <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
+              data-resource="produtores" data-tab="produtores" data-kind="produtor"
+              data-id="${p.id}" data-label="${escapeHtml(p.nome_propriedade)}">Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    renderPaginationBar(pagEl, data, page, (p) => loadAdminProducers(p));
+  } catch (err) {
+    el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+export async function openAdminProducerDetails(producerId) {
+  const titleEl = document.getElementById('adminDetailTitle');
+  const bodyEl = document.getElementById('adminDetailBody');
+  if (!bodyEl) return;
+
+  if (titleEl) titleEl.textContent = 'Detalhes do Produtor';
+  bodyEl.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  openModal('adminDetailModalOverlay');
+
+  try {
+    const res = await apiFetch(`/admin/produtores/${producerId}/detalhes/`);
+    if (!res.ok) throw new Error(await parseError(res));
+    const { produtor: p, produtos } = await res.json();
+
+    if (titleEl) titleEl.textContent = `Produtor: ${p.nome_propriedade}`;
+    bodyEl.innerHTML = `
+      <div class="admin-detail-grid">
+        <div class="admin-detail-kv"><span>Status</span><strong>${escapeHtml(p.status)}${p.excluido_em ? ' (Desativado)' : ''}</strong></div>
+        <div class="admin-detail-kv"><span>Localização</span><strong>${escapeHtml(p.cidade || '-')}/${escapeHtml(p.estado || '-')}</strong></div>
+        <div class="admin-detail-kv"><span>Usuário / E-mail</span><strong>@${escapeHtml(p.usuario_username || '-')} (${escapeHtml(p.usuario_email || '-')})</strong></div>
+        <div class="admin-detail-kv"><span>Resumo</span><strong>${Number(p.total_produtos) || 0} produto(s) • ${Number(p.total_pedidos) || 0} pedido(s) • ${Number(p.total_avaliacoes) || 0} avaliação(ões)</strong></div>
+      </div>
+      ${p.descricao ? `<p class="detail-desc">${escapeHtml(p.descricao)}</p>` : ''}
+      <div class="admin-detail-section">
+        <h4>Produtos vinculados (${produtos.length})</h4>
+        ${produtos.length === 0
+          ? '<p class="text-muted">Nenhum produto cadastrado por este produtor.</p>'
+          : `<div class="panel-list">${produtos.map(it => `
+            <div class="panel-list-item">
+              <div class="panel-list-item__info">
+                <strong>${escapeHtml(it.nome)}</strong>
+                <span>${escapeHtml(it.categoria_nome || '')} • ${formatCurrency(it.preco)} • Estoque: ${parseFloat(it.estoque)}</span>
+              </div>
+              <span class="badge ${it.excluido_em ? 'status--cancelled' : (it.ativo ? 'badge--success' : 'badge--outline')}">
+                ${it.excluido_em ? 'Desativado' : (it.ativo ? 'Ativo' : 'Oculto')}
+              </span>
+            </div>
+          `).join('')}</div>`}
+      </div>
+    `;
+  } catch (err) {
+    bodyEl.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ── Clientes (Pesquisa, Filtro, Detalhes, Bloqueio/Reativação, Exclusão) ──
+export async function loadAdminClients(page = 1) {
+  const el = document.getElementById('adminClientsList');
+  const pagEl = document.getElementById('adminClientsPagination');
+  if (!el) return;
+  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
+
+  const search = document.getElementById('adminClientSearch')?.value.trim() || '';
+  const isActive = document.getElementById('adminClientStatusFilter')?.value || '';
+  const params = new URLSearchParams({ tipo: 'CLIENTE', page: String(page) });
+  if (search) params.set('search', search);
+  if (isActive) params.set('is_active', isActive);
+
+  try {
+    const res = await apiFetch(`/admin/usuarios/?${params.toString()}`);
+    if (!res.ok) throw new Error('Falha ao carregar clientes.');
+    const data = await res.json();
+    const list = data.results || data || [];
+
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>Nenhum cliente encontrado.</p></div>';
+      return;
+    }
+
+    el.innerHTML = list.map(u => {
+      const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username;
+      const statusBadge = u.excluido_em
+        ? '<span class="badge status--cancelled">Desativado</span>'
+        : `<span class="badge ${u.is_active ? 'badge--success' : 'badge--outline'}">${u.is_active ? 'Ativo' : 'Bloqueado'}</span>`;
+      return `
+        <div class="panel-list-item">
+          <div class="panel-list-item__info">
+            <strong>${escapeHtml(fullName)} <span class="text-muted">(@${escapeHtml(u.username)})</span></strong>
+            <span>${escapeHtml(u.email || '-')}${u.telefone ? ` • ${escapeHtml(u.telefone)}` : ''}</span>
+            <span class="text-muted">
+              ${Number(u.total_pedidos) || 0} pedido(s) • ${Number(u.total_avaliacoes) || 0} avaliação(ões) • ${statusBadge}
+            </span>
+          </div>
+          <div class="panel-list-item__actions">
+            <button type="button" class="btn btn--outline btn--sm btnAdminClientDetail" data-id="${u.id}">Detalhes</button>
+            ${u.is_active
+              ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="usuarios" data-tab="clientes" data-id="${u.id}" data-action="bloquear">Bloquear</button>`
+              : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="usuarios" data-tab="clientes" data-id="${u.id}" data-action="reativar">Reativar</button>`}
+            <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
+              data-resource="usuarios" data-tab="clientes" data-kind="cliente"
+              data-id="${u.id}" data-label="${escapeHtml(fullName)}">Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    renderPaginationBar(pagEl, data, page, (p) => loadAdminClients(p));
+  } catch (err) {
+    el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+export async function openAdminClientDetails(userId) {
+  const titleEl = document.getElementById('adminDetailTitle');
+  const bodyEl = document.getElementById('adminDetailBody');
+  if (!bodyEl) return;
+
+  if (titleEl) titleEl.textContent = 'Detalhes do Cliente';
+  bodyEl.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  openModal('adminDetailModalOverlay');
+
+  try {
+    const res = await apiFetch(`/admin/usuarios/${userId}/detalhes/`);
+    if (!res.ok) throw new Error(await parseError(res));
+    const { usuario: u, pedidos, avaliacoes } = await res.json();
+    const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username;
+
+    if (titleEl) titleEl.textContent = `Cliente: ${fullName}`;
+    bodyEl.innerHTML = `
+      <div class="admin-detail-grid">
+        <div class="admin-detail-kv"><span>Usuário</span><strong>@${escapeHtml(u.username)} (${escapeHtml(u.tipo)})</strong></div>
+        <div class="admin-detail-kv"><span>E-mail</span><strong>${escapeHtml(u.email || '-')}</strong></div>
+        <div class="admin-detail-kv"><span>Telefone</span><strong>${escapeHtml(u.telefone || 'Não informado')}</strong></div>
+        <div class="admin-detail-kv"><span>Status</span><strong>${u.excluido_em ? 'Desativado (histórico)' : (u.is_active ? 'Ativo' : 'Bloqueado')}</strong></div>
+      </div>
+
+      <div class="admin-detail-section">
+        <h4>Pedidos realizados (${pedidos.length})</h4>
+        ${pedidos.length === 0
+          ? '<p class="text-muted">Nenhum pedido realizado por este cliente.</p>'
+          : `<div class="panel-list">${pedidos.map(p => {
+            const st = statusLabels[p.status] || { label: p.status, class: '' };
+            return `
+              <div class="panel-list-item">
+                <div class="panel-list-item__info">
+                  <strong>${escapeHtml(p.numero_publico || `#${p.id}`)} • ${formatCurrency(p.total_com_frete)}</strong>
+                  <span class="text-muted">Produtor: ${escapeHtml(p.produtor_nome)} • ${formatDate(p.criado_em)}</span>
+                </div>
+                <span class="badge ${st.class}">${escapeHtml(st.label)}</span>
+              </div>
+            `;
+          }).join('')}</div>`}
+      </div>
+
+      <div class="admin-detail-section">
+        <h4>Avaliações realizadas (${avaliacoes.length})</h4>
+        ${avaliacoes.length === 0
+          ? '<p class="text-muted">Nenhuma avaliação registrada por este cliente.</p>'
+          : avaliacoes.map(a => `
+            <div class="review-card">
+              <div class="review-card__top">
+                <strong>${escapeHtml(a.produto_nome || a.produtor_nome || 'Avaliação')}</strong>
+                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
+              </div>
+              ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : ''}
+              <span class="text-muted">${formatDate(a.criado_em)}${a.pedido_numero ? ` • Pedido ${escapeHtml(a.pedido_numero)}` : ''}</span>
+            </div>
+          `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    bodyEl.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -185,7 +536,7 @@ export async function loadAdminCategories() {
         <div class="panel-list-item__actions">
           <button type="button" class="btn btn--outline btn--sm btnEditAdminCat" data-id="${c.id}">Editar</button>
           <button type="button" class="btn btn--outline btn--sm btnToggleAdminCat" data-id="${c.id}" data-ativa="${c.ativa ? '0' : '1'}">${c.ativa ? 'Desativar' : 'Ativar'}</button>
-          <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminCat" data-id="${c.id}">Excluir</button>
+          <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminCat" data-id="${c.id}" data-label="${escapeHtml(c.nome)}">Excluir</button>
         </div>
       </div>
     `).join('');
@@ -252,16 +603,9 @@ export async function toggleAdminCategory(id, ativa) {
   window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }
 
-export async function deleteAdminCategory(id) {
-  if (!confirm('Deseja realmente excluir esta categoria?')) return;
-  const res = await apiFetch(`/categorias/${id}/`, { method: 'DELETE' });
-  if (!res.ok) {
-    showToast(await parseError(res), 'error');
-    return;
-  }
-  showToast('Categoria excluída.', 'info');
-  await loadAdminCategories();
-  window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
+export function deleteAdminCategory(id, label = '') {
+  const cat = adminCategoriesCache.find(x => String(x.id) === String(id));
+  openAdminDeleteConfirm('categorias', id, label || cat?.nome || `#${id}`, 'categorias', 'categoria');
 }
 
 // ── Pedidos (Listagem Admin com Filtro por Status e Paginação) ────────────
@@ -308,7 +652,76 @@ export async function loadAdminOrders(page = 1) {
   }
 }
 
-async function loadAdminComplaints(page = 1) {
+// ── Avaliações (Visão Administrativa Completa) ────────────────────────────
+export async function loadAdminReviews(page = 1) {
+  const el = document.getElementById('adminReviewsContent');
+  const pagEl = document.getElementById('adminReviewsPagination');
+  if (!el) return;
+  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
+  if (pagEl) pagEl.innerHTML = '';
+
+  try {
+    const [resAv, resCli] = await Promise.all([
+      apiFetch(`/admin/avaliacoes/?page=${page}`),
+      apiFetch('/admin/avaliacoes-clientes/?page=1'),
+    ]);
+    if (!resAv.ok) throw new Error('Falha ao carregar avaliações.');
+    const dataAv = await resAv.json();
+    const listAv = dataAv.results || dataAv || [];
+    const dataCli = resCli.ok ? await resCli.json() : { results: [] };
+    const listCli = dataCli.results || dataCli || [];
+
+    el.innerHTML = `
+      <div class="review-history-section">
+        <h4 class="review-history-section__title">Avaliações feitas por Clientes (${dataAv.count ?? listAv.length})</h4>
+        ${listAv.length === 0
+          ? '<p class="text-muted">Nenhuma avaliação de produto ou produtor registrada ainda.</p>'
+          : listAv.map(a => `
+            <div class="review-card">
+              <div class="review-card__top">
+                <strong>
+                  <span class="badge badge--outline">${a.tipo_avaliacao === 'PRODUTO' ? 'Produto' : 'Produtor'}</span>
+                  ${escapeHtml(a.produto_nome || a.produtor_nome || '-')}
+                </strong>
+                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
+              </div>
+              <p>${a.comentario ? escapeHtml(a.comentario) : '<span class="text-muted">Sem comentário.</span>'}</p>
+              <span class="text-muted">
+                Cliente: ${escapeHtml(a.cliente_nome || '-')}
+                ${a.pedido_numero ? ` • Pedido ${escapeHtml(a.pedido_numero)}` : ''}
+                • ${formatDate(a.criado_em)}
+              </span>
+            </div>
+          `).join('')}
+      </div>
+
+      <div class="review-history-section">
+        <h4 class="review-history-section__title">Avaliações de Clientes feitas por Produtores (${dataCli.count ?? listCli.length})</h4>
+        ${listCli.length === 0
+          ? '<p class="text-muted">Nenhuma avaliação recíproca registrada até o momento.</p>'
+          : listCli.map(a => `
+            <div class="review-card">
+              <div class="review-card__top">
+                <strong>Cliente: ${escapeHtml(a.cliente_nome || '-')}</strong>
+                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
+              </div>
+              <p>${a.comentario ? escapeHtml(a.comentario) : '<span class="text-muted">Sem comentário.</span>'}</p>
+              <span class="text-muted">
+                Produtor: ${escapeHtml(a.produtor_nome || '-')}
+                ${a.pedido_numero ? ` • Pedido ${escapeHtml(a.pedido_numero)}` : ''}
+                • ${formatDate(a.criado_em)}
+              </span>
+            </div>
+          `).join('')}
+      </div>
+    `;
+    renderPaginationBar(pagEl, dataAv, page, (p) => loadAdminReviews(p));
+  } catch (err) {
+    el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+export async function loadAdminComplaints(page = 1) {
   const el = document.getElementById('adminComplaintsList');
   const pagEl = document.getElementById('adminComplaintsPagination');
   if (!el) return;
@@ -350,44 +763,134 @@ async function loadAdminComplaints(page = 1) {
   }
 }
 
-async function loadAdminUsers(page = 1) {
+export async function loadAdminUsers(page = 1) {
   const el = document.getElementById('adminUsersList');
   const pagEl = document.getElementById('adminUsersPagination');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
   if (pagEl) pagEl.innerHTML = '';
 
+  const search = document.getElementById('adminUserSearch')?.value.trim() || '';
+  const tipo = document.getElementById('adminUserTypeFilter')?.value || '';
+  const params = new URLSearchParams({ page: String(page) });
+  if (search) params.set('search', search);
+  if (tipo) params.set('tipo', tipo);
+
   try {
-    const res = await apiFetch(`/admin/usuarios/?page=${page}`);
+    const res = await apiFetch(`/admin/usuarios/?${params.toString()}`);
+    if (!res.ok) throw new Error('Falha ao carregar usuários.');
     const data = await res.json();
     const list = data.results || data || [];
-    el.innerHTML = list.map(u => `
-      <div class="panel-list-item">
-        <div class="panel-list-item__info">
-          <strong>${escapeHtml(u.username)} (${escapeHtml(u.tipo)})</strong>
-          <span>${escapeHtml(u.email)} • <span class="badge ${u.is_active ? 'badge--success' : 'badge--outline'}">${u.is_active ? 'Ativo' : 'Bloqueado'}</span></span>
+
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>Nenhum usuário encontrado.</p></div>';
+      return;
+    }
+
+    const currentUserId = Number(authState.user?.id || 0);
+    el.innerHTML = list.map(u => {
+      const isSelf = currentUserId && Number(u.id) === currentUserId;
+      const statusBadge = u.excluido_em
+        ? '<span class="badge status--cancelled">Desativado</span>'
+        : `<span class="badge ${u.is_active ? 'badge--success' : 'badge--outline'}">${u.is_active ? 'Ativo' : 'Bloqueado'}</span>`;
+      return `
+        <div class="panel-list-item">
+          <div class="panel-list-item__info">
+            <strong>${escapeHtml(u.username)} <span class="badge badge--outline">${escapeHtml(u.tipo)}</span></strong>
+            <span>${escapeHtml(u.email || '-')} • ${statusBadge}</span>
+          </div>
+          <div class="panel-list-item__actions">
+            <button type="button" class="btn btn--outline btn--sm btnAdminClientDetail" data-id="${u.id}">Detalhes</button>
+            ${!isSelf ? (u.is_active
+              ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="usuarios" data-tab="usuarios" data-id="${u.id}" data-action="bloquear">Bloquear</button>`
+              : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="usuarios" data-tab="usuarios" data-id="${u.id}" data-action="reativar">Reativar</button>`)
+              : '<span class="text-muted">Sua conta</span>'}
+            ${!isSelf ? `
+              <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
+                data-resource="usuarios" data-tab="usuarios" data-kind="usuário"
+                data-id="${u.id}" data-label="${escapeHtml(u.username)}">Excluir</button>
+            ` : ''}
+          </div>
         </div>
-        <div class="panel-list-item__actions">
-          ${u.is_active
-            ? `<button type="button" class="btn btn--outline btn--sm text-danger btnAdminAction" data-resource="usuarios" data-id="${u.id}" data-action="bloquear">Bloquear</button>`
-            : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="usuarios" data-id="${u.id}" data-action="reativar">Reativar</button>`}
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
     renderPaginationBar(pagEl, data, page, (p) => loadAdminUsers(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
-export async function handleAdminAction(resource, id, action) {
+export async function handleAdminAction(resource, id, action, targetTab = null) {
   const res = await apiFetch(`/admin/${resource}/${id}/${action}/`, { method: 'POST' });
   if (!res.ok) {
     showToast(await parseError(res), 'error');
     return;
   }
   showToast('Ação administrativa aplicada!', 'success');
-  switchAdminTab(resource);
+  switchAdminTab(targetTab || currentAdminTab || resource);
+  if (resource === 'produtos' || resource === 'produtores') {
+    window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
+  }
+}
+
+// ── Modal Visual de Confirmação para Exclusão / Desativação Administrativa ──
+export function openAdminDeleteConfirm(resource, id, label, tab = null, kind = 'registro') {
+  pendingDeleteAction = {
+    resource,
+    id: Number(id),
+    label: String(label || `#${id}`),
+    tab: tab || currentAdminTab || resource,
+    kind,
+  };
+
+  const titleEl = document.getElementById('adminConfirmTitle');
+  const msgEl = document.getElementById('adminConfirmMessage');
+  const hintEl = document.getElementById('adminConfirmHint');
+
+  const article = kind === 'categoria' ? 'a' : 'o';
+  if (titleEl) titleEl.textContent = `Confirmar exclusão de ${kind}`;
+  if (msgEl) msgEl.textContent = `Tem certeza de que deseja excluir ${article} ${kind} "${pendingDeleteAction.label}"?`;
+  if (hintEl) {
+    hintEl.textContent = resource === 'categorias'
+      ? 'Categorias com produtos vinculados não podem ser excluídas fisicamente; nesse caso, desative a categoria.'
+      : 'Se existirem pedidos, avaliações ou vínculos históricos, o registro será desativado logicamente (ocultado da plataforma) preservando todo o histórico.';
+  }
+
+  openModal('adminConfirmModalOverlay');
+}
+
+export async function confirmAdminDelete() {
+  if (!pendingDeleteAction) return;
+  const { resource, id, tab } = pendingDeleteAction;
+  const proceedBtn = document.getElementById('btnProceedAdminConfirm');
+  if (proceedBtn) proceedBtn.disabled = true;
+
+  try {
+    const endpoint = resource === 'categorias' ? `/categorias/${id}/` : `/admin/${resource}/${id}/`;
+    const res = await apiFetch(endpoint, { method: 'DELETE' });
+    if (!res.ok) {
+      showToast(await parseError(res), 'error');
+      return;
+    }
+
+    let msg = 'Registro excluído com sucesso.';
+    let tone = 'success';
+    if (res.status !== 204) {
+      try {
+        const data = await res.json();
+        if (data?.detail) msg = data.detail;
+        if (data?.acao === 'desativado') tone = 'info';
+      } catch (_) {}
+    }
+
+    closeModal('adminConfirmModalOverlay');
+    pendingDeleteAction = null;
+    showToast(msg, tone);
+    switchAdminTab(tab);
+    window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
+  } finally {
+    if (proceedBtn) proceedBtn.disabled = false;
+  }
 }
 
 export async function saveAdminComplaint(id) {

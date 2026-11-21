@@ -26,12 +26,24 @@ class ProdutorPublicoViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return (PerfilProdutor.objects
-                .filter(status=PerfilProdutor.Status.APROVADO)
-                .annotate(total_produtos=Count(
-                    "produtos",
-                    filter=Q(produtos__ativo=True, produtos__categoria__ativa=True),
-                    distinct=True
-                ))
+                .filter(
+                    status=PerfilProdutor.Status.APROVADO,
+                    excluido_em__isnull=True,
+                    usuario__is_active=True,
+                )
+                .annotate(
+                    total_produtos=Count(
+                        "produtos",
+                        filter=Q(
+                            produtos__ativo=True,
+                            produtos__excluido_em__isnull=True,
+                            produtos__categoria__ativa=True,
+                        ),
+                        distinct=True,
+                    ),
+                    nota_media=Avg("avaliacoes__nota"),
+                    total_avaliacoes=Count("avaliacoes", distinct=True),
+                )
                 .order_by("nome_propriedade"))
 
 
@@ -49,12 +61,19 @@ class EstatisticasPublicasView(APIView):
         pedidos_semana = Pedido.objects.filter(criado_em__gte=sete_dias_atras)
         familias_semana = pedidos_semana.values("cliente_id").distinct().count()
 
-        total_clientes = Usuario.objects.filter(tipo=Usuario.Tipo.CLIENTE, is_active=True).count()
-        total_produtores = PerfilProdutor.objects.filter(status=PerfilProdutor.Status.APROVADO).count()
+        total_clientes = Usuario.objects.filter(tipo=Usuario.Tipo.CLIENTE, is_active=True, excluido_em__isnull=True).count()
+        total_produtores = PerfilProdutor.objects.filter(
+            status=PerfilProdutor.Status.APROVADO,
+            excluido_em__isnull=True,
+            usuario__is_active=True,
+        ).count()
         total_produtos = Produto.objects.filter(
             ativo=True,
+            excluido_em__isnull=True,
             categoria__ativa=True,
-            produtor__status=PerfilProdutor.Status.APROVADO
+            produtor__status=PerfilProdutor.Status.APROVADO,
+            produtor__excluido_em__isnull=True,
+            produtor__usuario__is_active=True,
         ).count()
         pedidos_concluidos = Pedido.objects.filter(status=Pedido.Status.CONCLUIDO).count()
 
@@ -107,7 +126,14 @@ class CatalogoViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return (Produto.objects
-                .filter(ativo=True, categoria__ativa=True, produtor__status=PerfilProdutor.Status.APROVADO)
+                .filter(
+                    ativo=True,
+                    excluido_em__isnull=True,
+                    categoria__ativa=True,
+                    produtor__status=PerfilProdutor.Status.APROVADO,
+                    produtor__excluido_em__isnull=True,
+                    produtor__usuario__is_active=True,
+                )
                 .select_related("produtor", "categoria")
                 .annotate(
                     nota_media=Avg("avaliacoes__nota"),
@@ -130,7 +156,7 @@ class ProdutoProdutorViewSet(viewsets.ModelViewSet):
         perfil = getattr(self.request.user, "perfil_produtor", None)
         if not perfil:
             return Produto.objects.none()
-        return Produto.objects.filter(produtor=perfil)
+        return Produto.objects.filter(produtor=perfil, excluido_em__isnull=True)
 
     def perform_create(self, serializer):
         serializer.save(produtor=self.request.user.perfil_produtor)

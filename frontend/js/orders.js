@@ -1,10 +1,25 @@
 /**
- * Pedidos do Cliente (Timeline, Cancelamento, Pix QR/Copia-e-Cola), Avaliações, Reclamações e Endereços (ViaCEP).
+ * Pedidos do Cliente (Timeline, Cancelamento, Pix QR/Copia-e-Cola),
+ * Avaliações de Produtos e Produtores (criação por pedido + histórico editável),
+ * Reclamações e Endereços (ViaCEP).
  */
-import { apiFetch, parseError } from './api.js?v=20261120j';
-import { closeModal, escapeHtml, formatCurrency, formatDate, generateSimpleQrSvg, openModal, renderPaginationBar, showToast } from './ui.js?v=20261120j';
+import { apiFetch, parseError } from './api.js?v=20261120k';
+import {
+  clearFormError,
+  closeModal,
+  escapeHtml,
+  formatCurrency,
+  formatDate,
+  generateSimpleQrSvg,
+  openModal,
+  renderPaginationBar,
+  showToast,
+} from './ui.js?v=20261120k';
 
 const ordersCache = new Map();
+const myReviewsCache = new Map();
+let currentOrdersTab = 'pedidos';
+let currentOrdersPage = 1;
 
 export const statusLabels = {
   PENDENTE: { label: 'Aguardando produtor', class: 'status--pending' },
@@ -17,15 +32,34 @@ export const statusLabels = {
   CANCELADO: { label: 'Cancelado', class: 'status--cancelled' },
 };
 
-export async function loadMyOrders(page = 1) {
+export async function loadMyOrders(page = 1, keepModalOpen = false) {
   const container = document.getElementById('myOrdersList');
   const pagEl = document.getElementById('myOrdersPagination');
   if (!container) return;
 
+  currentOrdersPage = page;
   container.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando seus pedidos...</p></div>';
   if (pagEl) pagEl.innerHTML = '';
-  switchOrdersTab('pedidos');
-  openModal('myOrdersModalOverlay');
+
+  if (!keepModalOpen) {
+    currentOrdersTab = 'pedidos';
+    const tabPedidos = document.getElementById('tabOrdersList');
+    const tabAval = document.getElementById('tabMyReviews');
+    const tabReclam = document.getElementById('tabMyComplaints');
+    const listPedidos = document.getElementById('myOrdersList');
+    const pagPedidos = document.getElementById('myOrdersPagination');
+    const listAval = document.getElementById('myReviewsList');
+    const listReclam = document.getElementById('myComplaintsList');
+
+    tabPedidos?.classList.add('active');
+    tabAval?.classList.remove('active');
+    tabReclam?.classList.remove('active');
+    if (listPedidos) listPedidos.style.display = 'flex';
+    if (pagPedidos) pagPedidos.style.display = 'block';
+    if (listAval) listAval.style.display = 'none';
+    if (listReclam) listReclam.style.display = 'none';
+    openModal('myOrdersModalOverlay');
+  }
 
   try {
     const res = await apiFetch(`/pedidos/?page=${page}`);
@@ -47,30 +81,53 @@ export async function loadMyOrders(page = 1) {
     }
 
     renderOrdersList(container, orders);
-    renderPaginationBar(pagEl, data, page, (nextPage) => loadMyOrders(nextPage));
+    renderPaginationBar(pagEl, data, page, (nextPage) => loadMyOrders(nextPage, true));
   } catch (err) {
     container.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
+export function openMyReviews() {
+  openModal('myOrdersModalOverlay');
+  switchOrdersTab('avaliacoes');
+}
+
 export function switchOrdersTab(tab) {
+  currentOrdersTab = tab;
   const tabPedidos = document.getElementById('tabOrdersList');
+  const tabAval = document.getElementById('tabMyReviews');
   const tabReclam = document.getElementById('tabMyComplaints');
   const listPedidos = document.getElementById('myOrdersList');
+  const pagPedidos = document.getElementById('myOrdersPagination');
+  const listAval = document.getElementById('myReviewsList');
   const listReclam = document.getElementById('myComplaintsList');
 
-  if (tab === 'pedidos') {
-    tabPedidos?.classList.add('active');
-    tabReclam?.classList.remove('active');
-    if (listPedidos) listPedidos.style.display = 'flex';
-    if (listReclam) listReclam.style.display = 'none';
-  } else {
-    tabReclam?.classList.add('active');
-    tabPedidos?.classList.remove('active');
-    if (listReclam) listReclam.style.display = 'flex';
-    if (listPedidos) listPedidos.style.display = 'none';
-    loadMyComplaints();
-  }
+  tabPedidos?.classList.toggle('active', tab === 'pedidos');
+  tabAval?.classList.toggle('active', tab === 'avaliacoes');
+  tabReclam?.classList.toggle('active', tab === 'reclamacoes');
+
+  if (listPedidos) listPedidos.style.display = tab === 'pedidos' ? 'flex' : 'none';
+  if (pagPedidos) pagPedidos.style.display = tab === 'pedidos' ? 'block' : 'none';
+  if (listAval) listAval.style.display = tab === 'avaliacoes' ? 'flex' : 'none';
+  if (listReclam) listReclam.style.display = tab === 'reclamacoes' ? 'flex' : 'none';
+
+  if (tab === 'pedidos') loadMyOrders(currentOrdersPage, true);
+  else if (tab === 'avaliacoes') loadMyReviews();
+  else if (tab === 'reclamacoes') loadMyComplaints();
+}
+
+function getPendingProductsForOrder(o) {
+  const avaliados = new Set((o.avaliacoes_feitas?.produtos || []).map(Number));
+  const seen = new Set();
+  const pending = [];
+  (o.itens || []).forEach(it => {
+    const pid = Number(it.produto);
+    if (pid && !avaliados.has(pid) && !seen.has(pid)) {
+      seen.add(pid);
+      pending.push(it);
+    }
+  });
+  return pending;
 }
 
 function renderOrdersList(container, orders) {
@@ -79,6 +136,10 @@ function renderOrdersList(container, orders) {
     const canCancel = ['PENDENTE', 'ACEITO'].includes(o.status);
     const isCompleted = o.status === 'CONCLUIDO';
     const isPix = o.forma_pagamento === 'PIX' && !['CANCELADO', 'RECUSADO'].includes(o.status);
+
+    const pendingProducts = isCompleted ? getPendingProductsForOrder(o) : [];
+    const producerPending = isCompleted && Boolean(o.produtor) && !o.avaliacoes_feitas?.produtor;
+    const allReviewed = isCompleted && pendingProducts.length === 0 && !producerPending;
 
     const timelineHtml = (o.historico || []).length > 0
       ? `
@@ -133,11 +194,17 @@ function renderOrdersList(container, orders) {
                 Cancelar
               </button>
             ` : ''}
-            ${isCompleted ? `
-              <button type="button" class="btn btn--outline btn--sm btnOpenReview" data-id="${o.id}">
-                ⭐ Avaliar
+            ${pendingProducts.length > 0 ? `
+              <button type="button" class="btn btn--outline btn--sm btnOpenReview" data-id="${o.id}" data-mode="produto">
+                ⭐ Avaliar produto
               </button>
             ` : ''}
+            ${producerPending ? `
+              <button type="button" class="btn btn--outline btn--sm btnOpenReview" data-id="${o.id}" data-mode="produtor">
+                ⭐ Avaliar produtor
+              </button>
+            ` : ''}
+            ${allReviewed ? '<span class="badge status--completed">Compra avaliada</span>' : ''}
             <button type="button" class="btn btn--outline btn--sm btnOpenComplaint" data-id="${o.id}">
               ⚠️ Reclamação
             </button>
@@ -146,6 +213,71 @@ function renderOrdersList(container, orders) {
       </div>
     `;
   }).join('');
+}
+
+function renderMyReviewCard(a) {
+  const targetName = a.produto_nome || a.produtor_nome || 'Registro avaliado';
+  const orderTag = a.pedido_numero ? ` • Pedido ${escapeHtml(a.pedido_numero)}` : '';
+  return `
+    <div class="review-card" data-review-id="${a.id}">
+      <div class="review-card__top">
+        <strong>${escapeHtml(targetName)}</strong>
+        <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
+      </div>
+      <p>${a.comentario ? escapeHtml(a.comentario) : '<span class="text-muted">Sem comentário adicional.</span>'}</p>
+      <span class="text-muted">${formatDate(a.criado_em)}${orderTag}</span>
+      <div class="review-card__actions">
+        <button type="button" class="btn btn--outline btn--sm btnEditMyReview" data-id="${a.id}">Editar</button>
+        <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteMyReview" data-id="${a.id}">Excluir</button>
+      </div>
+    </div>
+  `;
+}
+
+export async function loadMyReviews() {
+  const container = document.getElementById('myReviewsList');
+  if (!container) return;
+  container.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando suas avaliações...</p></div>';
+
+  try {
+    const res = await apiFetch('/avaliacoes/minhas/');
+    if (!res.ok) throw new Error('Falha ao carregar seu histórico de avaliações.');
+    const data = await res.json();
+    const list = data.results || data || [];
+
+    myReviewsCache.clear();
+    list.forEach(a => myReviewsCache.set(String(a.id), a));
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p class="empty-state__icon">⭐</p>
+          <p>Você ainda não enviou avaliações. Conclua um pedido para avaliar produtos e produtores.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const produtos = list.filter(a => a.tipo_avaliacao === 'PRODUTO' || a.produto);
+    const produtores = list.filter(a => a.tipo_avaliacao === 'PRODUTOR' || a.produtor);
+
+    container.innerHTML = `
+      <div class="review-history-section">
+        <h4 class="review-history-section__title">Produtos avaliados (${produtos.length})</h4>
+        ${produtos.length === 0
+          ? '<p class="text-muted">Nenhum produto avaliado até o momento.</p>'
+          : produtos.map(renderMyReviewCard).join('')}
+      </div>
+      <div class="review-history-section">
+        <h4 class="review-history-section__title">Produtores avaliados (${produtores.length})</h4>
+        ${produtores.length === 0
+          ? '<p class="text-muted">Nenhum produtor avaliado até o momento.</p>'
+          : produtores.map(renderMyReviewCard).join('')}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
 }
 
 export async function loadMyComplaints() {
@@ -224,31 +356,109 @@ export async function cancelOrder(pedidoId) {
       return;
     }
     showToast('Pedido cancelado com sucesso.', 'info');
-    await loadMyOrders();
+    await loadMyOrders(currentOrdersPage, true);
   } catch (_) {
     showToast('Erro ao cancelar pedido.', 'error');
   }
 }
 
 // ── Avaliações e Reclamações ──────────────────────────────────────────────
-export function openReviewModalForOrder(pedidoId) {
+export function openReviewModalForOrder(pedidoId, mode = 'all') {
   const pedido = ordersCache.get(String(pedidoId));
   const select = document.getElementById('reviewTarget');
   if (!select || !pedido) return;
 
+  clearFormError('reviewError');
+  const pendingProducts = getPendingProductsForOrder(pedido);
+  const producerPending = Boolean(pedido.produtor) && !pedido.avaliacoes_feitas?.produtor;
+
   const opts = [];
-  if (pedido.produtor) {
+  if (mode === 'produto' || mode === 'all') {
+    pendingProducts.forEach(it => {
+      opts.push(`<option value="produto:${it.produto}">Produto: ${escapeHtml(it.nome_produto)}</option>`);
+    });
+  }
+  if ((mode === 'produtor' || mode === 'all') && producerPending) {
     opts.push(`<option value="produtor:${pedido.produtor}">Produtor: ${escapeHtml(pedido.produtor_nome)}</option>`);
   }
-  (pedido.itens || []).forEach(it => {
-    if (it.produto) {
-      opts.push(`<option value="produto:${it.produto}">🥬 Produto: ${escapeHtml(it.nome_produto)}</option>`);
-    }
-  });
+
+  if (opts.length === 0) {
+    showToast('Todos os itens desta compra já foram avaliados.', 'info');
+    return;
+  }
+
   select.innerHTML = opts.join('');
+  const targetGroup = document.getElementById('reviewTargetGroup');
+  if (targetGroup) targetGroup.style.display = 'block';
+
+  document.getElementById('reviewEditId').value = '';
   document.getElementById('reviewOrderId').value = String(pedidoId);
   document.getElementById('reviewComment').value = '';
+
+  const titleEl = document.getElementById('reviewModalTitle');
+  if (titleEl) {
+    if (mode === 'produto') titleEl.textContent = '⭐ Avaliar Produto';
+    else if (mode === 'produtor') titleEl.textContent = '⭐ Avaliar Produtor';
+    else titleEl.textContent = '⭐ Avaliar Compra';
+  }
+
+  const ctxEl = document.getElementById('reviewOrderContext');
+  if (ctxEl) {
+    ctxEl.textContent = `Pedido ${pedido.numero_publico || `#${pedido.id}`} — ${pedido.produtor_nome}`;
+  }
+
+  const submitBtn = document.getElementById('btnSubmitReview');
+  if (submitBtn) submitBtn.textContent = 'Enviar Avaliação';
+
+  const defaultRadio = document.querySelector('input[name="reviewNota"][value="5"]');
+  if (defaultRadio) defaultRadio.checked = true;
+
   openModal('reviewModalOverlay');
+}
+
+export function openEditReviewModal(reviewId) {
+  const rev = myReviewsCache.get(String(reviewId));
+  if (!rev) return;
+
+  clearFormError('reviewError');
+  const targetGroup = document.getElementById('reviewTargetGroup');
+  if (targetGroup) targetGroup.style.display = 'none';
+
+  document.getElementById('reviewEditId').value = String(rev.id);
+  document.getElementById('reviewOrderId').value = rev.pedido ? String(rev.pedido) : '';
+  document.getElementById('reviewComment').value = rev.comentario || '';
+
+  const titleEl = document.getElementById('reviewModalTitle');
+  if (titleEl) {
+    titleEl.textContent = rev.produto ? '✏️ Editar Avaliação do Produto' : '✏️ Editar Avaliação do Produtor';
+  }
+
+  const ctxEl = document.getElementById('reviewOrderContext');
+  if (ctxEl) {
+    const targetName = rev.produto_nome || rev.produtor_nome || '';
+    const orderInfo = rev.pedido_numero ? ` • Pedido ${rev.pedido_numero}` : '';
+    ctxEl.textContent = `${targetName}${orderInfo}`;
+  }
+
+  const submitBtn = document.getElementById('btnSubmitReview');
+  if (submitBtn) submitBtn.textContent = 'Salvar Alterações';
+
+  const radio = document.querySelector(`input[name="reviewNota"][value="${rev.nota}"]`);
+  if (radio) radio.checked = true;
+
+  openModal('reviewModalOverlay');
+}
+
+export async function deleteMyReview(reviewId) {
+  if (!confirm('Tem certeza de que deseja excluir esta avaliação?')) return;
+  const res = await apiFetch(`/avaliacoes/${reviewId}/`, { method: 'DELETE' });
+  if (!res.ok) {
+    showToast(await parseError(res), 'error');
+    return;
+  }
+  showToast('Avaliação excluída com sucesso.', 'info');
+  await loadMyReviews();
+  window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }
 
 export function openComplaintModalForOrder(pedidoId) {
@@ -265,17 +475,35 @@ export function openComplaintModalForOrder(pedidoId) {
   openModal('complaintModalOverlay');
 }
 
-export async function submitReview(payload) {
-  const res = await apiFetch('/avaliacoes/', {
-    method: 'POST',
-    body: JSON.stringify(payload),
+export async function submitReview(payload, editId = null) {
+  const isEdit = Boolean(editId);
+  const endpoint = isEdit ? `/avaliacoes/${editId}/` : '/avaliacoes/';
+  const method = isEdit ? 'PATCH' : 'POST';
+  const body = isEdit
+    ? { nota: payload.nota, comentario: payload.comentario }
+    : payload;
+
+  const res = await apiFetch(endpoint, {
+    method,
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const err = await parseError(res);
     throw new Error(err);
   }
-  showToast('Avaliação enviada com sucesso! Obrigado pelo feedback.', 'success');
+
+  showToast(
+    isEdit ? 'Avaliação atualizada com sucesso!' : 'Avaliação enviada com sucesso! Obrigado pelo feedback.',
+    'success',
+  );
   closeModal('reviewModalOverlay');
+
+  if (currentOrdersTab === 'avaliacoes') {
+    await loadMyReviews();
+  } else {
+    await loadMyOrders(currentOrdersPage, true);
+  }
+  window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }
 
 export async function submitComplaint(payload) {

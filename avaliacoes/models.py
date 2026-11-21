@@ -6,6 +6,8 @@ from django.db.models import Q
 
 class Avaliacao(models.Model):
     cliente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="avaliacoes")
+    pedido = models.ForeignKey("pedidos.Pedido", null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name="avaliacoes")
     produto = models.ForeignKey("catalogo.Produto", null=True, blank=True, on_delete=models.CASCADE,
                                 related_name="avaliacoes")
     produtor = models.ForeignKey("usuarios.PerfilProdutor", null=True, blank=True, on_delete=models.CASCADE,
@@ -17,10 +19,26 @@ class Avaliacao(models.Model):
     class Meta:
         ordering = ["-criado_em"]
         constraints = [
-            models.UniqueConstraint(fields=["cliente", "produto"], condition=Q(produto__isnull=False),
-                                    name="uma_avaliacao_por_cliente_produto"),
-            models.UniqueConstraint(fields=["cliente", "produtor"], condition=Q(produtor__isnull=False),
-                                    name="uma_avaliacao_por_cliente_produtor"),
+            models.UniqueConstraint(
+                fields=["cliente", "produto", "pedido"],
+                condition=Q(produto__isnull=False, pedido__isnull=False),
+                name="uma_avaliacao_por_cliente_produto_pedido",
+            ),
+            models.UniqueConstraint(
+                fields=["cliente", "produtor", "pedido"],
+                condition=Q(produtor__isnull=False, pedido__isnull=False),
+                name="uma_avaliacao_por_cliente_produtor_pedido",
+            ),
+            models.UniqueConstraint(
+                fields=["cliente", "produto"],
+                condition=Q(produto__isnull=False, pedido__isnull=True),
+                name="uma_avaliacao_legada_cliente_produto",
+            ),
+            models.UniqueConstraint(
+                fields=["cliente", "produtor"],
+                condition=Q(produtor__isnull=False, pedido__isnull=True),
+                name="uma_avaliacao_legada_cliente_produtor",
+            ),
             models.CheckConstraint(
                 condition=(Q(produto__isnull=False, produtor__isnull=True) |
                            Q(produto__isnull=True, produtor__isnull=False)),

@@ -45,6 +45,7 @@ class Produto(models.Model):
     tipo_producao = models.CharField(max_length=25, choices=TipoProducao.choices, default=TipoProducao.CONVENCIONAL)
     imagem = models.ImageField(upload_to="produtos/%Y/%m/", blank=True, null=True)
     ativo = models.BooleanField(default=True, help_text="Desative para ocultar do catálogo (também usado na moderação).")
+    excluido_em = models.DateTimeField(null=True, blank=True, help_text="Preenchido na desativação lógica (soft delete).")
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

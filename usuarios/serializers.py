@@ -39,10 +39,15 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
 
 class UsuarioAdminSerializer(serializers.ModelSerializer):
+    total_pedidos = serializers.IntegerField(read_only=True, default=0)
+    total_avaliacoes = serializers.IntegerField(read_only=True, default=0)
+
     class Meta:
         model = Usuario
-        fields = ["id", "username", "email", "first_name", "last_name", "telefone", "tipo",
-                  "is_active", "date_joined"]
+        fields = [
+            "id", "username", "email", "first_name", "last_name", "telefone", "tipo",
+            "is_active", "excluido_em", "date_joined", "total_pedidos", "total_avaliacoes",
+        ]
         read_only_fields = fields
 
 

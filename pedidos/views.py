@@ -19,7 +19,7 @@ from .serializers import (CarrinhoSerializer, CheckoutSerializer, ItemCarrinhoSe
                           PedidoSerializer, StatusSerializer)
 
 S = Pedido.Status
-_pedidos_qs = Pedido.objects.select_related("produtor", "cliente", "avaliacao_cliente").prefetch_related("itens", "historico")
+_pedidos_qs = Pedido.objects.select_related("produtor", "cliente", "avaliacao_cliente").prefetch_related("itens", "historico", "avaliacoes")
 
 
 def _carrinho(user):

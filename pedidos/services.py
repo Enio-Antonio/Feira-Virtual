@@ -52,7 +52,7 @@ def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observaca
     por_produtor = defaultdict(list)
     for item in itens:
         p = produtos_lock.get(item.produto_id)
-        if not p or not p.ativo or p.produtor.status != PerfilProdutor.Status.APROVADO:
+        if not p or not p.ativo or p.excluido_em is not None or p.produtor.status != PerfilProdutor.Status.APROVADO or p.produtor.excluido_em is not None:
             raise ValidationError(f"O produto '{item.produto.nome}' não está mais disponível.")
         if item.quantidade > p.estoque:
             raise ValidationError(f"Estoque insuficiente para '{p.nome}' (disponível: {p.estoque}).")

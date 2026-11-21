@@ -12,6 +12,7 @@ class Usuario(AbstractUser):
     email = models.EmailField("e-mail", unique=True)
     tipo = models.CharField(max_length=12, choices=Tipo.choices, default=Tipo.CLIENTE)
     telefone = models.CharField(max_length=20, blank=True)
+    excluido_em = models.DateTimeField(null=True, blank=True, help_text="Preenchido na desativação lógica (soft delete).")
 
     def save(self, *args, **kwargs):
         if self.is_superuser:
@@ -41,6 +42,7 @@ class PerfilProdutor(models.Model):
     chave_pix = models.CharField(max_length=140, blank=True)
     possui_maquininha = models.BooleanField(default=False)
     aceita_dinheiro = models.BooleanField(default=True)
+    excluido_em = models.DateTimeField(null=True, blank=True, help_text="Preenchido na desativação lógica (soft delete).")
 
     def __str__(self):
         return self.nome_propriedade

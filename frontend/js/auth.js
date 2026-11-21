@@ -1,8 +1,8 @@
 /**
  * Gerenciamento de Autenticação, Perfis de Usuário (Multi-perfil) e LGPD.
  */
-import { apiFetch, parseError, tokens } from './api.js?v=20261120j';
-import { escapeHtml, openModal, showToast } from './ui.js?v=20261120j';
+import { apiFetch, parseError, tokens } from './api.js?v=20261120k';
+import { escapeHtml, openModal, showToast } from './ui.js?v=20261120k';
 
 export const authState = {
   user: null,
@@ -279,6 +279,7 @@ export function renderUserNav() {
   if (u.tipo === 'CLIENTE') {
     roleLinks = `
       <button type="button" class="dropdown__link" data-action="my-orders">📦 Meus Pedidos</button>
+      <button type="button" class="dropdown__link" data-action="my-reviews">⭐ Minhas Avaliações</button>
       <button type="button" class="dropdown__link" data-action="my-addresses">📍 Meus Endereços</button>
     `;
   } else if (u.tipo === 'PRODUTOR') {

@@ -1,9 +1,9 @@
 /**
  * Catálogo de Produtos, Filtros, Busca, Paginação, Detalhes, Vitrine de Produtores e Estatísticas.
  */
-import { apiFetch } from './api.js?v=20261120j';
-import { addToCart } from './cart.js?v=20261120j';
-import { escapeHtml, formatCurrency, formatDate, getUnitStep, openModal, renderProductSkeletons, safeUrl } from './ui.js?v=20261120j';
+import { apiFetch } from './api.js?v=20261120k';
+import { addToCart } from './cart.js?v=20261120k';
+import { escapeHtml, formatCurrency, formatDate, getUnitStep, openModal, renderProductSkeletons, safeUrl } from './ui.js?v=20261120k';
 
 export const catalogState = {
   categories: [],
@@ -136,6 +136,30 @@ function hasValidRating(p) {
   return total > 0 && Number.isFinite(media) && media > 0;
 }
 
+function formatRatingCompact(p) {
+  if (!hasValidRating(p)) return '';
+  const mediaStr = Number(p.nota_media).toFixed(1).replace('.', ',');
+  const total = Number(p.total_avaliacoes);
+  return `★ ${mediaStr} (${total})`;
+}
+
+function formatRatingSummaryHtml(p) {
+  if (!hasValidRating(p)) return '';
+  const mediaNum = Number(p.nota_media);
+  const mediaStr = mediaNum.toFixed(1).replace('.', ',');
+  const total = Number(p.total_avaliacoes);
+  const filled = Math.max(1, Math.min(5, Math.round(mediaNum)));
+  const stars = '★'.repeat(filled) + '☆'.repeat(5 - filled);
+  const label = total === 1 ? '1 avaliação' : `${total} avaliações`;
+  return `
+    <div class="rating-summary-inline" aria-label="Nota média ${mediaStr} de 5 com ${label}">
+      <span class="rating-summary-inline__stars" aria-hidden="true">${stars}</span>
+      <strong>${mediaStr}</strong>
+      <span class="text-muted">(${label})</span>
+    </div>
+  `;
+}
+
 function updateHeroProductRating(products) {
   const header = document.getElementById('heroProductHeader');
   if (!header) return;
@@ -151,7 +175,7 @@ function updateHeroProductRating(products) {
     const badge = document.createElement('div');
     badge.className = 'product-card-hero__badge';
     const span = document.createElement('span');
-    span.textContent = `⭐ ${Number(heroProd.nota_media).toFixed(1)}`;
+    span.textContent = formatRatingCompact(heroProd);
     badge.appendChild(span);
     header.appendChild(badge);
   }
@@ -177,7 +201,7 @@ function renderProductsGrid(products) {
     const customImgUrl = p.imagem ? safeUrl(p.imagem, '') : '';
     const imgUrl = customImgUrl || '/static/assets/logo-icon.webp';
     const imgClass = customImgUrl ? 'product-card__img' : 'product-card__img product-card__img--default';
-    const nota = hasValidRating(p) ? `⭐ ${Number(p.nota_media).toFixed(1)}` : '';
+    const nota = formatRatingCompact(p);
 
     return `
       <article class="product-card ${semEstoque ? 'card--out-of-stock' : ''}">
@@ -276,6 +300,7 @@ export async function openProductDetail(productId) {
             <span class="badge badge--outline">${escapeHtml(p.categoria_nome || '')}</span>
           </div>
           <h3>${escapeHtml(p.nome)}</h3>
+          ${formatRatingSummaryHtml(p)}
           <p class="text-muted">
             Produzido por:
             <button type="button" class="btn-link-inline btnProducerDetail" data-id="${p.produtor}">${escapeHtml(p.produtor_nome)}</button>
@@ -298,16 +323,16 @@ export async function openProductDetail(productId) {
       </div>
 
       <div class="detail-reviews">
-        <h4>⭐ Avaliações de Clientes (${avaliacoes.length})</h4>
+        <h4>⭐ Avaliações de Clientes (${Number(p.total_avaliacoes) || avaliacoes.length})</h4>
         ${avaliacoes.length === 0
           ? '<p class="text-muted">Ainda não há avaliações para este produto.</p>'
           : avaliacoes.map(a => `
             <div class="review-item">
               <div class="review-item__head">
                 <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
-                <span>${'⭐'.repeat(a.nota)}</span>
+                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
               </div>
-              <p>${escapeHtml(a.comentario || '')}</p>
+              ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : '<p class="text-muted">Sem comentário.</p>'}
               <span class="text-muted">${formatDate(a.criado_em)}</span>
             </div>
           `).join('')}
@@ -349,6 +374,7 @@ export async function openProducerDetail(producerId) {
         <div>
           <h3>${escapeHtml(p.nome_propriedade)}</h3>
           <p class="producer-card__location">📍 ${escapeHtml(p.cidade_uf || 'Agricultura Familiar Local')}</p>
+          ${formatRatingSummaryHtml(p)}
         </div>
       </div>
       <p class="detail-desc">${escapeHtml(p.descricao || 'Produção rural familiar direta.')}</p>
@@ -364,16 +390,17 @@ export async function openProducerDetail(producerId) {
       </button>
 
       <div class="detail-reviews">
-        <h4>⭐ Avaliações da Propriedade (${avaliacoes.length})</h4>
+        <h4>⭐ Avaliações da Propriedade (${Number(p.total_avaliacoes) || avaliacoes.length})</h4>
         ${avaliacoes.length === 0
           ? '<p class="text-muted">Ainda não há avaliações registradas para este produtor.</p>'
           : avaliacoes.map(a => `
             <div class="review-item">
               <div class="review-item__head">
                 <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
-                <span>${'⭐'.repeat(a.nota)}</span>
+                <span>${'⭐'.repeat(a.nota)} (${Number(a.nota) || 0}/5)</span>
               </div>
-              <p>${escapeHtml(a.comentario || '')}</p>
+              ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : '<p class="text-muted">Sem comentário.</p>'}
+              <span class="text-muted">${formatDate(a.criado_em)}</span>
             </div>
           `).join('')}
       </div>
@@ -425,6 +452,7 @@ export async function loadProducers() {
     }
 
     container.innerHTML = produtores.map(p => {
+      const ratingBadge = formatRatingCompact(p);
       return `
         <article class="producer-card">
           <div class="producer-card__top">
@@ -439,6 +467,7 @@ export async function loadProducers() {
           <p class="producer-card__desc">${escapeHtml(p.descricao || 'Produção familiar local e sustentável.')}</p>
           <div class="producer-card__footer">
             <div class="producer-card__badges">
+              ${ratingBadge ? `<span class="badge badge--outline">${ratingBadge}</span>` : ''}
               ${p.aceita_pix ? PIX_BADGE_HTML : ''}
               ${p.possui_maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
               ${p.aceita_dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}

@@ -31,7 +31,7 @@
   <link rel="manifest" href="{% static 'assets/manifest.webmanifest' %}" />
 
   <!-- Estilos (servido pelo WhiteNoise com cache imutável, sem requisições externas) -->
-  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120j" />
+  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120k" />
 </head>
 
 <body>
@@ -993,7 +993,7 @@
     </div>
   </div>
 
-  <!-- ===================== MODAL MEUS PEDIDOS & RECLAMAÇÕES ===================== -->
+  <!-- ===================== MODAL MEUS PEDIDOS, AVALIAÇÕES & RECLAMAÇÕES ===================== -->
   <div class="modal-overlay" id="myOrdersModalOverlay" aria-hidden="true">
     <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="myOrdersTitle">
       <button type="button" class="btn-close modal-close" id="btnCloseMyOrdersModal"
@@ -1001,10 +1001,12 @@
       <h3 id="myOrdersTitle" class="auth-form__title">📦 Meus Pedidos</h3>
       <div class="panel-tabs">
         <button type="button" class="panel-tab active" id="tabOrdersList">Pedidos Realizados</button>
+        <button type="button" class="panel-tab" id="tabMyReviews">Minhas Avaliações</button>
         <button type="button" class="panel-tab" id="tabMyComplaints">Minhas Reclamações</button>
       </div>
       <div id="myOrdersList" class="orders-list"></div>
       <div id="myOrdersPagination" class="pagination-wrap"></div>
+      <div id="myReviewsList" class="orders-list" style="display: none;"></div>
       <div id="myComplaintsList" class="orders-list" style="display: none;"></div>
     </div>
   </div>
@@ -1036,14 +1038,16 @@
   </div>
 
   <!-- ===================== MODAL AVALIAÇÃO ===================== -->
-  <div class="modal-overlay" id="reviewModalOverlay" aria-hidden="true">
+  <div class="modal-overlay modal-overlay--top" id="reviewModalOverlay" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
       <button type="button" class="btn-close modal-close" id="btnCloseReviewModal"
         aria-label="Fechar avaliação">✕</button>
       <h3 id="reviewModalTitle" class="auth-form__title">⭐ Avaliar Compra</h3>
+      <p id="reviewOrderContext" class="auth-form__subtitle"></p>
       <form id="reviewForm">
         <input type="hidden" id="reviewOrderId" />
-        <div class="form-group">
+        <input type="hidden" id="reviewEditId" />
+        <div class="form-group" id="reviewTargetGroup">
           <label for="reviewTarget">O que deseja avaliar:</label>
           <select id="reviewTarget" class="form-input"></select>
         </div>
@@ -1060,10 +1064,10 @@
         <div class="form-group">
           <label for="reviewComment">Comentário (opcional):</label>
           <textarea id="reviewComment" rows="3" class="form-input"
-            placeholder="Como foi a qualidade e o atendimento?"></textarea>
+            placeholder="Como foi a qualidade, entrega e o atendimento?"></textarea>
         </div>
         <div id="reviewError" class="auth-error" style="display: none;" role="alert"></div>
-        <button type="submit" class="btn btn--primary btn--full">Enviar Avaliação</button>
+        <button type="submit" class="btn btn--primary btn--full" id="btnSubmitReview">Enviar Avaliação</button>
       </form>
     </div>
   </div>
@@ -1219,11 +1223,13 @@
       <h3 id="adminPanelTitle" class="auth-form__title">🛡️ Painel de Moderação Administrativa</h3>
 
       <div class="panel-tabs" id="adminPanelTabs">
-        <button type="button" class="panel-tab active" data-admin-tab="indicadores">Indicadores</button>
-        <button type="button" class="panel-tab" data-admin-tab="produtores">Produtores</button>
+        <button type="button" class="panel-tab active" data-admin-tab="indicadores">Visão geral</button>
         <button type="button" class="panel-tab" data-admin-tab="produtos">Produtos</button>
+        <button type="button" class="panel-tab" data-admin-tab="produtores">Produtores</button>
+        <button type="button" class="panel-tab" data-admin-tab="clientes">Clientes</button>
         <button type="button" class="panel-tab" data-admin-tab="categorias">Categorias</button>
         <button type="button" class="panel-tab" data-admin-tab="pedidos">Pedidos</button>
+        <button type="button" class="panel-tab" data-admin-tab="avaliacoes">Avaliações</button>
         <button type="button" class="panel-tab" data-admin-tab="reclamacoes">Reclamações</button>
         <button type="button" class="panel-tab" data-admin-tab="usuarios">Usuários</button>
       </div>
@@ -1231,14 +1237,114 @@
       <div id="adminTabIndicadores">
         <div id="adminIndicatorsContent"></div>
       </div>
-      <div id="adminTabProdutores" style="display: none;">
-        <div id="adminProducersList" class="panel-list"></div>
-        <div id="adminProducersPagination" class="pagination-wrap"></div>
-      </div>
+
       <div id="adminTabProdutos" style="display: none;">
+        <div class="admin-filter-bar">
+          <input type="search" id="adminProdSearch" class="form-input" placeholder="Pesquisar produto ou produtor..." aria-label="Pesquisar produto" />
+          <select id="adminProdCatFilter" class="form-select" aria-label="Filtrar por categoria">
+            <option value="">Todas as categorias</option>
+          </select>
+          <select id="adminProdProducerFilter" class="form-select" aria-label="Filtrar por produtor">
+            <option value="">Todos os produtores</option>
+          </select>
+          <select id="adminProdStatusFilter" class="form-select" aria-label="Filtrar por status">
+            <option value="">Todos os status</option>
+            <option value="true">Ativos</option>
+            <option value="false">Ocultos / Inativos</option>
+          </select>
+        </div>
+
+        <div id="adminProductEditWrap" class="demo-box" style="display: none;">
+          <h4 style="margin-bottom: var(--space-3);">Editar Produto</h4>
+          <form id="adminProductEditForm">
+            <input type="hidden" id="adminEditProdId" />
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adminEditProdNome">Nome:</label>
+                <input type="text" id="adminEditProdNome" required class="form-input" />
+              </div>
+              <div class="form-group">
+                <label for="adminEditProdCategoria">Categoria:</label>
+                <select id="adminEditProdCategoria" required class="form-input"></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adminEditProdPreco">Preço (R$):</label>
+                <input type="number" id="adminEditProdPreco" step="0.01" min="0.01" required class="form-input" />
+              </div>
+              <div class="form-group">
+                <label for="adminEditProdUnidade">Unidade:</label>
+                <select id="adminEditProdUnidade" class="form-input">
+                  <option value="UNIDADE">Unidade</option>
+                  <option value="KG">Quilograma (kg)</option>
+                  <option value="MACO">Maço</option>
+                  <option value="LITRO">Litro</option>
+                  <option value="CAIXA">Caixa</option>
+                  <option value="SACO">Saco</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="adminEditProdEstoque">Estoque:</label>
+                <input type="number" id="adminEditProdEstoque" step="0.001" min="0" required class="form-input" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adminEditProdTipo">Tipo de cultivo:</label>
+                <select id="adminEditProdTipo" class="form-input">
+                  <option value="ORGANICO_CERTIFICADO">Orgânico Certificado</option>
+                  <option value="AGROECOLOGICO">Agroecológico</option>
+                  <option value="CONVENCIONAL">Convencional</option>
+                </select>
+              </div>
+              <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 8px;">
+                <label><input type="checkbox" id="adminEditProdAtivo" checked /> Produto ativo (visível no catálogo)</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="adminEditProdDesc">Descrição:</label>
+              <textarea id="adminEditProdDesc" rows="2" class="form-input"></textarea>
+            </div>
+            <div id="adminProductEditError" class="auth-error" style="display: none;" role="alert"></div>
+            <div style="display: flex; gap: var(--space-2);">
+              <button type="submit" class="btn btn--primary btn--sm">Salvar Alterações</button>
+              <button type="button" class="btn btn--outline btn--sm" id="btnCancelAdminProductEdit">Cancelar</button>
+            </div>
+          </form>
+        </div>
+
         <div id="adminProductsList" class="panel-list"></div>
         <div id="adminProductsPagination" class="pagination-wrap"></div>
       </div>
+
+      <div id="adminTabProdutores" style="display: none;">
+        <div class="admin-filter-bar">
+          <input type="search" id="adminProducerSearch" class="form-input" placeholder="Pesquisar propriedade, cidade, usuário ou e-mail..." aria-label="Pesquisar produtor" />
+          <select id="adminProducerStatusFilter" class="form-select" aria-label="Filtrar produtores por status">
+            <option value="">Todos os status</option>
+            <option value="PENDENTE">Pendentes</option>
+            <option value="APROVADO">Aprovados</option>
+            <option value="SUSPENSO">Suspensos</option>
+          </select>
+        </div>
+        <div id="adminProducersList" class="panel-list"></div>
+        <div id="adminProducersPagination" class="pagination-wrap"></div>
+      </div>
+
+      <div id="adminTabClientes" style="display: none;">
+        <div class="admin-filter-bar">
+          <input type="search" id="adminClientSearch" class="form-input" placeholder="Pesquisar cliente por nome, usuário ou e-mail..." aria-label="Pesquisar cliente" />
+          <select id="adminClientStatusFilter" class="form-select" aria-label="Filtrar clientes por status">
+            <option value="">Todos os status</option>
+            <option value="true">Ativos</option>
+            <option value="false">Inativos / Bloqueados</option>
+          </select>
+        </div>
+        <div id="adminClientsList" class="panel-list"></div>
+        <div id="adminClientsPagination" class="pagination-wrap"></div>
+      </div>
+
       <div id="adminTabCategorias" style="display: none;">
         <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-3);">
           <button type="button" class="btn btn--cta btn--sm" id="btnNewAdminCategory">+ Nova Categoria</button>
@@ -1266,6 +1372,7 @@
         </div>
         <div id="adminCategoriesList" class="panel-list"></div>
       </div>
+
       <div id="adminTabPedidos" style="display: none;">
         <div class="form-group" style="max-width: 280px;">
           <label for="adminOrderStatusFilter">Filtrar por status:</label>
@@ -1284,13 +1391,55 @@
         <div id="adminOrdersList" class="panel-list"></div>
         <div id="adminOrdersPagination" class="pagination-wrap"></div>
       </div>
+
+      <div id="adminTabAvaliacoes" style="display: none;">
+        <div id="adminReviewsContent"></div>
+        <div id="adminReviewsPagination" class="pagination-wrap"></div>
+      </div>
+
       <div id="adminTabReclamacoes" style="display: none;">
         <div id="adminComplaintsList" class="orders-list"></div>
         <div id="adminComplaintsPagination" class="pagination-wrap"></div>
       </div>
+
       <div id="adminTabUsuarios" style="display: none;">
+        <div class="admin-filter-bar">
+          <input type="search" id="adminUserSearch" class="form-input" placeholder="Pesquisar usuário por nome, username ou e-mail..." aria-label="Pesquisar usuário" />
+          <select id="adminUserTypeFilter" class="form-select" aria-label="Filtrar usuários por perfil">
+            <option value="">Todos os perfis</option>
+            <option value="CLIENTE">Clientes</option>
+            <option value="PRODUTOR">Produtores</option>
+            <option value="ENTREGADOR">Entregadores</option>
+            <option value="ADMIN">Administradores</option>
+          </select>
+        </div>
         <div id="adminUsersList" class="panel-list"></div>
         <div id="adminUsersPagination" class="pagination-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL DETALHES ADMINISTRATIVOS ===================== -->
+  <div class="modal-overlay modal-overlay--top" id="adminDetailModalOverlay" aria-hidden="true">
+    <div class="modal-card modal-card--lg" role="dialog" aria-modal="true" aria-labelledby="adminDetailTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseAdminDetailModal"
+        aria-label="Fechar detalhes">✕</button>
+      <h3 id="adminDetailTitle" class="auth-form__title">Detalhes do Registro</h3>
+      <div id="adminDetailBody"></div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL CONFIRMAÇÃO ADMINISTRATIVA ===================== -->
+  <div class="modal-overlay modal-overlay--top" id="adminConfirmModalOverlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="adminConfirmTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseAdminConfirmModal"
+        aria-label="Fechar confirmação">✕</button>
+      <h3 id="adminConfirmTitle" class="auth-form__title">Confirmar exclusão</h3>
+      <p id="adminConfirmMessage" class="detail-desc"></p>
+      <p id="adminConfirmHint" class="text-muted" style="margin-bottom: var(--space-5);"></p>
+      <div class="confirm-modal-actions">
+        <button type="button" class="btn btn--outline" id="btnCancelAdminConfirm">Cancelar</button>
+        <button type="button" class="btn btn--danger" id="btnProceedAdminConfirm">Confirmar exclusão</button>
       </div>
     </div>
   </div>
@@ -1298,7 +1447,7 @@
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="{% static 'main.js' %}?v=20261120j"></script>
+  <script type="module" src="{% static 'main.js' %}?v=20261120k"></script>
 </body>
 
 </html>

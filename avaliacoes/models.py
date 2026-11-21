@@ -44,3 +44,19 @@ class Reclamacao(models.Model):
 
     class Meta:
         ordering = ["-criado_em"]
+
+
+class AvaliacaoCliente(models.Model):
+    """Avaliação recíproca: produtor avalia o cliente após a conclusão de um pedido."""
+    produtor = models.ForeignKey("usuarios.PerfilProdutor", on_delete=models.CASCADE,
+                                 related_name="avaliacoes_clientes_feitas")
+    cliente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                related_name="avaliacoes_como_cliente")
+    pedido = models.OneToOneField("pedidos.Pedido", on_delete=models.CASCADE,
+                                  related_name="avaliacao_cliente")
+    nota = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    comentario = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-criado_em"]

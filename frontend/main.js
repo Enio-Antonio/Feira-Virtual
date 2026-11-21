@@ -11,8 +11,8 @@ import {
   saveAdminComplaint,
   switchAdminTab,
   toggleAdminCategory,
-} from './js/admin.js?v=20261120h';
-import { apiFetch } from './js/api.js?v=20261120h';
+} from './js/admin.js?v=20261120j';
+import { apiFetch } from './js/api.js?v=20261120j';
 import {
   checkAuth,
   confirmPasswordReset,
@@ -24,7 +24,7 @@ import {
   register,
   requestPasswordReset,
   updateProfile,
-} from './js/auth.js?v=20261120h';
+} from './js/auth.js?v=20261120j';
 import {
   addToCart,
   clearCart,
@@ -38,8 +38,15 @@ import {
   submitCheckout,
   updateCheckoutSummary,
   updateItemQuantity,
-} from './js/cart.js?v=20261120h';
-import { handleDeliveryAction, openDeliveryPanel, saveDeliveryVehicle, switchDeliveryTab } from './js/delivery.js?v=20261120h';
+} from './js/cart.js?v=20261120j';
+import {
+  handleDeliveryAction,
+  openDeliveryPanel,
+  refreshCurrentDeliveryTab,
+  saveDeliveryVehicle,
+  setDeliveryMineGroup,
+  switchDeliveryTab,
+} from './js/delivery.js?v=20261120j';
 import {
   cancelOrder,
   createAddress,
@@ -53,16 +60,21 @@ import {
   submitComplaint,
   submitReview,
   switchOrdersTab,
-} from './js/orders.js?v=20261120h';
+} from './js/orders.js?v=20261120j';
 import {
   deleteProducerProduct,
   handleProducerOrderAction,
+  openClientReviewModal,
   openProducerPanel,
   openProductForm,
   saveProducerProduct,
   saveProducerProperty,
+  setProducerOrderStatusFilter,
+  submitClientReview,
   switchProducerTab,
-} from './js/producer.js?v=20261120h';
+  updateProductPreview,
+  updatePropertyPreview,
+} from './js/producer.js?v=20261120j';
 import {
   catalogState,
   loadCategories,
@@ -72,7 +84,7 @@ import {
   openProducerDetail,
   openProductDetail,
   renderCategoryPills,
-} from './js/products.js?v=20261120h';
+} from './js/products.js?v=20261120j';
 import {
   clearFormError,
   clearFormFieldErrors,
@@ -85,7 +97,7 @@ import {
   setFieldError,
   showFormError,
   showToast,
-} from './js/ui.js?v=20261120h';
+} from './js/ui.js?v=20261120j';
 
 function switchAuthTab(tab) {
   const tabLogin = document.getElementById('tabLogin');
@@ -163,10 +175,10 @@ function handleUserAction(action) {
       openModal('addressesModalOverlay');
       break;
     case 'producer-panel':
-      openProducerPanel('produtos');
+      openProducerPanel('visao_geral');
       break;
     case 'delivery-panel':
-      openDeliveryPanel('disponiveis');
+      openDeliveryPanel('visao_geral');
       break;
     case 'admin-panel':
       openAdminPanel('indicadores');
@@ -200,8 +212,31 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
   });
 
-  window.addEventListener('fv:auth-changed', () => {
+  function syncRoleWorkspace(user) {
+    const storefront = document.getElementById('publicStorefront');
+    const prodWs = document.getElementById('producerWorkspace');
+    const delivWs = document.getElementById('deliveryWorkspace');
+
+    if (user?.tipo === 'PRODUTOR') {
+      openProducerPanel('visao_geral');
+      return;
+    }
+    if (user?.tipo === 'ENTREGADOR') {
+      openDeliveryPanel('visao_geral');
+      return;
+    }
+
+    if (prodWs) prodWs.style.display = 'none';
+    if (delivWs) delivWs.style.display = 'none';
+    if (storefront) storefront.style.display = 'block';
+    loadCategories();
+    loadProducts(1);
+    loadProducers();
+  }
+
+  window.addEventListener('fv:auth-changed', (e) => {
     loadCart();
+    syncRoleWorkspace(e.detail);
   });
 
   window.addEventListener('fv:open-pix', (e) => {
@@ -793,19 +828,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ── Painel do Produtor ─────────────────────────────────────────────────
-  document.getElementById('btnCloseProducerPanelModal')?.addEventListener('click', () => closeModal('producerPanelModalOverlay'));
+  // ── Navegação por Perfil (Navbar Desktop, Mobile, Footer e Atalhos) ────
+  document.addEventListener('click', (e) => {
+    const prodNav = e.target.closest('[data-producer-nav]');
+    if (prodNav) {
+      closeUserDropdownAndMobile();
+      openProducerPanel(prodNav.dataset.producerNav);
+      return;
+    }
+    const delivNav = e.target.closest('[data-delivery-nav]');
+    if (delivNav) {
+      closeUserDropdownAndMobile();
+      openDeliveryPanel(delivNav.dataset.deliveryNav);
+    }
+  });
+
+  // ── Painel Dedicado do Produtor Rural ──────────────────────────────────
   document.getElementById('producerPanelTabs')?.addEventListener('click', (e) => {
     const tabBtn = e.target.closest('[data-producer-tab]');
     if (tabBtn) switchProducerTab(tabBtn.dataset.producerTab);
+  });
+  document.getElementById('btnQuickNewProduct')?.addEventListener('click', () => {
+    switchProducerTab('produtos');
+    openProductForm(null);
   });
   document.getElementById('btnNewProducerProduct')?.addEventListener('click', () => openProductForm(null));
   document.getElementById('btnCancelProducerProduct')?.addEventListener('click', () => {
     document.getElementById('producerProductFormWrap').style.display = 'none';
   });
+  document.getElementById('producerProductForm')?.addEventListener('input', updateProductPreview);
+  document.getElementById('producerProductForm')?.addEventListener('change', updateProductPreview);
   document.getElementById('producerProductForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    saveProducerProduct(e.target);
+    saveProducerProduct();
   });
   document.getElementById('producerProductsList')?.addEventListener('click', (e) => {
     const editBtn = e.target.closest('.btnEditProdProduct');
@@ -813,31 +868,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const delBtn = e.target.closest('.btnDeleteProdProduct');
     if (delBtn) deleteProducerProduct(Number(delBtn.dataset.id));
   });
+  document.getElementById('producerOrderFilters')?.addEventListener('click', (e) => {
+    const pill = e.target.closest('.pill');
+    if (pill) setProducerOrderStatusFilter(pill.dataset.producerStatus || '');
+  });
   document.getElementById('producerOrdersList')?.addEventListener('click', (e) => {
+    const rateBtn = e.target.closest('.btnRateClient');
+    if (rateBtn) {
+      openClientReviewModal(Number(rateBtn.dataset.id));
+      return;
+    }
     const actBtn = e.target.closest('.btnProdOrderAction');
     if (actBtn) {
       handleProducerOrderAction(Number(actBtn.dataset.id), actBtn.dataset.action, actBtn.dataset.next || '');
     }
   });
+  document.getElementById('btnCloseClientReviewModal')?.addEventListener('click', () => closeModal('clientReviewModalOverlay'));
+  document.getElementById('clientReviewForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitClientReview();
+  });
+  document.getElementById('producerPropertyForm')?.addEventListener('input', updatePropertyPreview);
+  document.getElementById('producerPropertyForm')?.addEventListener('change', updatePropertyPreview);
   document.getElementById('producerPropertyForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     saveProducerProperty();
   });
 
-  // ── Painel do Entregador ───────────────────────────────────────────────
-  document.getElementById('btnCloseDeliveryPanelModal')?.addEventListener('click', () => closeModal('deliveryPanelModalOverlay'));
+  // ── Painel Dedicado do Entregador ──────────────────────────────────────
+  document.getElementById('btnRefreshDelivery')?.addEventListener('click', refreshCurrentDeliveryTab);
   document.getElementById('deliveryPanelTabs')?.addEventListener('click', (e) => {
     const tabBtn = e.target.closest('[data-delivery-tab]');
     if (tabBtn) switchDeliveryTab(tabBtn.dataset.deliveryTab);
   });
-  const bindDeliveryActions = (id) => {
-    document.getElementById(id)?.addEventListener('click', (e) => {
-      const btn = e.target.closest('.btnDeliveryAction');
-      if (btn) handleDeliveryAction(Number(btn.dataset.id), btn.dataset.action);
-    });
-  };
-  bindDeliveryActions('deliveryAvailableList');
-  bindDeliveryActions('deliveryMineList');
+  document.getElementById('deliveryMineFilters')?.addEventListener('click', (e) => {
+    const pill = e.target.closest('.pill');
+    if (pill) setDeliveryMineGroup(pill.dataset.deliveryGroup || '');
+  });
+  document.getElementById('deliveryWorkspace')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btnDeliveryAction');
+    if (btn) handleDeliveryAction(Number(btn.dataset.id), btn.dataset.action);
+  });
   document.getElementById('deliveryVehicleForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     saveDeliveryVehicle();
@@ -888,9 +959,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Inicialização de Dados ─────────────────────────────────────────────
+  // checkAuth() dispara fv:auth-changed -> syncRoleWorkspace() carrega o painel
+  // dedicado (Produtor/Entregador) ou a vitrine pública (Visitante/Cliente/Admin).
   checkAuth();
-  loadCategories();
-  loadProducts(1);
   loadStatistics();
-  loadProducers();
 });

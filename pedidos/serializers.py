@@ -107,21 +107,32 @@ class PedidoSerializer(serializers.ModelSerializer):
     itens = ItemPedidoSerializer(many=True, read_only=True)
     historico = HistoricoSerializer(many=True, read_only=True)
     produtor_nome = serializers.CharField(source="produtor.nome_propriedade", read_only=True)
-    cliente_nome = serializers.CharField(source="cliente.get_full_name", read_only=True)
+    cliente_nome = serializers.SerializerMethodField()
     total_com_frete = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     chave_pix = serializers.SerializerMethodField()
     endereco_entrega = serializers.SerializerMethodField()
+    endereco_resumido = serializers.SerializerMethodField()
+    local_retirada = serializers.SerializerMethodField()
+    concluido_em = serializers.SerializerMethodField()
+    cliente_avaliado = serializers.SerializerMethodField()
 
     class Meta:
         model = Pedido
         fields = [
             "id", "numero_publico", "status", "modalidade", "forma_pagamento",
-            "endereco_entrega", "observacao", "total", "taxa_entrega", "total_com_frete",
+            "endereco_entrega", "endereco_resumido", "local_retirada",
+            "observacao", "total", "taxa_entrega", "total_com_frete",
             "previsao_entrega", "motivo_cancelamento", "produtor", "produtor_nome",
             "cliente", "cliente_nome", "entregador", "chave_pix",
+            "concluido_em", "cliente_avaliado",
             "itens", "historico", "criado_em", "atualizado_em"
         ]
         read_only_fields = fields
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_cliente_nome(self, obj) -> str:
+        nome = obj.cliente.get_full_name().strip()
+        return nome or obj.cliente.first_name or obj.cliente.username
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_endereco_entrega(self, obj) -> str:
@@ -131,6 +142,33 @@ class PedidoSerializer(serializers.ModelSerializer):
             if getattr(u, "tipo", None) == "ENTREGADOR" and obj.entregador_id != u.id:
                 return _resumir_endereco_entregador(obj.endereco_entrega)
         return obj.endereco_entrega
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_endereco_resumido(self, obj) -> str:
+        return _resumir_endereco_entregador(obj.endereco_entrega) if obj.endereco_entrega else ""
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_local_retirada(self, obj) -> str:
+        p = obj.produtor
+        cidade_uf = "/".join(x for x in (p.cidade, p.estado) if x)
+        partes = [x for x in (p.endereco_propriedade, cidade_uf) if x]
+        return " - ".join(partes) if partes else p.nome_propriedade
+
+    @extend_schema_field(OpenApiTypes.DATETIME)
+    def get_concluido_em(self, obj):
+        if obj.status != Pedido.Status.CONCLUIDO:
+            return None
+        for h in reversed(list(obj.historico.all())):
+            if h.status == Pedido.Status.CONCLUIDO:
+                return h.criado_em
+        return obj.atualizado_em
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_cliente_avaliado(self, obj) -> bool:
+        try:
+            return obj.avaliacao_cliente is not None
+        except Exception:
+            return False
 
     def get_chave_pix(self, obj) -> str | None:
         request = self.context.get("request")

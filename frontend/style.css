@@ -1875,3 +1875,253 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
     scroll-behavior: auto !important;
   }
 }
+
+/* =========================================================
+   PAINÉIS DEDICADOS POR PERFIL (ENTREGADOR & PRODUTOR RURAL)
+   ========================================================= */
+.role-workspace {
+  padding-block: var(--space-10) var(--space-16);
+  min-height: calc(100vh - var(--navbar-height) - 200px);
+}
+.workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-6);
+}
+.workspace-header__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+.workspace-header__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: var(--space-1);
+  margin-bottom: 4px;
+}
+.workspace-header__subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  max-width: 680px;
+}
+.workspace-tabs {
+  margin-top: 0;
+  margin-bottom: var(--space-6);
+}
+.workspace-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+.workspace-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+.workspace-card__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.workspace-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+.workspace-preview-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.workspace-preview-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.filter-pills-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+.workspace-quick-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-5);
+}
+
+/* Cards de Entrega com Origem/Destino e Frete em Destaque */
+.delivery-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.delivery-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.delivery-freight-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-tint);
+  border: 1.5px solid rgba(36, 111, 17, 0.3);
+}
+.delivery-freight-pill span {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+.delivery-freight-pill strong {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+[data-theme="dark"] .delivery-freight-pill {
+  background: rgba(103, 174, 37, 0.16);
+  border-color: rgba(126, 217, 58, 0.45);
+}
+[data-theme="dark"] .delivery-freight-pill span {
+  color: #E8EAE3;
+}
+[data-theme="dark"] .delivery-freight-pill strong {
+  color: #7ED93A;
+}
+
+.delivery-route {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.delivery-route__stop {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.delivery-route__stop--origin {
+  border-left: 4px solid var(--color-primary);
+}
+.delivery-route__stop--dest {
+  border-left: 4px solid var(--color-cta);
+}
+.delivery-route__tag {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.delivery-route__stop strong {
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+}
+.delivery-route__addr {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.delivery-map-link {
+  margin-top: 6px;
+  align-self: flex-start;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+[data-theme="dark"] .delivery-map-link {
+  color: var(--color-primary-light);
+}
+.delivery-card__meta {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+.delivery-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+/* Avaliações separadas no Painel do Produtor */
+.reviews-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6);
+}
+.review-card {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.review-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.navbar__link--btn {
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+.navbar__link.active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-tint);
+}
+[data-theme="dark"] .navbar__link.active {
+  color: #E8EAE3;
+  background-color: rgba(103, 174, 37, 0.2);
+}
+
+@media (max-width: 900px) {
+  .workspace-split,
+  .delivery-route,
+  .reviews-split {
+    grid-template-columns: 1fr;
+  }
+}

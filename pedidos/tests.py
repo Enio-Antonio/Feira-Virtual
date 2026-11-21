@@ -353,3 +353,97 @@ class FluxoCompletoTest(APITestCase):
         r_aceite = self.client.post(f"/api/entregas/{pedido_id}/aceitar/")
         self.assertEqual(r_aceite.status_code, 200)
         self.assertIn("Rua das Flores", r_aceite.data["endereco_entrega"])
+
+    @override_settings(TAXA_ENTREGA_PADRAO=Decimal("8.50"))
+    def test_entregador_resumo_historico_aceite_duplicado_e_isolamento(self):
+        self.registrar("entregador", "zeca2", veiculo="Carro")
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "APROVADO"
+        p1_user.perfil_produtor.endereco_propriedade = "Estrada Rural km 5"
+        p1_user.perfil_produtor.cidade = "Natal"
+        p1_user.perfil_produtor.estado = "RN"
+        p1_user.perfil_produtor.save()
+
+        prod = Produto.objects.create(produtor=p1_user.perfil_produtor, categoria=self.cat, nome="Manga",
+                                      preco="6.00", estoque="10", unidade_medida="KG")
+        self.login("joao")
+        end = self.client.post("/api/enderecos/", {
+            "logradouro": "Av. Paulista", "numero": "100", "bairro": "Tirol",
+            "cidade": "Natal", "estado": "RN", "cep": "59015-000"
+        }, format="json").data["id"]
+        self.client.post("/api/carrinho/itens/", {"produto": prod.id, "quantidade": "2"}, format="json")
+        pedido_id = self.client.post("/api/pedidos/", {
+            "modalidade": "ENTREGA", "forma_pagamento": "PIX", "endereco_id": end
+        }, format="json").data[0]["id"]
+
+        # Cliente e produtor não acessam endpoints de entregador
+        self.assertEqual(self.client.get("/api/entregas/resumo/").status_code, 403)
+        self.login("maria")
+        self.assertEqual(self.client.get("/api/entregas/").status_code, 403)
+        self.client.post(f"/api/produtor/pedidos/{pedido_id}/aceitar/")
+
+        # Entregador 1 vê disponível com local de retirada e frete real
+        self.login("zeca")
+        r_res_antes = self.client.get("/api/entregas/resumo/")
+        self.assertEqual(r_res_antes.status_code, 200)
+        self.assertEqual(r_res_antes.data["disponiveis"], 1)
+        r_disp = self.client.get("/api/entregas/?escopo=disponiveis")
+        item = r_disp.data["results"][0]
+        self.assertEqual(Decimal(item["taxa_entrega"]), Decimal("8.50"))
+        self.assertIn("Estrada Rural km 5", item["local_retirada"])
+
+        # Entregador 1 aceita -> Entregador 2 não vê mais nem pode aceitar
+        self.assertEqual(self.client.post(f"/api/entregas/{pedido_id}/aceitar/").status_code, 200)
+        self.login("zeca2")
+        self.assertEqual(self.client.get("/api/entregas/?escopo=disponiveis").data["count"], 0)
+        self.assertEqual(self.client.post(f"/api/entregas/{pedido_id}/aceitar/").status_code, 400)
+        self.assertEqual(self.client.post(f"/api/entregas/{pedido_id}/saiu-para-entrega/").status_code, 404)
+
+        # Entregador 1 não pode sair para entrega antes de o produtor marcar PRONTO
+        self.login("zeca")
+        self.assertEqual(self.client.post(f"/api/entregas/{pedido_id}/saiu-para-entrega/").status_code, 400)
+
+        # Produtor prepara e marca pronto
+        self.login("maria")
+        self.client.post(f"/api/produtor/pedidos/{pedido_id}/status/", {"status": "EM_PREPARO"}, format="json")
+        self.client.post(f"/api/produtor/pedidos/{pedido_id}/status/", {"status": "PRONTO"}, format="json")
+
+        # Entregador 1 sai para entrega e conclui
+        self.login("zeca")
+        self.assertEqual(self.client.post(f"/api/entregas/{pedido_id}/saiu-para-entrega/").status_code, 200)
+        r_conf = self.client.post(f"/api/entregas/{pedido_id}/confirmar/")
+        self.assertEqual(r_conf.status_code, 200)
+        self.assertIsNotNone(r_conf.data["concluido_em"])
+
+        # Histórico e resumo com ganhos reais
+        r_hist = self.client.get("/api/entregas/?escopo=historico")
+        self.assertEqual(r_hist.data["count"], 1)
+        r_res = self.client.get("/api/entregas/resumo/")
+        self.assertEqual(r_res.data["concluidas"], 1)
+        self.assertEqual(Decimal(str(r_res.data["ganhos_concluidos"])), Decimal("8.50"))
+
+    def test_produtor_resumo_e_isolamento_propriedade(self):
+        p1_user = Usuario.objects.get(username="maria")
+        p1_user.perfil_produtor.status = "PENDENTE"
+        p1_user.perfil_produtor.save()
+
+        # Entregador não acessa painel do produtor
+        self.login("zeca")
+        self.assertEqual(self.client.get("/api/produtor/pedidos/resumo/").status_code, 403)
+        self.assertEqual(self.client.patch("/api/perfil/produtor/", {"descricao": "Invasão"}, format="json").status_code, 403)
+
+        # Produtor edita descrição da própria propriedade, mas não pode auto-aprovar status
+        self.login("maria")
+        r_patch = self.client.patch(
+            "/api/perfil/produtor/",
+            {"descricao": "Produção familiar certificada", "status": "APROVADO"},
+            format="json",
+        )
+        self.assertEqual(r_patch.status_code, 200)
+        self.assertEqual(r_patch.data["descricao"], "Produção familiar certificada")
+        self.assertEqual(r_patch.data["status"], "PENDENTE")
+
+        r_resumo = self.client.get("/api/produtor/pedidos/resumo/")
+        self.assertEqual(r_resumo.status_code, 200)
+        self.assertIsNone(r_resumo.data["media_avaliacoes_recebidas"])
+        self.assertEqual(r_resumo.data["status_produtor"], "PENDENTE")

@@ -1,19 +1,48 @@
 /**
- * Painel do Produtor: CRUD de Produtos, Gestão de Pedidos, Resumo de Vendas, Avaliações e Propriedade.
+ * Painel Dedicado do Produtor Rural: Visão Geral, Meus Produtos (com pré-visualização),
+ * Minhas Propriedades (com pré-visualização), Pedidos Recebidos, Avaliação de Clientes e Avaliações.
  */
-import { apiFetch, parseError } from './api.js?v=20261120h';
-import { statusLabels } from './orders.js?v=20261120h';
-import { clearFormError, escapeHtml, formatCurrency, formatDate, openModal, renderPaginationBar, safeUrl, showFormError, showToast } from './ui.js?v=20261120h';
+import { apiFetch, parseError } from './api.js?v=20261120j';
+import { statusLabels } from './orders.js?v=20261120j';
+import {
+  clearFormError,
+  closeModal,
+  escapeHtml,
+  formatCurrency,
+  formatDate,
+  openModal,
+  renderPaginationBar,
+  safeUrl,
+  showFormError,
+  showToast,
+} from './ui.js?v=20261120j';
 
 let producerProductsCache = [];
+let producerOrdersCache = new Map();
+let producerCategoriesCache = [];
+let currentProducerOrderStatus = '';
+let currentPropertyPhotoUrl = '';
+let currentEditingProductPhotoUrl = '';
+let tempProdPreviewObjectUrl = null;
+let tempPropPreviewObjectUrl = null;
+
+const CULTIVO_LABELS = {
+  ORGANICO_CERTIFICADO: { label: 'Orgânico', cls: 'badge--cultivo-organico' },
+  AGROECOLOGICO: { label: 'Agroecológico', cls: 'badge--cultivo-agro' },
+  CONVENCIONAL: { label: 'Convencional', cls: 'badge--cultivo-conv' },
+};
 
 async function syncProducerStatusBanner() {
   const badge = document.getElementById('producerStatusBadge');
   const warn = document.getElementById('producerStatusWarning');
+  const titleEl = document.getElementById('producerWorkspaceTitle');
   try {
     const res = await apiFetch('/perfil/produtor/');
-    if (!res.ok) return;
+    if (!res.ok) return null;
     const p = await res.json();
+    if (titleEl && p.nome_propriedade) {
+      titleEl.textContent = p.nome_propriedade;
+    }
     if (badge) {
       badge.textContent = `Status: ${p.status}`;
       badge.className = `badge ${p.status === 'APROVADO' ? 'badge--success' : 'badge--outline'}`;
@@ -22,7 +51,7 @@ async function syncProducerStatusBanner() {
       if (p.status === 'PENDENTE' || p.status === 'SUSPENSO') {
         warn.textContent =
           p.status === 'PENDENTE'
-            ? 'Seu cadastro de produtor está PENDENTE de aprovação. Você pode cadastrar seus produtos, mas eles só aparecerão no catálogo público após a aprovação do administrador.'
+            ? 'Seu cadastro de produtor está PENDENTE de aprovação. Você pode cadastrar seus produtos e atualizar sua propriedade, mas eles só aparecerão no catálogo público após a aprovação do administrador.'
             : 'Seu perfil de produtor está SUSPENSO. Seus produtos não aparecem no catálogo público até que o administrador reative sua conta.';
         warn.style.display = 'block';
       } else {
@@ -30,36 +59,112 @@ async function syncProducerStatusBanner() {
         warn.style.display = 'none';
       }
     }
-  } catch (_) {}
-}
-
-export async function openProducerPanel(initialTab = 'produtos') {
-  openModal('producerPanelModalOverlay');
-  syncProducerStatusBanner();
-  switchProducerTab(initialTab);
-}
-
-export function switchProducerTab(tab) {
-  const tabs = ['produtos', 'pedidos', 'vendas', 'propriedade'];
-  tabs.forEach(t => {
-    const cap = t.charAt(0).toUpperCase() + t.slice(1);
-    document.querySelector(`.panel-tab[data-producer-tab="${t}"]`)?.classList.toggle('active', t === tab);
-    const panel = document.getElementById(`producerTab${cap}`);
-    if (panel) panel.style.display = t === tab ? 'block' : 'none';
-  });
-
-  if (tab === 'produtos') {
-    loadProducerCategoriesSelect();
-    loadProducerProducts();
-  } else if (tab === 'pedidos') {
-    loadProducerOrders();
-  } else if (tab === 'vendas') {
-    loadProducerSalesAndReviews();
-  } else if (tab === 'propriedade') {
-    loadProducerProperty();
+    return p;
+  } catch (_) {
+    return null;
   }
 }
 
+export async function openProducerPanel(initialTab = 'visao_geral') {
+  const storefront = document.getElementById('publicStorefront');
+  const prodWs = document.getElementById('producerWorkspace');
+  const delivWs = document.getElementById('deliveryWorkspace');
+  if (storefront) storefront.style.display = 'none';
+  if (delivWs) delivWs.style.display = 'none';
+  if (prodWs) prodWs.style.display = 'block';
+
+  syncProducerStatusBanner();
+  switchProducerTab(initialTab);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+export function switchProducerTab(tab) {
+  const normalized = tab === 'vendas' ? 'avaliacoes' : tab;
+  const map = {
+    visao_geral: 'producerTabVisao_geral',
+    produtos: 'producerTabProdutos',
+    propriedade: 'producerTabPropriedade',
+    pedidos: 'producerTabPedidos',
+    avaliacoes: 'producerTabAvaliacoes',
+  };
+  Object.entries(map).forEach(([k, id]) => {
+    document.querySelector(`.panel-tab[data-producer-tab="${k}"]`)?.classList.toggle('active', k === normalized);
+    document.querySelectorAll(`[data-producer-nav="${k}"]`).forEach(el => el.classList.toggle('active', k === normalized));
+    const panel = document.getElementById(id);
+    if (panel) panel.style.display = k === normalized ? 'block' : 'none';
+  });
+
+  if (normalized === 'visao_geral') {
+    loadProducerOverview();
+  } else if (normalized === 'produtos') {
+    loadProducerCategoriesSelect();
+    loadProducerProducts();
+  } else if (normalized === 'propriedade') {
+    loadProducerProperty();
+  } else if (normalized === 'pedidos') {
+    loadProducerOrders(1);
+  } else if (normalized === 'avaliacoes') {
+    loadProducerReviews();
+  }
+}
+
+// ── Visão Geral do Produtor ────────────────────────────────────────────────
+async function loadProducerOverview() {
+  const el = document.getElementById('producerOverviewContent');
+  if (!el) return;
+  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando indicadores da propriedade...</p></div>';
+
+  try {
+    const res = await apiFetch('/produtor/pedidos/resumo/');
+    if (!res.ok) throw new Error('Falha ao carregar visão geral.');
+    const r = await res.json();
+
+    const mediaTexto =
+      r.total_avaliacoes_recebidas > 0 && r.media_avaliacoes_recebidas !== null
+        ? `${Number(r.media_avaliacoes_recebidas).toFixed(1)} (${r.total_avaliacoes_recebidas})`
+        : 'Sem avaliações';
+
+    el.innerHTML = `
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span>Meus produtos ativos</span>
+          <strong>${Number(r.produtos_ativos) || 0} / ${Number(r.total_produtos) || 0}</strong>
+        </div>
+        <div class="kpi-card">
+          <span>Pedidos pendentes</span>
+          <strong>${Number(r.pedidos_pendentes) || 0}</strong>
+        </div>
+        <div class="kpi-card">
+          <span>Pedidos em andamento</span>
+          <strong>${Number(r.pedidos_em_andamento) || 0}</strong>
+        </div>
+        <div class="kpi-card">
+          <span>Pedidos concluídos</span>
+          <strong>${Number(r.pedidos_concluidos) || 0}</strong>
+        </div>
+        <div class="kpi-card">
+          <span>Faturamento concluído</span>
+          <strong>${formatCurrency(r.faturamento_total)}</strong>
+        </div>
+        <div class="kpi-card">
+          <span>Avaliações recebidas</span>
+          <strong>${escapeHtml(mediaTexto)}</strong>
+        </div>
+      </div>
+
+      <div class="workspace-quick-actions">
+        <button type="button" class="btn btn--cta btn--sm" data-producer-nav="produtos">Gerenciar meus produtos</button>
+        <button type="button" class="btn btn--primary btn--sm" data-producer-nav="pedidos">Ver pedidos recebidos (${Number(r.pedidos_pendentes) || 0} pendente(s))</button>
+        <button type="button" class="btn btn--outline btn--sm" data-producer-nav="propriedade">Editar minha propriedade</button>
+        <button type="button" class="btn btn--outline btn--sm" data-producer-nav="avaliacoes">Ver avaliações (${Number(r.total_avaliacoes_recebidas) || 0})</button>
+      </div>
+    `;
+  } catch (err) {
+    el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ── Meus Produtos (CRUD + Pré-visualização antes de salvar) ────────────────
 async function loadProducerCategoriesSelect() {
   const sel = document.getElementById('prodCategoria');
   if (!sel) return;
@@ -67,8 +172,10 @@ async function loadProducerCategoriesSelect() {
     const res = await apiFetch('/categorias/');
     if (!res.ok) return;
     const data = await res.json();
-    const cats = (data.results || data || []).filter(c => c.ativa !== false);
-    sel.innerHTML = cats.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+    producerCategoriesCache = (data.results || data || []).filter(c => c.ativa !== false);
+    const current = sel.value;
+    sel.innerHTML = producerCategoriesCache.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+    if (current) sel.value = current;
   } catch (_) {}
 }
 
@@ -84,7 +191,7 @@ export async function loadProducerProducts() {
     producerProductsCache = data.results || data || [];
 
     if (producerProductsCache.length === 0) {
-      list.innerHTML = '<div class="empty-state"><p>Você ainda não cadastrou produtos. Clique em "Novo Produto".</p></div>';
+      list.innerHTML = '<div class="workspace-card empty-state"><p>Você ainda não possui produtos cadastrados.</p></div>';
       return;
     }
 
@@ -92,13 +199,17 @@ export async function loadProducerProducts() {
       const customImg = p.imagem ? safeUrl(p.imagem, '') : '';
       const img = customImg || '/static/assets/logo-icon.webp';
       const thumbClass = customImg ? 'panel-thumb' : 'panel-thumb product-card__img--default';
+      const cult = CULTIVO_LABELS[p.tipo_producao] || CULTIVO_LABELS.CONVENCIONAL;
       return `
         <div class="panel-list-item">
           <img src="${escapeHtml(img)}" alt="${escapeHtml(p.nome)}" class="${thumbClass}" />
           <div class="panel-list-item__info">
             <strong>${escapeHtml(p.nome)}</strong>
-            <span>${formatCurrency(p.preco)} / ${escapeHtml(p.unidade_medida)} • Estoque: ${parseFloat(p.estoque)}</span>
-            <span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Ativo' : 'Oculto'}</span>
+            <span>${formatCurrency(p.preco)} / ${escapeHtml(p.unidade_medida)} • Estoque: ${parseFloat(p.estoque)} • ${escapeHtml(cult.label)}</span>
+            ${p.descricao ? `<span class="text-muted">${escapeHtml(p.descricao)}</span>` : ''}
+            <div>
+              <span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Ativo' : 'Oculto'}</span>
+            </div>
           </div>
           <div class="panel-list-item__actions">
             <button type="button" class="btn btn--outline btn--sm btnEditProdProduct" data-id="${p.id}">Editar</button>
@@ -112,35 +223,90 @@ export async function loadProducerProducts() {
   }
 }
 
-export function openProductForm(productId = null) {
+export function updateProductPreview() {
+  const preview = document.getElementById('prodPreviewCard');
+  if (!preview) return;
+
+  const nome = document.getElementById('prodNome')?.value.trim() || 'Nome do produto';
+  const catSel = document.getElementById('prodCategoria');
+  const catNome = catSel?.options[catSel.selectedIndex]?.text || 'Categoria';
+  const preco = document.getElementById('prodPreco')?.value || '0';
+  const unidade = document.getElementById('prodUnidade')?.value || 'UNIDADE';
+  const estoque = parseFloat(document.getElementById('prodEstoque')?.value || '0') || 0;
+  const tipo = document.getElementById('prodTipo')?.value || 'CONVENCIONAL';
+  const desc = document.getElementById('prodDescricao')?.value.trim() || 'A descrição do seu produto aparecerá aqui.';
+  const fileInput = document.getElementById('prodImagem');
+
+  let imgSrc = currentEditingProductPhotoUrl || '/static/assets/logo-icon.webp';
+  let isDefault = !currentEditingProductPhotoUrl;
+  if (fileInput?.files?.length > 0) {
+    if (tempProdPreviewObjectUrl) URL.revokeObjectURL(tempProdPreviewObjectUrl);
+    tempProdPreviewObjectUrl = URL.createObjectURL(fileInput.files[0]);
+    imgSrc = tempProdPreviewObjectUrl;
+    isDefault = false;
+  }
+
+  const cult = CULTIVO_LABELS[tipo] || CULTIVO_LABELS.CONVENCIONAL;
+
+  preview.innerHTML = `
+    <div class="product-card__thumb">
+      <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(nome)}" class="product-card__img ${isDefault ? 'product-card__img--default' : ''}" />
+      <div class="product-card__badges">
+        <span class="badge badge--cultivo ${cult.cls}">${escapeHtml(cult.label)}</span>
+      </div>
+      <span class="product-card__stock-tag">${estoque > 0 ? `${estoque} em estoque` : 'Esgotado'}</span>
+    </div>
+    <span class="product-card__category">${escapeHtml(catNome)}</span>
+    <h3 class="product-card__title">${escapeHtml(nome)}</h3>
+    <p class="product-card__desc">${escapeHtml(desc)}</p>
+    <div class="product-card__action-row">
+      <div class="product-card__price-wrap">
+        <span class="product-card__price">${formatCurrency(preco)}</span>
+        <span class="product-card__unit">/ ${escapeHtml(unidade)}</span>
+      </div>
+    </div>
+  `;
+}
+
+export async function openProductForm(productId = null) {
   const wrap = document.getElementById('producerProductFormWrap');
   const form = document.getElementById('producerProductForm');
+  const heading = document.getElementById('producerProductFormTitle');
   if (!wrap || !form) return;
+
+  await loadProducerCategoriesSelect();
   clearFormError('producerProductError');
   form.reset();
+  currentEditingProductPhotoUrl = '';
 
   if (productId) {
     const p = producerProductsCache.find(x => String(x.id) === String(productId));
     if (p) {
+      if (heading) heading.textContent = `Editar Produto: ${p.nome}`;
       document.getElementById('prodId').value = String(p.id);
       document.getElementById('prodNome').value = p.nome || '';
       document.getElementById('prodCategoria').value = String(p.categoria || '');
       document.getElementById('prodPreco').value = String(p.preco || '');
       document.getElementById('prodUnidade').value = p.unidade_medida || 'UNIDADE';
       document.getElementById('prodEstoque').value = String(p.estoque || '0');
-      document.getElementById('prodTipo').value = p.tipo_producao || 'ORGANICO_CERTIFICADO';
+      document.getElementById('prodTipo').value = p.tipo_producao || 'CONVENCIONAL';
       document.getElementById('prodDescricao').value = p.descricao || '';
       document.getElementById('prodAtivo').checked = Boolean(p.ativo);
+      currentEditingProductPhotoUrl = p.imagem ? safeUrl(p.imagem, '') : '';
     }
   } else {
+    if (heading) heading.textContent = 'Cadastrar Novo Produto';
     document.getElementById('prodId').value = '';
     document.getElementById('prodTipo').value = 'CONVENCIONAL';
     document.getElementById('prodAtivo').checked = true;
   }
+
   wrap.style.display = 'block';
+  updateProductPreview();
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-export async function saveProducerProduct(formEl) {
+export async function saveProducerProduct() {
   clearFormError('producerProductError');
   const id = document.getElementById('prodId').value;
   const fd = new FormData();
@@ -169,7 +335,7 @@ export async function saveProducerProduct(formEl) {
   }
 
   document.getElementById('producerProductFormWrap').style.display = 'none';
-  showToast(id ? 'Produto atualizado!' : 'Produto cadastrado!', 'success');
+  showToast(id ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!', 'success');
   await loadProducerProducts();
   window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }
@@ -186,7 +352,15 @@ export async function deleteProducerProduct(id) {
   window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }
 
-// ── Pedidos Recebidos pelo Produtor ─────────────────────────────────────────
+// ── Pedidos Recebidos, Histórico e Avaliação de Clientes ───────────────────
+export function setProducerOrderStatusFilter(statusVal) {
+  currentProducerOrderStatus = statusVal;
+  document.querySelectorAll('#producerOrderFilters .pill').forEach(btn => {
+    btn.classList.toggle('active', (btn.dataset.producerStatus || '') === statusVal);
+  });
+  loadProducerOrders(1);
+}
+
 export async function loadProducerOrders(page = 1) {
   const container = document.getElementById('producerOrdersList');
   const pagEl = document.getElementById('producerOrdersPagination');
@@ -194,14 +368,20 @@ export async function loadProducerOrders(page = 1) {
   container.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
   if (pagEl) pagEl.innerHTML = '';
 
+  const params = new URLSearchParams({ page: String(page) });
+  if (currentProducerOrderStatus) params.set('status', currentProducerOrderStatus);
+
   try {
-    const res = await apiFetch(`/produtor/pedidos/?page=${page}`);
+    const res = await apiFetch(`/produtor/pedidos/?${params.toString()}`);
     if (!res.ok) throw new Error('Falha ao carregar pedidos.');
     const data = await res.json();
     const orders = data.results || data || [];
 
+    producerOrdersCache.clear();
+    orders.forEach(o => producerOrdersCache.set(String(o.id), o));
+
     if (orders.length === 0) {
-      container.innerHTML = '<div class="empty-state"><p>Nenhum pedido recebido ainda.</p></div>';
+      container.innerHTML = '<div class="workspace-card empty-state"><p>Nenhum pedido encontrado neste filtro.</p></div>';
       return;
     }
 
@@ -214,11 +394,15 @@ export async function loadProducerOrders(page = 1) {
           <button type="button" class="btn btn--outline btn--sm text-danger btnProdOrderAction" data-id="${o.id}" data-action="recusar">✕ Recusar</button>
         `;
       } else if (o.status === 'ACEITO') {
-        actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="EM_PREPARO">🌱 Iniciar Preparo</button>`;
+        actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="EM_PREPARO">Iniciar Preparo</button>`;
       } else if (o.status === 'EM_PREPARO') {
-        actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="PRONTO">📦 Marcar Pronto</button>`;
+        actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="PRONTO">Marcar Pronto</button>`;
       } else if (o.status === 'PRONTO' && o.modalidade === 'RETIRADA') {
-        actions = `<button type="button" class="btn btn--cta btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="CONCLUIDO">✅ Confirmar Retirada</button>`;
+        actions = `<button type="button" class="btn btn--cta btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="CONCLUIDO">Confirmar Retirada</button>`;
+      } else if (o.status === 'CONCLUIDO') {
+        actions = o.cliente_avaliado
+          ? '<span class="badge status--completed">Cliente avaliado</span>'
+          : `<button type="button" class="btn btn--outline btn--sm btnRateClient" data-id="${o.id}">Avaliar cliente</button>`;
       }
 
       return `
@@ -226,13 +410,14 @@ export async function loadProducerOrders(page = 1) {
           <div class="order-card__header">
             <div>
               <strong>${escapeHtml(o.numero_publico || `#${o.id}`)}</strong>
-              <span class="text-muted">• Cliente: ${escapeHtml(o.cliente_nome || 'Cliente')}</span>
+              <span class="text-muted">• Cliente: ${escapeHtml(o.cliente_nome || 'Cliente')} • ${formatDate(o.criado_em)}</span>
             </div>
             <span class="badge ${st.class}">${escapeHtml(st.label)}</span>
           </div>
           <div class="order-card__body">
-            <p>${o.modalidade === 'ENTREGA' ? '🚚 Entrega' : '🏪 Retirada'} • ${escapeHtml(o.forma_pagamento)}</p>
+            <p>${o.modalidade === 'ENTREGA' ? 'Entrega em domicílio' : 'Retirada na propriedade'} • Pagamento: ${escapeHtml(o.forma_pagamento)}</p>
             ${o.endereco_entrega ? `<p><strong>Endereço:</strong> ${escapeHtml(o.endereco_entrega)}</p>` : ''}
+            ${o.previsao_entrega ? `<p><strong>Previsão:</strong> ${escapeHtml(o.previsao_entrega)}</p>` : ''}
             ${o.observacao ? `<p><strong>Obs.:</strong> ${escapeHtml(o.observacao)}</p>` : ''}
             <ul class="order-items-list">
               ${(o.itens || []).map(it => `<li>${escapeHtml(it.nome_produto)} × ${parseFloat(it.quantidade)} ${escapeHtml(it.unidade_medida)}</li>`).join('')}
@@ -274,66 +459,171 @@ export async function handleProducerOrderAction(orderId, action, nextStatus = ''
     return;
   }
   showToast('Status do pedido atualizado!', 'success');
-  await loadProducerOrders();
+  await loadProducerOrders(1);
 }
 
-// ── Vendas e Avaliações ────────────────────────────────────────────────────
-async function loadProducerSalesAndReviews() {
-  const el = document.getElementById('producerSalesContent');
+export function openClientReviewModal(orderId) {
+  const pedido = producerOrdersCache.get(String(orderId));
+  if (!pedido) return;
+  clearFormError('clientReviewError');
+  document.getElementById('clientReviewOrderId').value = String(pedido.id);
+  const label = document.getElementById('clientReviewOrderLabel');
+  if (label) {
+    label.textContent = `Pedido ${pedido.numero_publico || `#${pedido.id}`} — Cliente: ${pedido.cliente_nome || 'Cliente'}`;
+  }
+  document.getElementById('clientReviewComment').value = '';
+  const nota5 = document.querySelector('input[name="clientReviewNota"][value="5"]');
+  if (nota5) nota5.checked = true;
+  openModal('clientReviewModalOverlay');
+}
+
+export async function submitClientReview() {
+  clearFormError('clientReviewError');
+  const pedidoId = Number(document.getElementById('clientReviewOrderId').value);
+  const nota = Number(document.querySelector('input[name="clientReviewNota"]:checked')?.value || 5);
+  const comentario = document.getElementById('clientReviewComment').value.trim();
+
+  const res = await apiFetch('/produtor/avaliacoes-clientes/', {
+    method: 'POST',
+    body: JSON.stringify({ pedido: pedidoId, nota, comentario }),
+  });
+  if (!res.ok) {
+    showFormError('clientReviewError', await parseError(res));
+    return;
+  }
+
+  closeModal('clientReviewModalOverlay');
+  showToast('Avaliação do cliente registrada com sucesso!', 'success');
+  await loadProducerOrders(1);
+}
+
+// ── Avaliações (Recebidas vs. Realizadas pelo Produtor) ────────────────────
+async function loadProducerReviews() {
+  const el = document.getElementById('producerReviewsContent');
   if (!el) return;
   el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div></div>';
 
   try {
-    const [resVendas, resAv] = await Promise.all([
-      apiFetch('/produtor/pedidos/vendas/'),
+    const [resRec, resFeitas] = await Promise.all([
       apiFetch('/produtor/avaliacoes/'),
+      apiFetch('/produtor/avaliacoes-clientes/'),
     ]);
-    const vendas = resVendas.ok ? await resVendas.json() : { quantidade_vendas: 0, faturamento: 0 };
-    const avData = resAv.ok ? await resAv.json() : { results: [] };
-    const avaliacoes = avData.results || [];
+    const recData = resRec.ok ? await resRec.json() : { results: [] };
+    const feitasData = resFeitas.ok ? await resFeitas.json() : { results: [] };
+    const recebidas = recData.results || recData || [];
+    const feitas = feitasData.results || feitasData || [];
+
+    const mediaRecebidas =
+      recebidas.length > 0
+        ? (recebidas.reduce((acc, a) => acc + (Number(a.nota) || 0), 0) / recebidas.length).toFixed(1)
+        : null;
 
     el.innerHTML = `
-      <div class="kpi-grid">
+      <div class="kpi-grid" style="margin-bottom: var(--space-5);">
         <div class="kpi-card">
-          <span>Vendas Concluídas</span>
-          <strong>${Number(vendas.quantidade_vendas) || 0}</strong>
+          <span>Avaliações recebidas</span>
+          <strong>${recebidas.length}</strong>
         </div>
         <div class="kpi-card">
-          <span>Faturamento Total</span>
-          <strong>${formatCurrency(vendas.faturamento)}</strong>
+          <span>Média recebida</span>
+          <strong>${mediaRecebidas ? `${mediaRecebidas} / 5` : 'Sem avaliações'}</strong>
+        </div>
+        <div class="kpi-card">
+          <span>Clientes avaliados por você</span>
+          <strong>${feitas.length}</strong>
         </div>
       </div>
-      <h4 style="margin-block: var(--space-4) var(--space-2);">⭐ Avaliações Recebidas (${avaliacoes.length})</h4>
-      ${avaliacoes.length === 0
-        ? '<p class="text-muted">Nenhuma avaliação recebida ainda.</p>'
-        : avaliacoes.map(a => `
-          <div class="review-item">
-            <div class="review-item__head">
-              <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
-              <span>${'⭐'.repeat(a.nota)}</span>
-            </div>
-            <p>${escapeHtml(a.comentario || '')}</p>
-            <span class="text-muted">${formatDate(a.criado_em)}</span>
-          </div>
-        `).join('')}
+
+      <div class="reviews-split">
+        <div class="workspace-card">
+          <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Avaliações Recebidas dos Clientes (${recebidas.length})</h2>
+          ${recebidas.length === 0
+            ? '<div class="empty-state"><p>Nenhuma avaliação recebida ainda.</p></div>'
+            : recebidas.map(a => `
+              <div class="review-card">
+                <div class="review-card__top">
+                  <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
+                  <span class="badge badge--outline">${a.tipo_avaliacao === 'PRODUTO' ? `Produto: ${escapeHtml(a.produto_nome || '')}` : 'Propriedade'}</span>
+                </div>
+                <div style="margin-bottom: 4px;">${'⭐'.repeat(Number(a.nota) || 0)} <strong>(${Number(a.nota) || 0}/5)</strong></div>
+                ${a.comentario ? `<p style="margin-bottom: 4px;">${escapeHtml(a.comentario)}</p>` : ''}
+                <span class="text-muted">${formatDate(a.criado_em)}</span>
+              </div>
+            `).join('')}
+        </div>
+
+        <div class="workspace-card">
+          <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Avaliações de Clientes Realizadas (${feitas.length})</h2>
+          ${feitas.length === 0
+            ? '<div class="empty-state"><p>Você ainda não avaliou nenhum cliente. Após concluir um pedido, clique em "Avaliar cliente" na aba Pedidos recebidos.</p></div>'
+            : feitas.map(a => `
+              <div class="review-card">
+                <div class="review-card__top">
+                  <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
+                  <span class="badge badge--outline">Pedido ${escapeHtml(a.pedido_numero || `#${a.pedido}`)}</span>
+                </div>
+                <div style="margin-bottom: 4px;">${'⭐'.repeat(Number(a.nota) || 0)} <strong>(${Number(a.nota) || 0}/5)</strong></div>
+                ${a.comentario ? `<p style="margin-bottom: 4px;">${escapeHtml(a.comentario)}</p>` : ''}
+                <span class="text-muted">${formatDate(a.criado_em)}</span>
+              </div>
+            `).join('')}
+        </div>
+      </div>
     `;
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
 }
 
-// ── Dados da Propriedade Rural ─────────────────────────────────────────────
+// ── Dados da Propriedade Rural + Pré-visualização ──────────────────────────
+export function updatePropertyPreview() {
+  const card = document.getElementById('propPreviewCard');
+  if (!card) return;
+
+  const nome = document.getElementById('propNome')?.value.trim() || 'Nome da propriedade';
+  const desc = document.getElementById('propDescricao')?.value.trim() || 'A apresentação e história da sua propriedade aparecerão aqui.';
+  const cidade = document.getElementById('propCidade')?.value.trim() || '';
+  const estado = document.getElementById('propEstado')?.value.trim().toUpperCase() || '';
+  const local = [cidade, estado].filter(Boolean).join(' / ') || 'Localização da propriedade';
+  const chavePix = document.getElementById('propChavePix')?.value.trim() || '';
+  const maquininha = Boolean(document.getElementById('propMaquininha')?.checked);
+  const dinheiro = Boolean(document.getElementById('propDinheiro')?.checked);
+  const fileInput = document.getElementById('propFoto');
+
+  let imgSrc = currentPropertyPhotoUrl || '/static/assets/logo-icon.webp';
+  let isDefault = !currentPropertyPhotoUrl;
+  if (fileInput?.files?.length > 0) {
+    if (tempPropPreviewObjectUrl) URL.revokeObjectURL(tempPropPreviewObjectUrl);
+    tempPropPreviewObjectUrl = URL.createObjectURL(fileInput.files[0]);
+    imgSrc = tempPropPreviewObjectUrl;
+    isDefault = false;
+  }
+
+  card.innerHTML = `
+    <div class="producer-card__top">
+      <div class="producer-card__avatar">
+        <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(nome)}" class="producer-card__img ${isDefault ? 'producer-card__img--default' : ''}" />
+      </div>
+      <div class="producer-card__header">
+        <h3>${escapeHtml(nome)}</h3>
+        <span class="producer-card__location">📍 ${escapeHtml(local)}</span>
+      </div>
+    </div>
+    <p class="producer-card__desc">${escapeHtml(desc)}</p>
+    <div class="producer-card__footer">
+      <div class="producer-card__badges">
+        ${chavePix ? '<span class="payment-badge"><img src="/static/assets/pix-icon.webp" alt="" class="pix-brand-icon" width="16" height="16" /> Pix</span>' : ''}
+        ${maquininha ? '<span class="payment-badge">💳 Cartão</span>' : ''}
+        ${dinheiro ? '<span class="payment-badge">💵 Dinheiro</span>' : ''}
+      </div>
+    </div>
+  `;
+}
+
 async function loadProducerProperty() {
   try {
-    const res = await apiFetch('/perfil/produtor/');
-    if (!res.ok) return;
-    const p = await res.json();
-
-    const badge = document.getElementById('producerStatusBadge');
-    if (badge) {
-      badge.textContent = `Status: ${p.status}`;
-      badge.className = `badge ${p.status === 'APROVADO' ? 'badge--success' : 'badge--outline'}`;
-    }
+    const p = await syncProducerStatusBanner();
+    if (!p) return;
 
     document.getElementById('propNome').value = p.nome_propriedade || '';
     document.getElementById('propDescricao').value = p.descricao || '';
@@ -346,10 +636,10 @@ async function loadProducerProperty() {
 
     const previewImg = document.getElementById('propFotoPreviewImg');
     const previewText = document.getElementById('propFotoPreviewText');
-    const customFoto = p.foto_propriedade ? safeUrl(p.foto_propriedade, '') : '';
+    currentPropertyPhotoUrl = p.foto_propriedade ? safeUrl(p.foto_propriedade, '') : '';
     if (previewImg && previewText) {
-      if (customFoto) {
-        previewImg.src = customFoto;
+      if (currentPropertyPhotoUrl) {
+        previewImg.src = currentPropertyPhotoUrl;
         previewImg.classList.remove('producer-card__img--default');
         previewText.textContent = 'Foto atual da propriedade cadastrada. Selecione outro arquivo acima se quiser substituí-la.';
       } else {
@@ -358,6 +648,7 @@ async function loadProducerProperty() {
         previewText.textContent = 'Usando logo padrão da Feira Virtual (envie uma foto para personalizar sua propriedade).';
       }
     }
+    updatePropertyPreview();
   } catch (_) {}
 }
 
@@ -385,6 +676,6 @@ export async function saveProducerProperty() {
   }
   if (foto) foto.value = '';
   await loadProducerProperty();
-  showToast('Dados da propriedade atualizados!', 'success');
+  showToast('Dados da propriedade atualizados com sucesso!', 'success');
   window.dispatchEvent(new CustomEvent('fv:catalog-updated'));
 }

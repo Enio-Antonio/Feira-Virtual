@@ -1,8 +1,8 @@
 /**
  * Gerenciamento de Autenticação, Perfis de Usuário (Multi-perfil) e LGPD.
  */
-import { apiFetch, parseError, tokens } from './api.js?v=20261120h';
-import { escapeHtml, openModal, showToast } from './ui.js?v=20261120h';
+import { apiFetch, parseError, tokens } from './api.js?v=20261120j';
+import { escapeHtml, openModal, showToast } from './ui.js?v=20261120j';
 
 export const authState = {
   user: null,
@@ -172,9 +172,84 @@ export function loadProfileModal() {
   openModal('profileModalOverlay');
 }
 
+export function renderRoleNavigation(user) {
+  const desktopNav = document.getElementById('navbarLinksDesktop');
+  const mobileNav = document.getElementById('navbarLinksMobile');
+  const cartBtn = document.getElementById('btnOpenCart');
+  const footerLinks = document.getElementById('footerLinks');
+
+  const tipo = user?.tipo || null;
+
+  if (tipo === 'PRODUTOR') {
+    const items = [
+      { tab: 'visao_geral', label: 'Visão geral' },
+      { tab: 'produtos', label: 'Meus produtos' },
+      { tab: 'propriedade', label: 'Minhas propriedades' },
+      { tab: 'pedidos', label: 'Pedidos recebidos' },
+      { tab: 'avaliacoes', label: 'Avaliações' },
+    ];
+    const html = items
+      .map(it => `<li><button type="button" class="navbar__link navbar__link--btn" data-producer-nav="${it.tab}">${it.label}</button></li>`)
+      .join('');
+    if (desktopNav) desktopNav.innerHTML = html;
+    if (mobileNav) mobileNav.innerHTML = html;
+    if (cartBtn) cartBtn.style.display = 'none';
+    if (footerLinks) {
+      footerLinks.innerHTML = `
+        <button type="button" class="btn-link" data-producer-nav="produtos">Meus produtos</button>
+        <button type="button" class="btn-link" data-producer-nav="propriedade">Minhas propriedades</button>
+        <button type="button" class="btn-link" data-producer-nav="pedidos">Pedidos recebidos</button>
+      `;
+    }
+    return;
+  }
+
+  if (tipo === 'ENTREGADOR') {
+    const items = [
+      { tab: 'visao_geral', label: 'Visão geral' },
+      { tab: 'disponiveis', label: 'Entregas disponíveis' },
+      { tab: 'minhas', label: 'Minhas entregas' },
+      { tab: 'historico', label: 'Histórico' },
+      { tab: 'ganhos', label: 'Ganhos' },
+    ];
+    const html = items
+      .map(it => `<li><button type="button" class="navbar__link navbar__link--btn" data-delivery-nav="${it.tab}">${it.label}</button></li>`)
+      .join('');
+    if (desktopNav) desktopNav.innerHTML = html;
+    if (mobileNav) mobileNav.innerHTML = html;
+    if (cartBtn) cartBtn.style.display = 'none';
+    if (footerLinks) {
+      footerLinks.innerHTML = `
+        <button type="button" class="btn-link" data-delivery-nav="disponiveis">Entregas disponíveis</button>
+        <button type="button" class="btn-link" data-delivery-nav="minhas">Minhas entregas</button>
+        <button type="button" class="btn-link" data-delivery-nav="historico">Histórico</button>
+      `;
+    }
+    return;
+  }
+
+  // Visitante, CLIENTE ou ADMIN: preserva a navegação pública completa
+  const publicHtml = `
+    <li><a href="#produtos" class="navbar__link">Produtos</a></li>
+    <li><a href="#produtores" class="navbar__link">Produtores</a></li>
+    <li><a href="#como-funciona" class="navbar__link">Como funciona</a></li>
+  `;
+  if (desktopNav) desktopNav.innerHTML = publicHtml;
+  if (mobileNav) mobileNav.innerHTML = publicHtml;
+  if (cartBtn) cartBtn.style.display = tipo === 'ADMIN' ? 'none' : 'inline-flex';
+  if (footerLinks) {
+    footerLinks.innerHTML = `
+      <a href="#produtos">Catálogo</a>
+      <a href="#produtores">Produtores</a>
+      <a href="#como-funciona">Como funciona</a>
+    `;
+  }
+}
+
 export function renderUserNav() {
   const desktopArea = document.getElementById('navAuthArea');
   const mobileArea = document.getElementById('mobileAuthArea');
+  renderRoleNavigation(authState.user);
 
   if (!authState.user) {
     if (desktopArea) {
@@ -208,11 +283,11 @@ export function renderUserNav() {
     `;
   } else if (u.tipo === 'PRODUTOR') {
     roleLinks = `
-      <button type="button" class="dropdown__link" data-action="producer-panel">🌾 Painel do Produtor</button>
+      <button type="button" class="dropdown__link" data-action="producer-panel">Painel do Produtor</button>
     `;
   } else if (u.tipo === 'ENTREGADOR') {
     roleLinks = `
-      <button type="button" class="dropdown__link" data-action="delivery-panel">🛵 Painel de Entregas</button>
+      <button type="button" class="dropdown__link" data-action="delivery-panel">Painel de Entregas</button>
     `;
   } else if (u.tipo === 'ADMIN') {
     roleLinks = `

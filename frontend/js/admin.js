@@ -1,8 +1,8 @@
 /**
  * Painel Administrativo de Moderação: Indicadores, Produtores, Produtos, Categorias, Pedidos, Reclamações e Usuários.
  */
-import { apiFetch, parseError } from './api.js?v=20261120h';
-import { statusLabels } from './orders.js?v=20261120h';
+import { apiFetch, parseError } from './api.js?v=20261120j';
+import { statusLabels } from './orders.js?v=20261120j';
 import {
   clearFormError,
   escapeHtml,
@@ -12,7 +12,7 @@ import {
   renderPaginationBar,
   showFormError,
   showToast,
-} from './ui.js?v=20261120h';
+} from './ui.js?v=20261120j';
 
 let adminCategoriesCache = [];
 

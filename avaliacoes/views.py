@@ -4,8 +4,8 @@ from rest_framework.permissions import SAFE_METHODS, AllowAny
 
 from usuarios.permissions import EhCliente, EhProdutor
 
-from .models import Avaliacao, Reclamacao
-from .serializers import AvaliacaoSerializer, ReclamacaoSerializer
+from .models import Avaliacao, AvaliacaoCliente, Reclamacao
+from .serializers import AvaliacaoClienteSerializer, AvaliacaoSerializer, ReclamacaoSerializer
 
 
 class AvaliacaoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -33,7 +33,30 @@ class AvaliacaoProdutorViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         perfil = getattr(self.request.user, "perfil_produtor", None)
         if not perfil:
             return Avaliacao.objects.none()
-        return Avaliacao.objects.filter(Q(produtor=perfil) | Q(produto__produtor=perfil))
+        return (Avaliacao.objects
+                .filter(Q(produtor=perfil) | Q(produto__produtor=perfil))
+                .select_related("cliente", "produto", "produtor"))
+
+
+class AvaliacaoClienteProdutorViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Produtor avalia o cliente de um pedido concluído e consulta as avaliações que realizou."""
+    serializer_class = AvaliacaoClienteSerializer
+    permission_classes = [EhProdutor]
+    queryset = AvaliacaoCliente.objects.none()
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return AvaliacaoCliente.objects.none()
+        perfil = getattr(self.request.user, "perfil_produtor", None)
+        if not perfil:
+            return AvaliacaoCliente.objects.none()
+        return (AvaliacaoCliente.objects
+                .filter(produtor=perfil)
+                .select_related("cliente", "produtor", "pedido"))
+
+    def perform_create(self, serializer):
+        pedido = serializer.validated_data["pedido"]
+        serializer.save(produtor=self.request.user.perfil_produtor, cliente=pedido.cliente)
 
 
 class ReclamacaoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin,

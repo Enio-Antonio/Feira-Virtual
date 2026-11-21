@@ -1,17 +1,33 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from pedidos.models import ItemPedido, Pedido
 
-from .models import Avaliacao, Reclamacao
+from .models import Avaliacao, AvaliacaoCliente, Reclamacao
 
 
 class AvaliacaoSerializer(serializers.ModelSerializer):
-    cliente_nome = serializers.CharField(source="cliente.first_name", read_only=True)
+    cliente_nome = serializers.SerializerMethodField()
+    produto_nome = serializers.CharField(source="produto.nome", read_only=True, default=None)
+    tipo_avaliacao = serializers.SerializerMethodField()
 
     class Meta:
         model = Avaliacao
-        fields = ["id", "produto", "produtor", "nota", "comentario", "cliente_nome", "criado_em"]
+        fields = [
+            "id", "produto", "produto_nome", "produtor", "tipo_avaliacao",
+            "nota", "comentario", "cliente_nome", "criado_em",
+        ]
         read_only_fields = ["criado_em"]
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_cliente_nome(self, obj) -> str:
+        nome = obj.cliente.get_full_name().strip()
+        return nome or obj.cliente.first_name or obj.cliente.username
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_tipo_avaliacao(self, obj) -> str:
+        return "PRODUTO" if obj.produto_id else "PRODUTOR"
 
     def validate(self, attrs):
         produto, produtor = attrs.get("produto"), attrs.get("produtor")
@@ -50,3 +66,33 @@ class ReclamacaoAdminSerializer(serializers.ModelSerializer):
         model = Reclamacao
         fields = ["id", "cliente", "pedido", "assunto", "descricao", "status", "resposta_admin", "criado_em"]
         read_only_fields = ["cliente", "pedido", "assunto", "descricao", "criado_em"]
+
+
+class AvaliacaoClienteSerializer(serializers.ModelSerializer):
+    cliente_nome = serializers.SerializerMethodField()
+    produtor_nome = serializers.CharField(source="produtor.nome_propriedade", read_only=True)
+    pedido_numero = serializers.CharField(source="pedido.numero_publico", read_only=True)
+
+    class Meta:
+        model = AvaliacaoCliente
+        fields = [
+            "id", "pedido", "pedido_numero", "cliente", "cliente_nome",
+            "produtor", "produtor_nome", "nota", "comentario", "criado_em",
+        ]
+        read_only_fields = ["cliente", "produtor", "criado_em"]
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_cliente_nome(self, obj) -> str:
+        nome = obj.cliente.get_full_name().strip()
+        return nome or obj.cliente.first_name or obj.cliente.username
+
+    def validate_pedido(self, pedido):
+        user = self.context["request"].user
+        perfil = getattr(user, "perfil_produtor", None)
+        if not perfil or pedido.produtor_id != perfil.id:
+            raise serializers.ValidationError("Você só pode avaliar clientes de pedidos da sua propriedade.")
+        if pedido.status != Pedido.Status.CONCLUIDO:
+            raise serializers.ValidationError("A avaliação do cliente só é permitida após a conclusão do pedido.")
+        if AvaliacaoCliente.objects.filter(pedido=pedido).exists():
+            raise serializers.ValidationError("Você já avaliou o cliente para este pedido.")
+        return pedido

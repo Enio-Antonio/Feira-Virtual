@@ -1,9 +1,9 @@
 /**
  * Catálogo de Produtos, Filtros, Busca, Paginação, Detalhes, Vitrine de Produtores e Estatísticas.
  */
-import { apiFetch } from './api.js?v=20261120h';
-import { addToCart } from './cart.js?v=20261120h';
-import { escapeHtml, formatCurrency, formatDate, getUnitStep, openModal, renderProductSkeletons, safeUrl } from './ui.js?v=20261120h';
+import { apiFetch } from './api.js?v=20261120j';
+import { addToCart } from './cart.js?v=20261120j';
+import { escapeHtml, formatCurrency, formatDate, getUnitStep, openModal, renderProductSkeletons, safeUrl } from './ui.js?v=20261120j';
 
 export const catalogState = {
   categories: [],

@@ -31,7 +31,7 @@
   <link rel="manifest" href="{% static 'assets/manifest.webmanifest' %}" />
 
   <!-- Estilos (servido pelo WhiteNoise com cache imutável, sem requisições externas) -->
-  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120i" />
+  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261120j" />
 </head>
 
 <body>
@@ -63,7 +63,7 @@
 
       <!-- Nav Links (desktop) -->
       <nav class="navbar__nav" aria-label="Navegação principal">
-        <ul class="navbar__links" role="list">
+        <ul class="navbar__links" id="navbarLinksDesktop" role="list">
           <li><a href="#produtos" class="navbar__link">Produtos</a></li>
           <li><a href="#produtores" class="navbar__link">Produtores</a></li>
           <li><a href="#como-funciona" class="navbar__link">Como funciona</a></li>
@@ -123,7 +123,7 @@
     <!-- Menu Mobile -->
     <div class="navbar__mobile" id="mobileMenu" aria-hidden="true">
       <nav aria-label="Menu mobile">
-        <ul role="list">
+        <ul role="list" id="navbarLinksMobile">
           <li><a href="#produtos" class="navbar__link">Produtos</a></li>
           <li><a href="#produtores" class="navbar__link">Produtores</a></li>
           <li><a href="#como-funciona" class="navbar__link">Como funciona</a></li>
@@ -136,8 +136,8 @@
     </div>
   </header>
 
-  <!-- ===================== HERO SECTION ===================== -->
-  <main>
+  <!-- ===================== VITRINE PÚBLICA (COMPRADOR / VISITANTE / ADMIN) ===================== -->
+  <main id="publicStorefront">
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero__bg-shapes" aria-hidden="true">
         <div class="hero__shape hero__shape--1"></div>
@@ -366,6 +366,278 @@
     </section>
   </main>
 
+  <!-- ===================== PAINEL DEDICADO DO ENTREGADOR ===================== -->
+  <section id="deliveryWorkspace" class="role-workspace" style="display: none;" aria-label="Painel do Entregador">
+    <div class="container">
+      <div class="workspace-header">
+        <div>
+          <span class="badge badge--entregador">Perfil ativo: Entregador</span>
+          <h1 class="workspace-header__title">Painel de Entregas</h1>
+          <p class="workspace-header__subtitle">Aceite oportunidades, acompanhe rotas de retirada e entrega e consulte seus fretes acumulados.</p>
+        </div>
+        <button type="button" class="btn btn--outline btn--sm" id="btnRefreshDelivery">Atualizar painel</button>
+      </div>
+
+      <div class="panel-tabs workspace-tabs" id="deliveryPanelTabs" role="tablist" aria-label="Seções do entregador">
+        <button type="button" class="panel-tab active" data-delivery-tab="visao_geral" role="tab">Visão geral</button>
+        <button type="button" class="panel-tab" data-delivery-tab="disponiveis" role="tab">Entregas disponíveis</button>
+        <button type="button" class="panel-tab" data-delivery-tab="minhas" role="tab">Minhas entregas</button>
+        <button type="button" class="panel-tab" data-delivery-tab="historico" role="tab">Histórico</button>
+        <button type="button" class="panel-tab" data-delivery-tab="ganhos" role="tab">Ganhos</button>
+        <button type="button" class="panel-tab" data-delivery-tab="veiculo" role="tab">Meu veículo</button>
+      </div>
+
+      <div id="deliveryTabVisao_geral" class="workspace-pane">
+        <div id="deliveryOverviewContent"></div>
+      </div>
+
+      <div id="deliveryTabDisponiveis" class="workspace-pane" style="display: none;">
+        <div id="deliveryAvailableList" class="orders-list"></div>
+        <div id="deliveryAvailablePagination" class="pagination-wrap"></div>
+      </div>
+
+      <div id="deliveryTabMinhas" class="workspace-pane" style="display: none;">
+        <div class="filter-pills-row" id="deliveryMineFilters" role="group" aria-label="Filtrar minhas entregas">
+          <button type="button" class="pill active" data-delivery-group="">Todas</button>
+          <button type="button" class="pill" data-delivery-group="aguardando">Aguardando retirada</button>
+          <button type="button" class="pill" data-delivery-group="andamento">Em andamento</button>
+          <button type="button" class="pill" data-delivery-group="concluidas">Concluídas</button>
+          <button type="button" class="pill" data-delivery-group="canceladas">Canceladas</button>
+        </div>
+        <div id="deliveryMineList" class="orders-list"></div>
+        <div id="deliveryMinePagination" class="pagination-wrap"></div>
+      </div>
+
+      <div id="deliveryTabHistorico" class="workspace-pane" style="display: none;">
+        <div id="deliveryHistoryList" class="orders-list"></div>
+        <div id="deliveryHistoryPagination" class="pagination-wrap"></div>
+      </div>
+
+      <div id="deliveryTabGanhos" class="workspace-pane" style="display: none;">
+        <div id="deliveryEarningsContent"></div>
+      </div>
+
+      <div id="deliveryTabVeiculo" class="workspace-pane" style="display: none;">
+        <div class="workspace-card" style="max-width: 640px;">
+          <h2 class="workspace-card__title">Dados do Veículo e Região</h2>
+          <form id="deliveryVehicleForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="delivVeiculo">Veículo:</label>
+                <input type="text" id="delivVeiculo" class="form-input" placeholder="Ex: Moto 160cc / Utilitário" />
+              </div>
+              <div class="form-group">
+                <label for="delivPlaca">Placa:</label>
+                <input type="text" id="delivPlaca" class="form-input" placeholder="ABC1D23" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="delivArea">Área de atuação:</label>
+              <input type="text" id="delivArea" class="form-input" placeholder="Ex: Zona Sul e Centro" />
+            </div>
+            <div id="deliveryVehicleError" class="auth-error" style="display: none;" role="alert"></div>
+            <button type="submit" class="btn btn--primary">Atualizar Dados do Veículo</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PAINEL DEDICADO DO PRODUTOR RURAL ===================== -->
+  <section id="producerWorkspace" class="role-workspace" style="display: none;" aria-label="Painel do Produtor Rural">
+    <div class="container">
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-header__badges">
+            <span class="badge badge--produtor">Perfil ativo: Produtor Rural</span>
+            <span id="producerStatusBadge" class="badge badge--outline"></span>
+          </div>
+          <h1 class="workspace-header__title" id="producerWorkspaceTitle">Painel do Produtor Rural</h1>
+          <p class="workspace-header__subtitle">Gerencie seus produtos, atualize os dados da sua propriedade, acompanhe pedidos e avalie seus clientes.</p>
+        </div>
+        <button type="button" class="btn btn--cta btn--sm" id="btnQuickNewProduct">+ Novo Produto</button>
+      </div>
+
+      <div id="producerStatusWarning" class="auth-error" style="display: none;" role="status"></div>
+
+      <div class="panel-tabs workspace-tabs" id="producerPanelTabs" role="tablist" aria-label="Seções do produtor">
+        <button type="button" class="panel-tab active" data-producer-tab="visao_geral" role="tab">Visão geral</button>
+        <button type="button" class="panel-tab" data-producer-tab="produtos" role="tab">Meus produtos</button>
+        <button type="button" class="panel-tab" data-producer-tab="propriedade" role="tab">Minhas propriedades</button>
+        <button type="button" class="panel-tab" data-producer-tab="pedidos" role="tab">Pedidos recebidos</button>
+        <button type="button" class="panel-tab" data-producer-tab="avaliacoes" role="tab">Avaliações</button>
+      </div>
+
+      <!-- Visão Geral -->
+      <div id="producerTabVisao_geral" class="workspace-pane">
+        <div id="producerOverviewContent"></div>
+      </div>
+
+      <!-- Meus Produtos -->
+      <div id="producerTabProdutos" class="workspace-pane" style="display: none;">
+        <div class="workspace-toolbar">
+          <h2 class="workspace-card__title">Produtos Cadastrados</h2>
+          <button type="button" class="btn btn--cta btn--sm" id="btnNewProducerProduct">+ Novo Produto</button>
+        </div>
+
+        <div id="producerProductFormWrap" class="workspace-card" style="display: none; margin-bottom: var(--space-5);">
+          <h3 id="producerProductFormTitle" class="workspace-card__title" style="margin-bottom: var(--space-4);">Cadastrar / Editar Produto</h3>
+          <div class="workspace-split">
+            <form id="producerProductForm">
+              <input type="hidden" id="prodId" />
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="prodNome">Nome do produto:</label>
+                  <input type="text" id="prodNome" required class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="prodCategoria">Categoria:</label>
+                  <select id="prodCategoria" required class="form-input"></select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="prodPreco">Preço (R$):</label>
+                  <input type="number" step="0.01" min="0.01" id="prodPreco" required class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="prodUnidade">Unidade:</label>
+                  <select id="prodUnidade" class="form-input">
+                    <option value="UNIDADE">unidade</option>
+                    <option value="KG">kg</option>
+                    <option value="G">g</option>
+                    <option value="MACO">maço</option>
+                    <option value="CAIXA">caixa</option>
+                    <option value="SACO">saco</option>
+                    <option value="L">L</option>
+                    <option value="ML">ml</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="prodEstoque">Estoque:</label>
+                  <input type="number" step="0.001" min="0" id="prodEstoque" required class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="prodTipo">Tipo de cultivo:</label>
+                  <select id="prodTipo" class="form-input">
+                    <option value="CONVENCIONAL" selected>Convencional</option>
+                    <option value="AGROECOLOGICO">Agroecológico</option>
+                    <option value="ORGANICO_CERTIFICADO">Orgânico certificado</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="prodDescricao">Descrição do produto:</label>
+                <textarea id="prodDescricao" rows="3" class="form-input" placeholder="Descreva origem, sabor, forma de colheita ou conservação..."></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="prodImagem">Foto (JPEG/PNG/WebP até 5MB):</label>
+                  <input type="file" id="prodImagem" accept="image/jpeg,image/png,image/webp" class="form-input" />
+                </div>
+                <div class="form-group" style="display: flex; align-items: center;">
+                  <label><input type="checkbox" id="prodAtivo" checked /> Visível no catálogo</label>
+                </div>
+              </div>
+              <div id="producerProductError" class="auth-error" style="display: none;" role="alert"></div>
+              <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                <button type="submit" class="btn btn--primary">Salvar Produto</button>
+                <button type="button" class="btn btn--outline" id="btnCancelProducerProduct">Cancelar</button>
+              </div>
+            </form>
+
+            <div class="workspace-preview-col">
+              <span class="workspace-preview-label">Pré-visualização antes de salvar</span>
+              <div id="prodPreviewCard" class="product-card product-card--preview"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="producerProductsList" class="panel-list"></div>
+      </div>
+
+      <!-- Minhas Propriedades -->
+      <div id="producerTabPropriedade" class="workspace-pane" style="display: none;">
+        <div class="workspace-card">
+          <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Dados e Apresentação da Propriedade Rural</h2>
+          <div class="workspace-split">
+            <form id="producerPropertyForm">
+              <div class="form-group">
+                <label for="propNome">Nome da propriedade:</label>
+                <input type="text" id="propNome" required class="form-input" />
+              </div>
+              <div class="form-group">
+                <label for="propDescricao">História, apresentação e descrição da produção:</label>
+                <textarea id="propDescricao" rows="4" class="form-input" placeholder="Conte sobre sua família, técnicas de cultivo e o que torna sua produção especial..."></textarea>
+              </div>
+              <div class="form-group">
+                <label for="propEndereco">Endereço da propriedade (usado como local de retirada):</label>
+                <input type="text" id="propEndereco" class="form-input" placeholder="Ex: Estrada Rural km 5, Sítio Boa Vista" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="propCidade">Cidade:</label>
+                  <input type="text" id="propCidade" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="propEstado">UF:</label>
+                  <input type="text" id="propEstado" maxlength="2" class="form-input" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="propChavePix">Chave Pix:</label>
+                <input type="text" id="propChavePix" class="form-input" />
+              </div>
+              <div class="checkbox-row" style="margin-bottom: var(--space-4);">
+                <label><input type="checkbox" id="propMaquininha" /> Possuo maquininha de cartão</label>
+                <label><input type="checkbox" id="propDinheiro" /> Aceito dinheiro</label>
+              </div>
+              <div class="form-group">
+                <label for="propFoto">Foto da propriedade (JPEG/PNG/WebP até 5MB):</label>
+                <input type="file" id="propFoto" accept="image/jpeg,image/png,image/webp" class="form-input" />
+                <div id="propFotoPreviewWrap" class="property-photo-preview">
+                  <img id="propFotoPreviewImg" src="{% static 'assets/logo-icon.webp' %}" alt="Imagem da propriedade" class="producer-card__img--default" />
+                  <span id="propFotoPreviewText" class="text-muted">Usando logo padrão da Feira Virtual (envie uma foto para personalizar sua propriedade).</span>
+                </div>
+              </div>
+              <div id="producerPropertyError" class="auth-error" style="display: none;" role="alert"></div>
+              <button type="submit" class="btn btn--primary btn--full">Salvar Dados da Propriedade</button>
+            </form>
+
+            <div class="workspace-preview-col">
+              <span class="workspace-preview-label">Pré-visualização da propriedade</span>
+              <div id="propPreviewCard" class="producer-card"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pedidos Recebidos e Histórico -->
+      <div id="producerTabPedidos" class="workspace-pane" style="display: none;">
+        <div class="filter-pills-row" id="producerOrderFilters" role="group" aria-label="Filtrar pedidos por status">
+          <button type="button" class="pill active" data-producer-status="">Todos</button>
+          <button type="button" class="pill" data-producer-status="PENDENTE">Pendentes</button>
+          <button type="button" class="pill" data-producer-status="ACEITO">Aceitos</button>
+          <button type="button" class="pill" data-producer-status="EM_PREPARO">Em preparo</button>
+          <button type="button" class="pill" data-producer-status="PRONTO">Prontos</button>
+          <button type="button" class="pill" data-producer-status="EM_ENTREGA">Em entrega</button>
+          <button type="button" class="pill" data-producer-status="CONCLUIDO">Concluídos</button>
+          <button type="button" class="pill" data-producer-status="CANCELADO">Cancelados</button>
+          <button type="button" class="pill" data-producer-status="RECUSADO">Recusados</button>
+        </div>
+        <div id="producerOrdersList" class="orders-list"></div>
+        <div id="producerOrdersPagination" class="pagination-wrap"></div>
+      </div>
+
+      <!-- Avaliações -->
+      <div id="producerTabAvaliacoes" class="workspace-pane" style="display: none;">
+        <div id="producerReviewsContent"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===================== FOOTER ===================== -->
   <footer class="footer">
     <div class="container footer__inner">
@@ -386,7 +658,7 @@
         </picture>
         <p>Plataforma de venda direta da agricultura familiar.</p>
       </div>
-      <div class="footer__links">
+      <div class="footer__links" id="footerLinks">
         <a href="#produtos">Catálogo</a>
         <a href="#produtores">Produtores</a>
         <a href="#como-funciona">Como funciona</a>
@@ -909,200 +1181,33 @@
     </div>
   </div>
 
-  <!-- ===================== PAINEL DO PRODUTOR ===================== -->
-  <div class="modal-overlay" id="producerPanelModalOverlay" aria-hidden="true">
-    <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="producerPanelTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseProducerPanelModal"
-        aria-label="Fechar painel do produtor">✕</button>
-      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <h3 id="producerPanelTitle" class="auth-form__title">🌾 Painel do Produtor</h3>
-        <span id="producerStatusBadge" class="badge badge--outline"></span>
-      </div>
-
-      <div class="panel-tabs" id="producerPanelTabs">
-        <button type="button" class="panel-tab active" data-producer-tab="produtos">Meus Produtos</button>
-        <button type="button" class="panel-tab" data-producer-tab="pedidos">Pedidos Recebidos</button>
-        <button type="button" class="panel-tab" data-producer-tab="vendas">Vendas e Avaliações</button>
-        <button type="button" class="panel-tab" data-producer-tab="propriedade">Minha Propriedade</button>
-      </div>
-
-      <!-- Aba Produtos -->
-      <div id="producerTabProdutos">
-        <div id="producerStatusWarning" class="auth-error" style="display: none;" role="status"></div>
-        <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-3);">
-          <button type="button" class="btn btn--cta btn--sm" id="btnNewProducerProduct">+ Novo Produto</button>
+  <!-- ===================== MODAL AVALIAR CLIENTE (PRODUTOR) ===================== -->
+  <div class="modal-overlay" id="clientReviewModalOverlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="clientReviewModalTitle">
+      <button type="button" class="btn-close modal-close" id="btnCloseClientReviewModal"
+        aria-label="Fechar avaliação de cliente">✕</button>
+      <h3 id="clientReviewModalTitle" class="auth-form__title">Avaliar Cliente</h3>
+      <p id="clientReviewOrderLabel" class="auth-form__subtitle"></p>
+      <form id="clientReviewForm">
+        <input type="hidden" id="clientReviewOrderId" />
+        <div class="form-group">
+          <label>Nota da experiência (comunicação, pontualidade e retirada/entrega):</label>
+          <div class="rating-row">
+            <label><input type="radio" name="clientReviewNota" value="5" checked /> ⭐⭐⭐⭐⭐ (5)</label>
+            <label><input type="radio" name="clientReviewNota" value="4" /> ⭐⭐⭐⭐ (4)</label>
+            <label><input type="radio" name="clientReviewNota" value="3" /> ⭐⭐⭐ (3)</label>
+            <label><input type="radio" name="clientReviewNota" value="2" /> ⭐⭐ (2)</label>
+            <label><input type="radio" name="clientReviewNota" value="1" /> ⭐ (1)</label>
+          </div>
         </div>
-
-        <div id="producerProductFormWrap" class="demo-box" style="display: none;">
-          <form id="producerProductForm">
-            <input type="hidden" id="prodId" />
-            <div class="form-row">
-              <div class="form-group">
-                <label for="prodNome">Nome do produto:</label>
-                <input type="text" id="prodNome" required class="form-input" />
-              </div>
-              <div class="form-group">
-                <label for="prodCategoria">Categoria:</label>
-                <select id="prodCategoria" required class="form-input"></select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="prodPreco">Preço (R$):</label>
-                <input type="number" step="0.01" min="0.01" id="prodPreco" required class="form-input" />
-              </div>
-              <div class="form-group">
-                <label for="prodUnidade">Unidade:</label>
-                <select id="prodUnidade" class="form-input">
-                  <option value="UNIDADE">unidade</option>
-                  <option value="KG">kg</option>
-                  <option value="G">g</option>
-                  <option value="MACO">maço</option>
-                  <option value="CAIXA">caixa</option>
-                  <option value="SACO">saco</option>
-                  <option value="L">L</option>
-                  <option value="ML">ml</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="prodEstoque">Estoque:</label>
-                <input type="number" step="0.001" min="0" id="prodEstoque" required class="form-input" />
-              </div>
-              <div class="form-group">
-                <label for="prodTipo">Tipo de cultivo:</label>
-                <select id="prodTipo" class="form-input">
-                  <option value="CONVENCIONAL" selected>Convencional</option>
-                  <option value="AGROECOLOGICO">Agroecológico</option>
-                  <option value="ORGANICO_CERTIFICADO">Orgânico certificado</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="prodDescricao">Descrição:</label>
-              <textarea id="prodDescricao" rows="2" class="form-input"></textarea>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="prodImagem">Foto (JPEG/PNG/WebP até 5MB):</label>
-                <input type="file" id="prodImagem" accept="image/jpeg,image/png,image/webp" class="form-input" />
-              </div>
-              <div class="form-group" style="display: flex; align-items: center;">
-                <label><input type="checkbox" id="prodAtivo" checked /> Visível no catálogo</label>
-              </div>
-            </div>
-            <div id="producerProductError" class="auth-error" style="display: none;" role="alert"></div>
-            <div style="display: flex; gap: var(--space-2);">
-              <button type="submit" class="btn btn--primary btn--sm">Salvar Produto</button>
-              <button type="button" class="btn btn--outline btn--sm" id="btnCancelProducerProduct">Cancelar</button>
-            </div>
-          </form>
+        <div class="form-group">
+          <label for="clientReviewComment">Comentário (opcional):</label>
+          <textarea id="clientReviewComment" rows="3" class="form-input"
+            placeholder="Ex: Comunicação clara, pontual na retirada e ótimo relacionamento."></textarea>
         </div>
-
-        <div id="producerProductsList" class="panel-list"></div>
-      </div>
-
-      <!-- Aba Pedidos -->
-      <div id="producerTabPedidos" style="display: none;">
-        <div id="producerOrdersList" class="orders-list"></div>
-        <div id="producerOrdersPagination" class="pagination-wrap"></div>
-      </div>
-
-      <!-- Aba Vendas -->
-      <div id="producerTabVendas" style="display: none;">
-        <div id="producerSalesContent"></div>
-      </div>
-
-      <!-- Aba Propriedade -->
-      <div id="producerTabPropriedade" style="display: none;">
-        <form id="producerPropertyForm">
-          <div class="form-group">
-            <label for="propNome">Nome da propriedade:</label>
-            <input type="text" id="propNome" required class="form-input" />
-          </div>
-          <div class="form-group">
-            <label for="propDescricao">História e descrição:</label>
-            <textarea id="propDescricao" rows="3" class="form-input"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="propEndereco">Endereço da propriedade:</label>
-            <input type="text" id="propEndereco" class="form-input" />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="propCidade">Cidade:</label>
-              <input type="text" id="propCidade" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label for="propEstado">UF:</label>
-              <input type="text" id="propEstado" maxlength="2" class="form-input" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="propChavePix">Chave Pix:</label>
-            <input type="text" id="propChavePix" class="form-input" />
-          </div>
-          <div class="checkbox-row" style="margin-bottom: var(--space-4);">
-            <label><input type="checkbox" id="propMaquininha" /> Possuo maquininha de cartão</label>
-            <label><input type="checkbox" id="propDinheiro" /> Aceito dinheiro</label>
-          </div>
-          <div class="form-group">
-            <label for="propFoto">Foto da propriedade (JPEG/PNG/WebP até 5MB):</label>
-            <input type="file" id="propFoto" accept="image/jpeg,image/png,image/webp" class="form-input" />
-            <div id="propFotoPreviewWrap" class="property-photo-preview">
-              <img id="propFotoPreviewImg" src="{% static 'assets/logo-icon.webp' %}" alt="Imagem da propriedade" class="producer-card__img--default" />
-              <span id="propFotoPreviewText" class="text-muted">Usando logo padrão da Feira Virtual (envie uma foto para personalizar sua propriedade).</span>
-            </div>
-          </div>
-          <div id="producerPropertyError" class="auth-error" style="display: none;" role="alert"></div>
-          <button type="submit" class="btn btn--primary btn--full">Salvar Dados da Propriedade</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================== PAINEL DO ENTREGADOR ===================== -->
-  <div class="modal-overlay" id="deliveryPanelModalOverlay" aria-hidden="true">
-    <div class="modal-card modal-card--xl" role="dialog" aria-modal="true" aria-labelledby="deliveryPanelTitle">
-      <button type="button" class="btn-close modal-close" id="btnCloseDeliveryPanelModal"
-        aria-label="Fechar painel do entregador">✕</button>
-      <h3 id="deliveryPanelTitle" class="auth-form__title">🛵 Painel do Entregador</h3>
-
-      <div class="panel-tabs" id="deliveryPanelTabs">
-        <button type="button" class="panel-tab active" data-delivery-tab="disponiveis">Entregas Disponíveis</button>
-        <button type="button" class="panel-tab" data-delivery-tab="minhas">Minhas Entregas</button>
-        <button type="button" class="panel-tab" data-delivery-tab="veiculo">Meu Veículo</button>
-      </div>
-
-      <div id="deliveryTabDisponiveis">
-        <div id="deliveryAvailableList" class="orders-list"></div>
-      </div>
-
-      <div id="deliveryTabMinhas" style="display: none;">
-        <div id="deliveryMineList" class="orders-list"></div>
-      </div>
-
-      <div id="deliveryTabVeiculo" style="display: none;">
-        <form id="deliveryVehicleForm">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="delivVeiculo">Veículo:</label>
-              <input type="text" id="delivVeiculo" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label for="delivPlaca">Placa:</label>
-              <input type="text" id="delivPlaca" class="form-input" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="delivArea">Área de atuação:</label>
-            <input type="text" id="delivArea" class="form-input" />
-          </div>
-          <div id="deliveryVehicleError" class="auth-error" style="display: none;" role="alert"></div>
-          <button type="submit" class="btn btn--primary btn--full">Atualizar Dados do Veículo</button>
-        </form>
-      </div>
+        <div id="clientReviewError" class="auth-error" style="display: none;" role="alert"></div>
+        <button type="submit" class="btn btn--primary btn--full">Registrar Avaliação</button>
+      </form>
     </div>
   </div>
 
@@ -1193,7 +1298,7 @@
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="{% static 'main.js' %}?v=20261120h"></script>
+  <script type="module" src="{% static 'main.js' %}?v=20261120j"></script>
 </body>
 
 </html>

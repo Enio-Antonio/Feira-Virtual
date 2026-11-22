@@ -23,6 +23,7 @@
   <img src="https://img.shields.io/badge/Banco-MySQL%208.4%20%7C%20SQLite-4479A1?style=flat&logo=mysql&logoColor=white" alt="MySQL 8.4 e SQLite" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker Compose" />
   <img src="https://img.shields.io/badge/Testes-42%20aprovados-246F11?style=flat" alt="42 testes aprovados" />
+  <a href="https://github.com/pauloguilhermexs/Feira-Virtual/actions/workflows/ci.yml"><img src="https://github.com/pauloguilhermexs/Feira-Virtual/actions/workflows/ci.yml/badge.svg?branch=dev" alt="CI — Feira Virtual" /></a>
 </p>
 
 **Sumário:** [1. Princípios](#1-princípios-de-projeto-e-engenharia-de-software) · [2. Proposta, Motivação e ODS](#2-apresentação-motivação-e-ods) · [3. Padrões de Projeto](#3-padrões-de-projeto-aplicados) · [4. Critérios de Avaliação](#4-critérios-de-avaliação-e-evidências) ([4.1 Docker](#41-projeto-conteinerizado) · [4.2 API](#42-api-com-os-principais-requisitos) · [4.3 Auth](#43-autenticação-e-autorização) · [4.4 Testes/CI](#44-ci-e-testes) · [4.5 Front-End](#45-front-end-e-demonstração)) · [5. Arquitetura, Tecnologias e Diretórios](#5-arquitetura-tecnologias-e-diretórios) · [6. Execução Local e Variáveis](#6-execução-local-sem-docker-e-variáveis) · [7. Considerações Finais](#7-considerações-finais)
@@ -112,7 +113,9 @@ API REST em **Django REST Framework** (JSON / `multipart` validado com Pillow, `
 ### 4.4. CI e Testes
 
 **42 testes automatizados aprovados** (cobertura medida de **87%** via `coverage`): [`usuarios/tests.py`](usuarios/tests.py) (**10**), [`catalogo/tests.py`](catalogo/tests.py) (**9**), [`pedidos/tests.py`](pedidos/tests.py) (**13**), [`avaliacoes/tests.py`](avaliacoes/tests.py) (**4**) e [`painel/tests.py`](painel/tests.py) (**6**). Cobrem cadastros, RBAC, anti-IDOR, estoque transacional, Pix HMAC, entregas, avaliações recíprocas, LGPD, moderação, CSP e anti-*Path Traversal*.  
-**CI:** não há `.github/workflows/ci.yml` presente na branch `dev` atual (existiu apenas em commits anteriores da `main`); automação no GitHub Actions está **pendente na `dev`**.
+**CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):** pipeline no **GitHub Actions** disparada em `push`, `pull_request` (`main` e `dev`) e `workflow_dispatch`, composta por dois jobs:
+- **`backend-tests` (Python 3.12):** instala dependências, executa `manage.py check`, `makemigrations --check --dry-run`, `spectacular --validate`, `check --deploy` e os 42 testes com relatório de cobertura (`coverage`).
+- **`docker-build`:** valida a sintaxe de `docker compose config --quiet` e o build completo da imagem `Dockerfile`.
 
 ```bash
 python manage.py check && python manage.py makemigrations --check --dry-run
@@ -146,6 +149,7 @@ feira_virtual/
 ├── avaliacoes/   # Avaliacao (produto/produtor), AvaliacaoCliente (recíproca) e Reclamacao
 ├── painel/       # Moderação admin, indicadores e LogAuditoria
 ├── frontend/     # index.html, style.css, main.js, js/ (9 ES Modules) e assets/ (logos, icons.svg, og-image.png)
+├── .github/      # workflows/ci.yml (GitHub Actions: checks, schema, testes + cobertura e build Docker)
 └── Dockerfile · docker-compose.yml · entrypoint.sh · requirements.txt · requirements-dev.txt · .env.example
 ```
 
@@ -172,4 +176,4 @@ python manage.py migrate && python manage.py seed_demo && python manage.py runse
 
 A **Feira Virtual** consolida modelagem relacional, arquitetura modular, padrões de projeto verificáveis no código, RBAC + LGPD, compatibilidade SQLite/MySQL 8.4, containerização e 42 testes automatizados para a disciplina **Engenharia de Software (DCA3603)** em alinhamento aos ODS 2, 8 e 12.
 
-**Pendências registradas:** (1) criar `.github/workflows/ci.yml` na branch `dev`; (2) versionar capturas de tela em `docs/screenshots/`; (3) migrar JWT para cookies `HttpOnly` com `ROTATE_REFRESH_TOKENS = True`; (4) integrar Pix e WhatsApp reais em produção; e (5) adicionar `LICENSE` e testes E2E.
+**Pendências registradas:** (1) versionar capturas de tela em `docs/screenshots/`; (2) migrar JWT para cookies `HttpOnly` com `ROTATE_REFRESH_TOKENS = True`; (3) integrar Pix e WhatsApp reais em produção; e (4) adicionar `LICENSE` e testes E2E.

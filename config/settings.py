@@ -2,6 +2,7 @@ import os
 import secrets
 import sys
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -46,6 +47,17 @@ ALLOWED_HOSTS = [
 
 # Swagger / Documentação OpenAPI (padrão: restrito a admins)
 ENABLE_SWAGGER = os.environ.get("ENABLE_SWAGGER", "0") == "1"
+
+# Atalhos de preenchimento demo no modal de login (desacoplado de DEBUG; padrão desligado)
+SHOW_DEMO_SHORTCUTS = os.environ.get("SHOW_DEMO_SHORTCUTS", "0") == "1"
+
+# Pagamentos e entrega
+PIX_WEBHOOK_SECRET = os.environ.get("PIX_WEBHOOK_SECRET", "")
+try:
+    _taxa_env = Decimal(os.environ.get("TAXA_ENTREGA_PADRAO", "0.00"))
+except InvalidOperation:
+    _taxa_env = Decimal("0.00")
+TAXA_ENTREGA_PADRAO = max(Decimal("0.00"), _taxa_env)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -139,12 +151,18 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "frontend"]
 WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0
+WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_AUTOREFRESH = DEBUG
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
     },
 }
 MEDIA_URL = "/media/"
@@ -182,15 +200,20 @@ USE_X_FORWARDED_PORT = True
 # ---------------------------------------------------------------------------
 if not DEBUG:
     SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "1").lower() in ("1", "true", "yes")
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
     X_FRAME_OPTIONS = "DENY"
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    if SECURE_SSL_REDIRECT:
+        SESSION_COOKIE_SECURE = True
+        CSRF_COOKIE_SECURE = True
+        SECURE_HSTS_SECONDS = 31536000
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
+    else:
+        SESSION_COOKIE_SECURE = False
+        CSRF_COOKIE_SECURE = False
+        SECURE_HSTS_SECONDS = 0
 
 # ---------------------------------------------------------------------------
 # E-mail (console em dev, configurar SMTP em produção via variáveis)

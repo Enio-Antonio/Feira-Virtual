@@ -44,7 +44,9 @@ class Produto(models.Model):
     estoque = models.DecimalField(max_digits=10, decimal_places=3, validators=[MinValueValidator(Decimal("0"))])
     tipo_producao = models.CharField(max_length=25, choices=TipoProducao.choices, default=TipoProducao.CONVENCIONAL)
     imagem = models.ImageField(upload_to="produtos/%Y/%m/", blank=True, null=True)
-    ativo = models.BooleanField(default=True, help_text="Desative para ocultar do catálogo (também usado na moderação).")
+    ativo = models.BooleanField(default=True, help_text="Controle de visibilidade gerenciado pelo produtor.")
+    oculto_moderacao = models.BooleanField(default=False, help_text="Ocultado pela moderação administrativa (produtor não pode reverter).")
+    excluido_em = models.DateTimeField(null=True, blank=True, help_text="Preenchido na desativação lógica (soft delete).")
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

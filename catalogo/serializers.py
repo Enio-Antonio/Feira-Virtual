@@ -12,6 +12,9 @@ class ProdutorPublicoSerializer(serializers.ModelSerializer):
     """Vitrine pública de produtores: não expõe dados sensíveis como chave Pix ou telefones."""
     total_produtos = serializers.IntegerField(read_only=True, default=0)
     cidade_uf = serializers.SerializerMethodField()
+    aceita_pix = serializers.SerializerMethodField()
+    nota_media = serializers.FloatField(read_only=True, default=None)
+    total_avaliacoes = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = PerfilProdutor
@@ -23,15 +26,22 @@ class ProdutorPublicoSerializer(serializers.ModelSerializer):
             "estado",
             "cidade_uf",
             "foto_propriedade",
+            "aceita_pix",
             "possui_maquininha",
             "aceita_dinheiro",
             "total_produtos",
+            "nota_media",
+            "total_avaliacoes",
         ]
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_cidade_uf(self, obj):
         partes = [p for p in (obj.cidade, obj.estado) if p]
         return " / ".join(partes) if partes else ""
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_aceita_pix(self, obj) -> bool:
+        return bool((obj.chave_pix or "").strip())
 
 
 class EstatisticasPublicasSerializer(serializers.Serializer):
@@ -52,19 +62,20 @@ class ProdutoPublicoSerializer(serializers.ModelSerializer):
     produtor_nome = serializers.CharField(source="produtor.nome_propriedade", read_only=True)
     categoria_nome = serializers.CharField(source="categoria.nome", read_only=True)
     nota_media = serializers.FloatField(read_only=True, default=None)
+    total_avaliacoes = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Produto
         fields = ["id", "nome", "descricao", "preco", "unidade_medida", "estoque", "tipo_producao", "imagem",
-                  "categoria", "categoria_nome", "produtor", "produtor_nome", "nota_media"]
+                  "categoria", "categoria_nome", "produtor", "produtor_nome", "nota_media", "total_avaliacoes"]
 
 
 class ProdutoProdutorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Produto
         fields = ["id", "nome", "descricao", "preco", "unidade_medida", "estoque", "tipo_producao", "imagem",
-                  "categoria", "ativo", "criado_em"]
-        read_only_fields = ["criado_em"]
+                  "categoria", "ativo", "oculto_moderacao", "criado_em"]
+        read_only_fields = ["criado_em", "oculto_moderacao"]
 
     def validate_categoria(self, value):
         if not value.ativa:

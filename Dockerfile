@@ -1,40 +1,34 @@
 FROM python:3.12-slim
 
-# Evita criação de arquivos .pyc e faz o stdout/stderr sair direto no console
+# Evita criação de arquivos .pyc, envia logs direto ao stdout e define HOME gravável (evita erro do control server do Gunicorn)
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    HOME=/home/appuser
 
 WORKDIR /app
 
-# PyMySQL é 100% Python puro: dispensamos gcc e bibliotecas C de MySQL
-# Mantemos apenas utilitários essenciais
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Cria usuário sem privilégios administrativos com diretório HOME gravável
+RUN addgroup --system appgroup \
+    && adduser --system --home /home/appuser --ingroup appgroup appuser \
+    && mkdir -p /home/appuser /app/staticfiles /app/media \
+    && chown -R appuser:appgroup /home/appuser /app
 
-# Cria usuário sem privilégios administrativos para segurança
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-
-# Instala dependências do Python
+# Instala dependências do Python (PyMySQL é 100% Python puro — sem gcc/libmysqlclient)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia o código da aplicação
-COPY . .
-
-# Ajusta permissões e diretórios para arquivos estáticos e de mídia
-RUN mkdir -p /app/staticfiles /app/media \
-    && chown -R appuser:appgroup /app \
-    && chmod +x /app/entrypoint.sh
+# Copia o código já pertencendo ao usuário não-root (evita duplicação de camadas por chown -R)
+COPY --chown=appuser:appgroup . .
+RUN chmod +x /app/entrypoint.sh
 
 USER appuser
 
-# Coleta arquivos estáticos usando whitenoise (com SQLite temporário)
+# Coleta arquivos estáticos usando WhiteNoise (com SQLite temporário durante o build)
 RUN DB_ENGINE=sqlite python manage.py collectstatic --no-input
 
 EXPOSE 8000
 
-# Healthcheck do container no endpoint dedicado da API
+# Healthcheck do container no endpoint dedicado da API (usa Python stdlib, dispensando curl)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')" || exit 1
 

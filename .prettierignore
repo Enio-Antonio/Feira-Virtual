@@ -1,0 +1,10 @@
+node_modules/
+.venv/
+staticfiles/
+media/
+htmlcov/
+frontend/index.html
+*.py
+*.md
+*.yml
+*.yaml

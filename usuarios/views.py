@@ -2,6 +2,9 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.mail import send_mail
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from drf_spectacular.utils import extend_schema
@@ -11,13 +14,14 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from painel.models import LogAuditoria
 
 from . import serializers as s
-from .models import Endereco, Usuario
+from .models import Endereco, PerfilEntregador, PerfilProdutor, Usuario
 from .permissions import EhEntregador, EhProdutor
 
 
@@ -65,14 +69,20 @@ class RegistroEntregadorView(generics.CreateAPIView):
 
 
 class LogoutView(APIView):
-    """Invalida o refresh token (logout)."""
+    """Invalida o refresh token (logout), garantindo que pertence ao usuário autenticado."""
     serializer_class = s.LogoutSerializer
 
     def post(self, request):
         ser = s.LogoutSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         try:
-            RefreshToken(ser.validated_data["refresh"]).blacklist()
+            token = RefreshToken(ser.validated_data["refresh"])
+            if str(token.get("user_id")) != str(request.user.id):
+                return Response(
+                    {"detail": "Este token não pertence ao usuário autenticado."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            token.blacklist()
         except TokenError:
             return Response({"detail": "Token inválido ou já expirado."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -90,12 +100,22 @@ class RecuperarSenhaView(APIView):
         if user:
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
+            origem = request.build_absolute_uri("/").rstrip("/")
+            link = f"{origem}/#redefinir-senha?uid={uid}&token={token}"
             send_mail(
-                "Feira Virtual - recuperação de senha",
-                f"Use os dados abaixo em POST /api/auth/redefinir-senha/\n\nuid: {uid}\ntoken: {token}\n",
-                None, [user.email])
+                "Feira Virtual — Redefinição de senha",
+                (
+                    f"Olá, {user.first_name or user.username}!\n\n"
+                    f"Recebemos uma solicitação para redefinir a senha da sua conta na Feira Virtual.\n"
+                    f"Clique no link abaixo para cadastrar uma nova senha:\n\n"
+                    f"{link}\n\n"
+                    f"Se você não fez esta solicitação, pode ignorar este e-mail com segurança.\n"
+                ),
+                None,
+                [user.email],
+            )
         # Resposta idêntica exista ou não o e-mail (evita enumeração de contas)
-        return Response({"detail": "Se o e-mail existir, enviaremos as instruções."})
+        return Response({"detail": "Se o e-mail estiver cadastrado, enviaremos um link para redefinição de senha."})
 
 
 class RedefinirSenhaView(APIView):
@@ -133,7 +153,7 @@ class PerfilProdutorView(generics.RetrieveUpdateAPIView):
     permission_classes = [EhProdutor]
 
     def get_object(self):
-        return self.request.user.perfil_produtor
+        return get_object_or_404(PerfilProdutor, usuario=self.request.user)
 
 
 class PerfilEntregadorView(generics.RetrieveUpdateAPIView):
@@ -141,7 +161,7 @@ class PerfilEntregadorView(generics.RetrieveUpdateAPIView):
     permission_classes = [EhEntregador]
 
     def get_object(self):
-        return self.request.user.perfil_entregador
+        return get_object_or_404(PerfilEntregador, usuario=self.request.user)
 
 
 class EnderecoViewSet(viewsets.ModelViewSet):
@@ -197,18 +217,44 @@ class ExportarDadosLGPDView(APIView):
 
 
 class ExcluirContaLGPDView(APIView):
-    """LGPD: Direito ao esquecimento — anonimiza os dados pessoais e desativa a conta."""
+    """LGPD: Direito ao esquecimento — exige confirmação de senha, anonimiza dados, suspende perfil/produtos e revoga tokens."""
     @extend_schema(responses=dict)
+    @transaction.atomic
     def delete(self, request):
+        from catalogo.models import Produto
+        from pedidos.models import ItemCarrinho
+
         user = request.user
+        senha = (request.data or {}).get("password", "") if isinstance(request.data, dict) else ""
+        if not senha or not user.check_password(senha):
+            return Response(
+                {"password": ["Informe sua senha atual correta para confirmar a exclusão da conta."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        agora = timezone.now()
         username_original = user.username
         user.first_name = "Titular"
         user.last_name = "Anonimizado"
         user.email = f"anonimo_{user.id}@excluido.local"
         user.telefone = ""
         user.is_active = False
+        user.excluido_em = agora
         user.save()
         user.enderecos.all().delete()
+
+        perfil_prod = PerfilProdutor.objects.filter(usuario=user).first()
+        if perfil_prod is not None:
+            perfil_prod.status = PerfilProdutor.Status.SUSPENSO
+            perfil_prod.excluido_em = agora
+            perfil_prod.chave_pix = ""
+            perfil_prod.save(update_fields=["status", "excluido_em", "chave_pix"])
+            Produto.objects.filter(produtor=perfil_prod).update(ativo=False, excluido_em=agora)
+            ItemCarrinho.objects.filter(produto__produtor=perfil_prod).delete()
+
+        for tok in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=tok)
+
         LogAuditoria.objects.create(
             usuario=user,
             acao=LogAuditoria.Acao.EXCLUIR_CONTA_LGPD,

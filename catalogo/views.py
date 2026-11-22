@@ -1,9 +1,9 @@
 from datetime import timedelta
 
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, ProtectedError, Q
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -26,12 +26,25 @@ class ProdutorPublicoViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return (PerfilProdutor.objects
-                .filter(status=PerfilProdutor.Status.APROVADO)
-                .annotate(total_produtos=Count(
-                    "produtos",
-                    filter=Q(produtos__ativo=True, produtos__categoria__ativa=True),
-                    distinct=True
-                ))
+                .filter(
+                    status=PerfilProdutor.Status.APROVADO,
+                    excluido_em__isnull=True,
+                    usuario__is_active=True,
+                )
+                .annotate(
+                    total_produtos=Count(
+                        "produtos",
+                        filter=Q(
+                            produtos__ativo=True,
+                            produtos__oculto_moderacao=False,
+                            produtos__excluido_em__isnull=True,
+                            produtos__categoria__ativa=True,
+                        ),
+                        distinct=True,
+                    ),
+                    nota_media=Avg("avaliacoes__nota"),
+                    total_avaliacoes=Count("avaliacoes", distinct=True),
+                )
                 .order_by("nome_propriedade"))
 
 
@@ -49,12 +62,20 @@ class EstatisticasPublicasView(APIView):
         pedidos_semana = Pedido.objects.filter(criado_em__gte=sete_dias_atras)
         familias_semana = pedidos_semana.values("cliente_id").distinct().count()
 
-        total_clientes = Usuario.objects.filter(tipo=Usuario.Tipo.CLIENTE, is_active=True).count()
-        total_produtores = PerfilProdutor.objects.filter(status=PerfilProdutor.Status.APROVADO).count()
+        total_clientes = Usuario.objects.filter(tipo=Usuario.Tipo.CLIENTE, is_active=True, excluido_em__isnull=True).count()
+        total_produtores = PerfilProdutor.objects.filter(
+            status=PerfilProdutor.Status.APROVADO,
+            excluido_em__isnull=True,
+            usuario__is_active=True,
+        ).count()
         total_produtos = Produto.objects.filter(
             ativo=True,
+            oculto_moderacao=False,
+            excluido_em__isnull=True,
             categoria__ativa=True,
-            produtor__status=PerfilProdutor.Status.APROVADO
+            produtor__status=PerfilProdutor.Status.APROVADO,
+            produtor__excluido_em__isnull=True,
+            produtor__usuario__is_active=True,
         ).count()
         pedidos_concluidos = Pedido.objects.filter(status=Pedido.Status.CONCLUIDO).count()
 
@@ -68,11 +89,33 @@ class EstatisticasPublicasView(APIView):
 
 
 class CategoriaViewSet(viewsets.ModelViewSet):
-    """Qualquer um lista; só o administrador cria/edita/remove."""
+    """Público lista apenas categorias ativas; administrador vê todas e gerencia CRUD."""
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
     permission_classes = [AdminEscreveTodosLeem]
     pagination_class = None
+
+    def get_queryset(self):
+        u = getattr(self.request, "user", None)
+        if u and u.is_authenticated and (getattr(u, "tipo", None) == Usuario.Tipo.ADMIN or u.is_superuser):
+            return Categoria.objects.all()
+        return Categoria.objects.filter(ativa=True)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "Não é possível excluir esta categoria pois existem produtos vinculados a ela. "
+                        "Desative a categoria em vez de excluí-la."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CatalogoViewSet(viewsets.ReadOnlyModelViewSet):
@@ -85,9 +128,20 @@ class CatalogoViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return (Produto.objects
-                .filter(ativo=True, categoria__ativa=True, produtor__status=PerfilProdutor.Status.APROVADO)
+                .filter(
+                    ativo=True,
+                    oculto_moderacao=False,
+                    excluido_em__isnull=True,
+                    categoria__ativa=True,
+                    produtor__status=PerfilProdutor.Status.APROVADO,
+                    produtor__excluido_em__isnull=True,
+                    produtor__usuario__is_active=True,
+                )
                 .select_related("produtor", "categoria")
-                .annotate(nota_media=Avg("avaliacoes__nota"))
+                .annotate(
+                    nota_media=Avg("avaliacoes__nota"),
+                    total_avaliacoes=Count("avaliacoes", distinct=True),
+                )
                 .order_by("nome"))
 
 
@@ -105,7 +159,7 @@ class ProdutoProdutorViewSet(viewsets.ModelViewSet):
         perfil = getattr(self.request.user, "perfil_produtor", None)
         if not perfil:
             return Produto.objects.none()
-        return Produto.objects.filter(produtor=perfil)
+        return Produto.objects.filter(produtor=perfil, excluido_em__isnull=True)
 
     def perform_create(self, serializer):
         serializer.save(produtor=self.request.user.perfil_produtor)

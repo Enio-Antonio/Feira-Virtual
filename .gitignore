@@ -7,4 +7,6 @@ staticfiles/
 media/
 .coverage
 htmlcov/
+.idea/
+node_modules/
 

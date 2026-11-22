@@ -39,7 +39,7 @@ def _registrar(pedido):
 def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observacao="", taxa_entrega=Decimal("0.00")):
     """Transforma o carrinho em pedidos (um por produtor) com proteção contra concorrência."""
     carrinho = getattr(cliente, "carrinho", None)
-    itens = list(carrinho.itens.select_related("produto__produtor")) if carrinho else []
+    itens = list(carrinho.itens.select_related("produto__produtor", "produto__categoria")) if carrinho else []
     if not itens:
         raise ValidationError("Não é possível finalizar uma compra sem produtos no carrinho.")
     if modalidade == Pedido.Modalidade.ENTREGA and endereco is None:
@@ -47,17 +47,29 @@ def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observaca
 
     # Proteção de concorrência: lock nos produtos envolvidos
     p_ids = [it.produto_id for it in itens]
-    produtos_lock = {p.id: p for p in Produto.objects.select_for_update().filter(id__in=p_ids)}
+    produtos_lock = {
+        p.id: p
+        for p in Produto.objects.select_for_update().select_related("produtor", "categoria").filter(id__in=p_ids)
+    }
 
     por_produtor = defaultdict(list)
     for item in itens:
         p = produtos_lock.get(item.produto_id)
-        if not p or not p.ativo or p.produtor.status != PerfilProdutor.Status.APROVADO:
+        if (
+            not p
+            or not p.ativo
+            or p.oculto_moderacao
+            or p.excluido_em is not None
+            or not p.categoria.ativa
+            or p.produtor.status != PerfilProdutor.Status.APROVADO
+            or p.produtor.excluido_em is not None
+        ):
             raise ValidationError(f"O produto '{item.produto.nome}' não está mais disponível.")
         if item.quantidade > p.estoque:
             raise ValidationError(f"Estoque insuficiente para '{p.nome}' (disponível: {p.estoque}).")
         por_produtor[p.produtor].append((item, p))
 
+    taxa_segura = max(Decimal("0.00"), Decimal(str(taxa_entrega or "0.00")))
     pedidos = []
     for produtor, its in por_produtor.items():
         validar_pagamento(produtor, forma_pagamento)
@@ -66,7 +78,7 @@ def finalizar_carrinho(cliente, modalidade, endereco, forma_pagamento, observaca
             produtor=produtor,
             modalidade=modalidade,
             forma_pagamento=forma_pagamento,
-            taxa_entrega=taxa_entrega if modalidade == Pedido.Modalidade.ENTREGA else Decimal("0.00"),
+            taxa_entrega=taxa_segura if modalidade == Pedido.Modalidade.ENTREGA else Decimal("0.00"),
             endereco_entrega=endereco.como_texto() if (endereco and modalidade == Pedido.Modalidade.ENTREGA) else "",
             observacao=observacao,
         )
@@ -134,6 +146,10 @@ def mudar_status(pedido, novo, usuario, motivo="", previsao_entrega=""):
     elif tipo == "ENTREGADOR":
         if pedido.entregador_id != usuario.id or novo not in (S.EM_ENTREGA, S.CONCLUIDO):
             raise ValidationError("Ação não permitida para este entregador.")
+        if novo == S.EM_ENTREGA and pedido.status != S.PRONTO:
+            raise ValidationError("O pedido precisa estar pronto para sair para entrega.")
+        if novo == S.CONCLUIDO and pedido.status != S.EM_ENTREGA:
+            raise ValidationError("É obrigatório marcar 'Saiu para entrega' antes de confirmar a entrega.")
     else:
         raise ValidationError("Ação não permitida.")
 

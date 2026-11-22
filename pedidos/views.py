@@ -1,7 +1,9 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Avg, Count, Q, Sum
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -18,7 +20,7 @@ from .serializers import (CarrinhoSerializer, CheckoutSerializer, ItemCarrinhoSe
                           PedidoSerializer, StatusSerializer)
 
 S = Pedido.Status
-_pedidos_qs = Pedido.objects.select_related("produtor", "cliente").prefetch_related("itens", "historico")
+_pedidos_qs = Pedido.objects.select_related("produtor", "cliente", "avaliacao_cliente").prefetch_related("itens", "historico", "avaliacoes")
 
 
 def _carrinho(user):
@@ -48,7 +50,7 @@ class ItemCarrinhoViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixi
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
             return ItemCarrinho.objects.none()
-        return ItemCarrinho.objects.filter(carrinho__cliente=self.request.user).select_related("produto__produtor")
+        return ItemCarrinho.objects.filter(carrinho__cliente=self.request.user).select_related("produto__produtor", "produto__categoria")
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
@@ -88,13 +90,14 @@ class PedidoClienteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixin
         ser = CheckoutSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
+        taxa_servidor = max(Decimal("0.00"), Decimal(str(getattr(settings, "TAXA_ENTREGA_PADRAO", "0.00"))))
         pedidos = services.finalizar_carrinho(
             request.user,
             d["modalidade"],
             d["endereco"],
             d["forma_pagamento"],
             d.get("observacao", ""),
-            taxa_entrega=d.get("taxa_entrega", Decimal("0.00")),
+            taxa_entrega=taxa_servidor,
         )
         return Response(PedidoSerializer(pedidos, many=True, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
@@ -125,7 +128,10 @@ class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
             return Pedido.objects.none()
-        return _pedidos_qs.filter(produtor=self.request.user.perfil_produtor)
+        perfil = getattr(self.request.user, "perfil_produtor", None)
+        if not perfil:
+            return Pedido.objects.none()
+        return _pedidos_qs.filter(produtor=perfil)
 
     def _mudar(self, novo, motivo="", previsao_entrega=""):
         pedido = services.mudar_status(self.get_object(), novo, self.request.user, motivo=motivo, previsao_entrega=previsao_entrega)
@@ -160,9 +166,40 @@ class PedidoProdutorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
                          "faturamento": agg["faturamento"] or Decimal("0.00"),
                          "pedidos": PedidoSerializer(concluidos, many=True, context={"request": request}).data})
 
+    @action(detail=False, methods=["get"])
+    def resumo(self, request):
+        """Indicadores operacionais reais do produtor para a visão geral do painel."""
+        from avaliacoes.models import Avaliacao, AvaliacaoCliente
+        from catalogo.models import Produto
+        from usuarios.models import PerfilProdutor
+
+        perfil = get_object_or_404(PerfilProdutor, usuario=request.user)
+        qs = self.get_queryset()
+        concluidos = qs.filter(status=S.CONCLUIDO)
+        agg_vendas = concluidos.aggregate(qtd=Count("id"), fat=Sum("total"))
+        av_recebidas = Avaliacao.objects.filter(Q(produtor=perfil) | Q(produto__produtor=perfil))
+        agg_av = av_recebidas.aggregate(total=Count("id"), media=Avg("nota"))
+        prods = Produto.objects.filter(produtor=perfil, excluido_em__isnull=True)
+
+        return Response({
+            "status_produtor": perfil.status,
+            "nome_propriedade": perfil.nome_propriedade,
+            "total_produtos": prods.count(),
+            "produtos_ativos": prods.filter(ativo=True, oculto_moderacao=False).count(),
+            "pedidos_total": qs.count(),
+            "pedidos_pendentes": qs.filter(status=S.PENDENTE).count(),
+            "pedidos_em_andamento": qs.filter(status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO, S.EM_ENTREGA]).count(),
+            "pedidos_concluidos": agg_vendas["qtd"] or 0,
+            "pedidos_cancelados_recusados": qs.filter(status__in=[S.CANCELADO, S.RECUSADO]).count(),
+            "faturamento_total": agg_vendas["fat"] or Decimal("0.00"),
+            "total_avaliacoes_recebidas": agg_av["total"] or 0,
+            "media_avaliacoes_recebidas": round(float(agg_av["media"]), 2) if (agg_av["total"] and agg_av["media"]) else None,
+            "total_avaliacoes_clientes": AvaliacaoCliente.objects.filter(produtor=perfil).count(),
+        })
+
 
 class EntregaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    """Entregador: ver entregas disponíveis/atribuídas, aceitar, atualizar e confirmar."""
+    """Entregador: ver entregas disponíveis/atribuídas, histórico, resumo, aceitar, atualizar e confirmar."""
     permission_classes = [EhEntregador]
     serializer_class = PedidoSerializer
     filterset_fields = ["status"]
@@ -176,30 +213,79 @@ class EntregaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.
         if self.action in ("list",):
             escopo = self.request.query_params.get("escopo", "disponiveis")
             if escopo == "minhas":
-                return base.filter(entregador=u)
+                qs = base.filter(entregador=u)
+                grupo = self.request.query_params.get("grupo", "")
+                if grupo == "aguardando":
+                    return qs.filter(status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO])
+                if grupo == "andamento":
+                    return qs.filter(status=S.EM_ENTREGA)
+                if grupo == "concluidas":
+                    return qs.filter(status=S.CONCLUIDO)
+                if grupo == "canceladas":
+                    return qs.filter(status__in=[S.CANCELADO, S.RECUSADO])
+                return qs
+            if escopo == "historico":
+                return base.filter(entregador=u, status__in=[S.CONCLUIDO, S.CANCELADO, S.RECUSADO])
             return base.filter(entregador__isnull=True, status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO])
         return base.filter(Q(entregador=u) | Q(entregador__isnull=True, status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO]))
 
+    @action(detail=False, methods=["get"])
+    def resumo(self, request):
+        """Indicadores reais e ganhos acumulados de frete do entregador."""
+        base = Pedido.objects.filter(modalidade=Pedido.Modalidade.ENTREGA)
+        u = request.user
+        minhas = base.filter(entregador=u)
+        disponiveis = base.filter(entregador__isnull=True, status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO]).count()
+        aguardando = minhas.filter(status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO])
+        em_andamento = minhas.filter(status=S.EM_ENTREGA)
+        concluidas = minhas.filter(status=S.CONCLUIDO)
+        canceladas = minhas.filter(status__in=[S.CANCELADO, S.RECUSADO])
+
+        ganhos_concluidos = concluidas.aggregate(total=Sum("taxa_entrega"))["total"] or Decimal("0.00")
+        ganhos_previstos = minhas.filter(
+            status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO, S.EM_ENTREGA]
+        ).aggregate(total=Sum("taxa_entrega"))["total"] or Decimal("0.00")
+
+        return Response({
+            "disponiveis": disponiveis,
+            "aceitas_aguardando_retirada": aguardando.count(),
+            "em_andamento": em_andamento.count(),
+            "concluidas": concluidas.count(),
+            "canceladas": canceladas.count(),
+            "total_aceitas": minhas.count(),
+            "ganhos_concluidos": ganhos_concluidos,
+            "ganhos_previstos": ganhos_previstos,
+        })
+
     @action(detail=True, methods=["post"])
     def aceitar(self, request, pk=None):
-        """Atribui a entrega ao entregador (primeiro que aceitar leva)."""
+        """Atribui a entrega ao entregador com lock atômico (primeiro que aceitar leva)."""
         with transaction.atomic():
-            ok = Pedido.objects.filter(pk=pk, modalidade=Pedido.Modalidade.ENTREGA, entregador__isnull=True,
-                                       status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO]
-                                       ).update(entregador=request.user)
-        if not ok:
-            raise ValidationError("Entrega indisponível ou já atribuída a outro entregador.")
-        return Response(PedidoSerializer(_pedidos_qs.get(pk=pk)).data)
+            pedido = (
+                Pedido.objects.select_for_update()
+                .filter(
+                    pk=pk,
+                    modalidade=Pedido.Modalidade.ENTREGA,
+                    entregador__isnull=True,
+                    status__in=[S.ACEITO, S.EM_PREPARO, S.PRONTO],
+                )
+                .first()
+            )
+            if not pedido:
+                raise ValidationError("Entrega indisponível ou já atribuída a outro entregador.")
+            pedido.entregador = request.user
+            pedido.save(update_fields=["entregador", "atualizado_em"])
+        return Response(PedidoSerializer(_pedidos_qs.get(pk=pk), context={"request": request}).data)
 
     @action(detail=True, methods=["post"], url_path="saiu-para-entrega")
     def saiu_para_entrega(self, request, pk=None):
         pedido = services.mudar_status(self.get_object(), S.EM_ENTREGA, request.user)
-        return Response(PedidoSerializer(pedido).data)
+        return Response(PedidoSerializer(pedido, context={"request": request}).data)
 
     @action(detail=True, methods=["post"])
     def confirmar(self, request, pk=None):
         pedido = services.mudar_status(self.get_object(), S.CONCLUIDO, request.user)
-        return Response(PedidoSerializer(pedido).data)
+        return Response(PedidoSerializer(pedido, context={"request": request}).data)
 
 
 class PixWebhookView(APIView):
@@ -218,8 +304,12 @@ class PixWebhookView(APIView):
         import json
         try:
             dados = json.loads(payload.decode("utf-8"))
-            txid = dados.get("txid", "")
-            pedido = Pedido.objects.filter(numero_publico=f"PED-{txid}").first()
+            txid_raw = str(dados.get("txid", "")).strip().upper()
+            txid_clean = txid_raw.replace("-", "")
+            if not txid_clean:
+                return Response({"erro": "txid ausente."}, status=status.HTTP_400_BAD_REQUEST)
+            sufixo = txid_clean[3:] if txid_clean.startswith("PED") else txid_clean
+            pedido = Pedido.objects.filter(numero_publico=f"PED-{sufixo}").first()
             if pedido and dados.get("evento") == "PAGAMENTO_CONFIRMADO":
                 if pedido.status == Pedido.Status.PENDENTE:
                     services.mudar_status(pedido, Pedido.Status.ACEITO, pedido.produtor.usuario)

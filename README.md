@@ -113,8 +113,9 @@ API REST em **Django REST Framework** (JSON / `multipart` validado com Pillow, `
 ### 4.4. CI e Testes
 
 **42 testes automatizados aprovados** (cobertura medida de **87%** via `coverage`): [`usuarios/tests.py`](usuarios/tests.py) (**10**), [`catalogo/tests.py`](catalogo/tests.py) (**9**), [`pedidos/tests.py`](pedidos/tests.py) (**13**), [`avaliacoes/tests.py`](avaliacoes/tests.py) (**4**) e [`painel/tests.py`](painel/tests.py) (**6**). Cobrem cadastros, RBAC, anti-IDOR, estoque transacional, Pix HMAC, entregas, avaliações recíprocas, LGPD, moderação, CSP e anti-*Path Traversal*.  
-**CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):** pipeline no **GitHub Actions** disparada em `push`, `pull_request` (`main` e `dev`) e `workflow_dispatch`, composta por dois jobs:
+**CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):** pipeline no **GitHub Actions** disparada em `push`, `pull_request` (`main` e `dev`) e `workflow_dispatch`, composta por três jobs:
 - **`backend-tests` (Python 3.12):** instala dependências, executa `manage.py check`, `makemigrations --check --dry-run`, `spectacular --validate`, `check --deploy` e os 42 testes com relatório de cobertura (`coverage`).
+- **`frontend-lint` (Node.js 22):** executa **ESLint** (`npm run lint:js`) nos ES Modules (`frontend/main.js` e `frontend/js/*.js`) e **Prettier** (`npm run format:check`) em JS e CSS.
 - **`docker-build`:** valida a sintaxe de `docker compose config --quiet` e o build completo da imagem `Dockerfile`.
 
 ```bash

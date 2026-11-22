@@ -203,7 +203,11 @@ function updateHeroProductRating(products) {
 
   if (!Array.isArray(products) || products.length === 0) return;
   const heroProd =
-    products.find(p => String(p.nome || '').toLowerCase().includes('alface')) || products[0];
+    products.find(p =>
+      String(p.nome || '')
+        .toLowerCase()
+        .includes('alface')
+    ) || products[0];
 
   if (hasValidRating(heroProd)) {
     const temp = document.createElement('div');
@@ -226,17 +230,18 @@ function renderProductsGrid(products) {
     return;
   }
 
-  grid.innerHTML = products.map(p => {
-    const semEstoque = parseFloat(p.estoque) <= 0;
-    const produtorNome = p.produtor_nome || 'Produtor Parceiro';
-    const customImgUrl = p.imagem ? safeUrl(p.imagem, '') : '';
-    const thumbMedia = customImgUrl
-      ? `<img src="${escapeHtml(customImgUrl)}" alt="${escapeHtml(p.nome)}" class="product-card__img" loading="lazy" />`
-      : renderBrandLogoHtml(p.nome, 'product-card__img product-card__img--default');
-    const ratingBadgeHtml = renderRatingBadgeHtml(p);
-    const unidadeLabel = formatUnitLabel(p.unidade_medida);
+  grid.innerHTML = products
+    .map(p => {
+      const semEstoque = parseFloat(p.estoque) <= 0;
+      const produtorNome = p.produtor_nome || 'Produtor Parceiro';
+      const customImgUrl = p.imagem ? safeUrl(p.imagem, '') : '';
+      const thumbMedia = customImgUrl
+        ? `<img src="${escapeHtml(customImgUrl)}" alt="${escapeHtml(p.nome)}" class="product-card__img" loading="lazy" />`
+        : renderBrandLogoHtml(p.nome, 'product-card__img product-card__img--default');
+      const ratingBadgeHtml = renderRatingBadgeHtml(p);
+      const unidadeLabel = formatUnitLabel(p.unidade_medida);
 
-    return `
+      return `
       <article class="product-card ${semEstoque ? 'card--out-of-stock' : ''}">
         <div class="product-card__thumb btnProductDetail" data-id="${p.id}" role="button" tabindex="0" aria-label="Ver detalhes de ${escapeHtml(p.nome)}">
           ${thumbMedia}
@@ -277,7 +282,8 @@ function renderProductsGrid(products) {
         </div>
       </article>
     `;
-  }).join('');
+    })
+    .join('');
 }
 
 function renderPagination() {
@@ -308,7 +314,8 @@ export async function openProductDetail(productId, avPage = 1) {
   if (!body) return;
 
   if (avPage === 1) {
-    body.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando detalhes...</p></div>';
+    body.innerHTML =
+      '<div class="catalog-loading"><div class="spinner"></div><p>Carregando detalhes...</p></div>';
     openModal('productDetailModalOverlay');
   }
 
@@ -363,9 +370,12 @@ export async function openProductDetail(productId, avPage = 1) {
 
       <div class="detail-reviews">
         <h4>${renderIcon('star-filled', 16, 'icon--star-filled')} Avaliações de Clientes (${Number(p.total_avaliacoes) || avData.count || avaliacoes.length})</h4>
-        ${avaliacoes.length === 0
-          ? '<p class="text-muted">Ainda não há avaliações para este produto.</p>'
-          : avaliacoes.map(a => `
+        ${
+          avaliacoes.length === 0
+            ? '<p class="text-muted">Ainda não há avaliações para este produto.</p>'
+            : avaliacoes
+                .map(
+                  a => `
             <div class="review-item">
               <div class="review-item__head">
                 <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
@@ -374,16 +384,16 @@ export async function openProductDetail(productId, avPage = 1) {
               ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : '<p class="text-muted">Sem comentário.</p>'}
               <span class="text-muted">${formatDate(a.criado_em)}</span>
             </div>
-          `).join('')}
+          `
+                )
+                .join('')
+        }
         <div id="productReviewsPagination" class="pagination-wrap"></div>
       </div>
     `;
 
-    renderPaginationBar(
-      document.getElementById('productReviewsPagination'),
-      avData,
-      avPage,
-      (nextPage) => openProductDetail(productId, nextPage),
+    renderPaginationBar(document.getElementById('productReviewsPagination'), avData, avPage, nextPage =>
+      openProductDetail(productId, nextPage)
     );
 
     document.getElementById('btnDetailAddToCart')?.addEventListener('click', () => {
@@ -401,7 +411,8 @@ export async function openProducerDetail(producerId, avPage = 1) {
   if (!body) return;
 
   if (avPage === 1) {
-    body.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando produtor...</p></div>';
+    body.innerHTML =
+      '<div class="catalog-loading"><div class="spinner"></div><p>Carregando produtor...</p></div>';
     openModal('producerDetailModalOverlay');
   }
 
@@ -438,9 +449,12 @@ export async function openProducerDetail(producerId, avPage = 1) {
 
       <div class="detail-reviews">
         <h4>${renderIcon('star-filled', 16, 'icon--star-filled')} Avaliações da Propriedade (${Number(p.total_avaliacoes) || avData.count || avaliacoes.length})</h4>
-        ${avaliacoes.length === 0
-          ? '<p class="text-muted">Ainda não há avaliações registradas para este produtor.</p>'
-          : avaliacoes.map(a => `
+        ${
+          avaliacoes.length === 0
+            ? '<p class="text-muted">Ainda não há avaliações registradas para este produtor.</p>'
+            : avaliacoes
+                .map(
+                  a => `
             <div class="review-item">
               <div class="review-item__head">
                 <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
@@ -449,16 +463,16 @@ export async function openProducerDetail(producerId, avPage = 1) {
               ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : '<p class="text-muted">Sem comentário.</p>'}
               <span class="text-muted">${formatDate(a.criado_em)}</span>
             </div>
-          `).join('')}
+          `
+                )
+                .join('')
+        }
         <div id="producerReviewsPagination" class="pagination-wrap"></div>
       </div>
     `;
 
-    renderPaginationBar(
-      document.getElementById('producerReviewsPagination'),
-      avData,
-      avPage,
-      (nextPage) => openProducerDetail(producerId, nextPage),
+    renderPaginationBar(document.getElementById('producerReviewsPagination'), avData, avPage, nextPage =>
+      openProducerDetail(producerId, nextPage)
     );
   } catch (err) {
     body.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
@@ -488,9 +502,10 @@ export async function loadProducers(page = 1) {
       return;
     }
 
-    container.innerHTML = produtores.map(p => {
-      const ratingBadgeHtml = renderRatingBadgeHtml(p, 'product-rating-badge--sm');
-      return `
+    container.innerHTML = produtores
+      .map(p => {
+        const ratingBadgeHtml = renderRatingBadgeHtml(p, 'product-rating-badge--sm');
+        return `
         <article class="producer-card">
           <div class="producer-card__top">
             ${renderProducerAvatarHtml(p)}
@@ -514,9 +529,10 @@ export async function loadProducers(page = 1) {
           </div>
         </article>
       `;
-    }).join('');
+      })
+      .join('');
 
-    renderPaginationBar(pagEl, data, page, (nextPage) => loadProducers(nextPage));
+    renderPaginationBar(pagEl, data, page, nextPage => loadProducers(nextPage));
   } catch (_) {
     container.innerHTML = `
       <div class="empty-state">

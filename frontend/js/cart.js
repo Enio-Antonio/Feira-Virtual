@@ -183,14 +183,15 @@ export function renderCartDrawer() {
   if (footer) footer.style.display = 'block';
   if (totalEl) totalEl.textContent = formatCurrency(cartState.total);
 
-  container.innerHTML = cartState.items.map(item => {
-    const { step } = getUnitStep(item.unidade_medida);
-    const qtd = parseFloat(item.quantidade) || 0;
-    const estoque = parseFloat(item.estoque);
-    const prevQtd = Math.round((qtd - step) * 1000) / 1000;
-    const nextQtd = Math.round((qtd + step) * 1000) / 1000;
-    const atMax = Number.isFinite(estoque) && nextQtd > estoque;
-    return `
+  container.innerHTML = cartState.items
+    .map(item => {
+      const { step } = getUnitStep(item.unidade_medida);
+      const qtd = parseFloat(item.quantidade) || 0;
+      const estoque = parseFloat(item.estoque);
+      const prevQtd = Math.round((qtd - step) * 1000) / 1000;
+      const nextQtd = Math.round((qtd + step) * 1000) / 1000;
+      const atMax = Number.isFinite(estoque) && nextQtd > estoque;
+      return `
     <div class="cart-item">
       <div class="cart-item__info">
         <div class="cart-item__name">${escapeHtml(item.produto_nome)}</div>
@@ -205,7 +206,8 @@ export function renderCartDrawer() {
       <button type="button" class="cart-item__remove btnDel" data-id="${item.id}" title="Remover item" aria-label="Remover item">${renderIcon('trash-2', 16)}</button>
     </div>
   `;
-  }).join('');
+    })
+    .join('');
 }
 
 function groupCartByProducer() {
@@ -255,7 +257,9 @@ export function updateCheckoutSummary() {
 
   const summaryEl = document.getElementById('checkoutProducerSummary');
   if (summaryEl) {
-    summaryEl.innerHTML = groups.map(g => `
+    summaryEl.innerHTML = groups
+      .map(
+        g => `
       <div class="checkout-producer-group">
         <div class="checkout-producer-group__head">
           <strong>${escapeHtml(g.produtor_nome)}</strong>
@@ -265,12 +269,19 @@ export function updateCheckoutSummary() {
           ${g.items.map(it => `<li>${escapeHtml(it.produto_nome)} × ${escapeHtml(formatQuantity(it.quantidade, it.unidade_medida))} ${escapeHtml(formatUnitLabel(it.unidade_medida))}</li>`).join('')}
         </ul>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
   }
 
   const methods = [
     { value: 'PIX', label: 'Pix', check: g => g.aceita_pix, reason: 'não aceita Pix' },
-    { value: 'CARTAO', label: 'Cartão', check: g => g.possui_maquininha, reason: 'não possui maquininha de cartão' },
+    {
+      value: 'CARTAO',
+      label: 'Cartão',
+      check: g => g.possui_maquininha,
+      reason: 'não possui maquininha de cartão',
+    },
     { value: 'DINHEIRO', label: 'Dinheiro', check: g => g.aceita_dinheiro, reason: 'não aceita dinheiro' },
   ];
 
@@ -331,9 +342,13 @@ export async function refreshCheckoutAddresses() {
       if (addrs.length === 0) {
         addrSelect.innerHTML = '<option value="">Nenhum endereço cadastrado — cadastre abaixo</option>';
       } else {
-        addrSelect.innerHTML = addrs.map(a => `
+        addrSelect.innerHTML = addrs
+          .map(
+            a => `
           <option value="${a.id}">${escapeHtml(a.rotulo)} — ${escapeHtml(a.logradouro)}, ${escapeHtml(a.numero)} (${escapeHtml(a.bairro)})</option>
-        `).join('');
+        `
+          )
+          .join('');
       }
     }
   } catch (_) {}

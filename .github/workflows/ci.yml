@@ -61,10 +61,33 @@ jobs:
           coverage run --source=usuarios,catalogo,pedidos,avaliacoes,painel,config manage.py test -v 2
           coverage report -m
 
+  frontend-lint:
+    name: Lint e Formatação do Front-End (ESLint + Prettier)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Instalar ferramentas de qualidade (devDependencies)
+        run: npm ci
+
+      - name: Verificar lint JavaScript (ESLint)
+        run: npm run lint:js
+
+      - name: Verificar formatação JS e CSS (Prettier)
+        run: npm run format:check
+
   docker-build:
     name: Validação Docker e Compose
     runs-on: ubuntu-latest
-    needs: backend-tests
+    needs: [backend-tests, frontend-lint]
 
     steps:
       - name: Checkout do repositório

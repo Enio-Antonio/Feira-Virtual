@@ -100,7 +100,9 @@ export function switchProducerTab(tab) {
       tabBtn.classList.toggle('active', k === normalized);
       tabBtn.setAttribute('aria-selected', String(k === normalized));
     }
-    document.querySelectorAll(`[data-producer-nav="${k}"]`).forEach(el => el.classList.toggle('active', k === normalized));
+    document
+      .querySelectorAll(`[data-producer-nav="${k}"]`)
+      .forEach(el => el.classList.toggle('active', k === normalized));
     const panel = document.getElementById(id);
     if (panel) panel.style.display = k === normalized ? 'block' : 'none';
   });
@@ -123,7 +125,8 @@ export function switchProducerTab(tab) {
 async function loadProducerOverview() {
   const el = document.getElementById('producerOverviewContent');
   if (!el) return;
-  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando indicadores da propriedade...</p></div>';
+  el.innerHTML =
+    '<div class="catalog-loading"><div class="spinner"></div><p>Carregando indicadores da propriedade...</p></div>';
 
   try {
     const [resResumo, resVendas] = await Promise.all([
@@ -177,11 +180,14 @@ async function loadProducerOverview() {
 
       <div class="workspace-card" style="margin-top: var(--space-6);">
         <h2 class="workspace-card__title" style="margin-bottom: var(--space-3);">Vendas Concluídas Recentes (${Number(vendas.quantidade_vendas) || pedidosConcluidos.length})</h2>
-        ${pedidosConcluidos.length === 0
-          ? '<p class="text-muted">Nenhuma venda concluída registrada ainda.</p>'
-          : `
+        ${
+          pedidosConcluidos.length === 0
+            ? '<p class="text-muted">Nenhuma venda concluída registrada ainda.</p>'
+            : `
             <div class="panel-list">
-              ${pedidosConcluidos.map(o => `
+              ${pedidosConcluidos
+                .map(
+                  o => `
                 <div class="panel-list-item">
                   <div class="panel-list-item__info">
                     <strong>${escapeHtml(o.numero_publico || `#${o.id}`)} • ${escapeHtml(o.cliente_nome || 'Cliente')}</strong>
@@ -189,9 +195,12 @@ async function loadProducerOverview() {
                   </div>
                   <strong>${formatCurrency(o.total)}</strong>
                 </div>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
-          `}
+          `
+        }
       </div>
     `;
   } catch (err) {
@@ -209,7 +218,9 @@ async function loadProducerCategoriesSelect() {
     const data = await res.json();
     producerCategoriesCache = (data.results || data || []).filter(c => c.ativa !== false);
     const current = sel.value;
-    sel.innerHTML = producerCategoriesCache.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+    sel.innerHTML = producerCategoriesCache
+      .map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`)
+      .join('');
     if (current) sel.value = current;
   } catch (_) {}
 }
@@ -229,20 +240,22 @@ export async function loadProducerProducts(page = 1) {
     producerProductsCache = data.results || data || [];
 
     if (producerProductsCache.length === 0) {
-      list.innerHTML = '<div class="workspace-card empty-state"><p>Você ainda não possui produtos cadastrados.</p></div>';
+      list.innerHTML =
+        '<div class="workspace-card empty-state"><p>Você ainda não possui produtos cadastrados.</p></div>';
       return;
     }
 
-    list.innerHTML = producerProductsCache.map(p => {
-      const customImg = p.imagem ? safeUrl(p.imagem, '') : '';
-      const thumbHtml = customImg
-        ? `<img src="${escapeHtml(customImg)}" alt="${escapeHtml(p.nome)}" class="panel-thumb" />`
-        : `<div class="panel-thumb--logo">${renderBrandLogoHtml(p.nome, 'product-card__img--default')}</div>`;
-      const cult = CULTIVO_LABELS[p.tipo_producao] || CULTIVO_LABELS.CONVENCIONAL;
-      const statusBadges = p.oculto_moderacao
-        ? '<span class="badge status--cancelled">Oculto pela moderação</span>'
-        : `<span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Ativo' : 'Oculto'}</span>`;
-      return `
+    list.innerHTML = producerProductsCache
+      .map(p => {
+        const customImg = p.imagem ? safeUrl(p.imagem, '') : '';
+        const thumbHtml = customImg
+          ? `<img src="${escapeHtml(customImg)}" alt="${escapeHtml(p.nome)}" class="panel-thumb" />`
+          : `<div class="panel-thumb--logo">${renderBrandLogoHtml(p.nome, 'product-card__img--default')}</div>`;
+        const cult = CULTIVO_LABELS[p.tipo_producao] || CULTIVO_LABELS.CONVENCIONAL;
+        const statusBadges = p.oculto_moderacao
+          ? '<span class="badge status--cancelled">Oculto pela moderação</span>'
+          : `<span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Ativo' : 'Oculto'}</span>`;
+        return `
         <div class="panel-list-item">
           ${thumbHtml}
           <div class="panel-list-item__info">
@@ -257,8 +270,9 @@ export async function loadProducerProducts(page = 1) {
           </div>
         </div>
       `;
-    }).join('');
-    renderPaginationBar(pagEl, data, page, (nextPage) => loadProducerProducts(nextPage));
+      })
+      .join('');
+    renderPaginationBar(pagEl, data, page, nextPage => loadProducerProducts(nextPage));
   } catch (err) {
     list.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -275,7 +289,8 @@ export function updateProductPreview() {
   const unidade = document.getElementById('prodUnidade')?.value || 'UNIDADE';
   const estoque = parseFloat(document.getElementById('prodEstoque')?.value || '0') || 0;
   const tipo = document.getElementById('prodTipo')?.value || 'CONVENCIONAL';
-  const desc = document.getElementById('prodDescricao')?.value.trim() || 'A descrição do seu produto aparecerá aqui.';
+  const desc =
+    document.getElementById('prodDescricao')?.value.trim() || 'A descrição do seu produto aparecerá aqui.';
   const fileInput = document.getElementById('prodImagem');
 
   let imgSrc = currentEditingProductPhotoUrl || '';
@@ -425,31 +440,33 @@ export async function loadProducerOrders(page = 1) {
     orders.forEach(o => producerOrdersCache.set(String(o.id), o));
 
     if (orders.length === 0) {
-      container.innerHTML = '<div class="workspace-card empty-state"><p>Nenhum pedido encontrado neste filtro.</p></div>';
+      container.innerHTML =
+        '<div class="workspace-card empty-state"><p>Nenhum pedido encontrado neste filtro.</p></div>';
       return;
     }
 
-    container.innerHTML = orders.map(o => {
-      const st = statusLabels[o.status] || { label: o.status, class: '' };
-      let actions = '';
-      if (o.status === 'PENDENTE') {
-        actions = `
+    container.innerHTML = orders
+      .map(o => {
+        const st = statusLabels[o.status] || { label: o.status, class: '' };
+        let actions = '';
+        if (o.status === 'PENDENTE') {
+          actions = `
           <button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="aceitar">${renderIcon('check', 14)} Aceitar</button>
           <button type="button" class="btn btn--outline btn--sm text-danger btnProdOrderAction" data-id="${o.id}" data-action="recusar">${renderIcon('x', 14)} Recusar</button>
         `;
-      } else if (o.status === 'ACEITO') {
-        actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="EM_PREPARO">Iniciar Preparo</button>`;
-      } else if (o.status === 'EM_PREPARO') {
-        actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="PRONTO">Marcar Pronto</button>`;
-      } else if (o.status === 'PRONTO' && o.modalidade === 'RETIRADA') {
-        actions = `<button type="button" class="btn btn--cta btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="CONCLUIDO">Confirmar Retirada</button>`;
-      } else if (o.status === 'CONCLUIDO') {
-        actions = o.cliente_avaliado
-          ? '<span class="badge status--completed">Cliente avaliado</span>'
-          : `<button type="button" class="btn btn--outline btn--sm btnRateClient" data-id="${o.id}">${renderIcon('star', 14)} Avaliar cliente</button>`;
-      }
+        } else if (o.status === 'ACEITO') {
+          actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="EM_PREPARO">Iniciar Preparo</button>`;
+        } else if (o.status === 'EM_PREPARO') {
+          actions = `<button type="button" class="btn btn--primary btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="PRONTO">Marcar Pronto</button>`;
+        } else if (o.status === 'PRONTO' && o.modalidade === 'RETIRADA') {
+          actions = `<button type="button" class="btn btn--cta btn--sm btnProdOrderAction" data-id="${o.id}" data-action="status" data-next="CONCLUIDO">Confirmar Retirada</button>`;
+        } else if (o.status === 'CONCLUIDO') {
+          actions = o.cliente_avaliado
+            ? '<span class="badge status--completed">Cliente avaliado</span>'
+            : `<button type="button" class="btn btn--outline btn--sm btnRateClient" data-id="${o.id}">${renderIcon('star', 14)} Avaliar cliente</button>`;
+        }
 
-      return `
+        return `
         <div class="order-card">
           <div class="order-card__header">
             <div>
@@ -473,8 +490,9 @@ export async function loadProducerOrders(page = 1) {
           </div>
         </div>
       `;
-    }).join('');
-    renderPaginationBar(pagEl, data, page, (nextPage) => loadProducerOrders(nextPage));
+      })
+      .join('');
+    renderPaginationBar(pagEl, data, page, nextPage => loadProducerOrders(nextPage));
   } catch (err) {
     container.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -559,10 +577,13 @@ async function loadProducerReviews(pageRec = 1, pageFeitas = 1) {
     const recebidas = recData.results || recData || [];
     const feitas = feitasData.results || feitasData || [];
 
-    const totalRecebidas = Number(resumo.total_avaliacoes_recebidas ?? recData.count ?? recebidas.length) || 0;
+    const totalRecebidas =
+      Number(resumo.total_avaliacoes_recebidas ?? recData.count ?? recebidas.length) || 0;
     const totalFeitas = Number(resumo.total_avaliacoes_clientes ?? feitasData.count ?? feitas.length) || 0;
     const mediaSrv =
-      totalRecebidas > 0 && resumo.media_avaliacoes_recebidas !== null && resumo.media_avaliacoes_recebidas !== undefined
+      totalRecebidas > 0 &&
+      resumo.media_avaliacoes_recebidas !== null &&
+      resumo.media_avaliacoes_recebidas !== undefined
         ? Number(resumo.media_avaliacoes_recebidas).toFixed(1).replace('.', ',')
         : null;
 
@@ -585,9 +606,12 @@ async function loadProducerReviews(pageRec = 1, pageFeitas = 1) {
       <div class="reviews-split">
         <div class="workspace-card">
           <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Avaliações Recebidas dos Clientes (${totalRecebidas})</h2>
-          ${recebidas.length === 0
-            ? '<div class="empty-state"><p>Nenhuma avaliação recebida ainda.</p></div>'
-            : recebidas.map(a => `
+          ${
+            recebidas.length === 0
+              ? '<div class="empty-state"><p>Nenhuma avaliação recebida ainda.</p></div>'
+              : recebidas
+                  .map(
+                    a => `
               <div class="review-card">
                 <div class="review-card__top">
                   <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
@@ -597,15 +621,21 @@ async function loadProducerReviews(pageRec = 1, pageFeitas = 1) {
                 ${a.comentario ? `<p style="margin-bottom: 4px;">${escapeHtml(a.comentario)}</p>` : ''}
                 <span class="text-muted">${formatDate(a.criado_em)}</span>
               </div>
-            `).join('')}
+            `
+                  )
+                  .join('')
+          }
           <div id="producerRecReviewsPagination" class="pagination-wrap"></div>
         </div>
 
         <div class="workspace-card">
           <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Avaliações de Clientes Realizadas (${totalFeitas})</h2>
-          ${feitas.length === 0
-            ? '<div class="empty-state"><p>Você ainda não avaliou nenhum cliente. Após concluir um pedido, clique em "Avaliar cliente" na aba Pedidos recebidos.</p></div>'
-            : feitas.map(a => `
+          ${
+            feitas.length === 0
+              ? '<div class="empty-state"><p>Você ainda não avaliou nenhum cliente. Após concluir um pedido, clique em "Avaliar cliente" na aba Pedidos recebidos.</p></div>'
+              : feitas
+                  .map(
+                    a => `
               <div class="review-card">
                 <div class="review-card__top">
                   <strong>${escapeHtml(a.cliente_nome || 'Cliente')}</strong>
@@ -615,23 +645,23 @@ async function loadProducerReviews(pageRec = 1, pageFeitas = 1) {
                 ${a.comentario ? `<p style="margin-bottom: 4px;">${escapeHtml(a.comentario)}</p>` : ''}
                 <span class="text-muted">${formatDate(a.criado_em)}</span>
               </div>
-            `).join('')}
+            `
+                  )
+                  .join('')
+          }
           <div id="producerClientReviewsPagination" class="pagination-wrap"></div>
         </div>
       </div>
     `;
 
-    renderPaginationBar(
-      document.getElementById('producerRecReviewsPagination'),
-      recData,
-      pageRec,
-      (nextPage) => loadProducerReviews(nextPage, pageFeitas),
+    renderPaginationBar(document.getElementById('producerRecReviewsPagination'), recData, pageRec, nextPage =>
+      loadProducerReviews(nextPage, pageFeitas)
     );
     renderPaginationBar(
       document.getElementById('producerClientReviewsPagination'),
       feitasData,
       pageFeitas,
-      (nextPage) => loadProducerReviews(pageRec, nextPage),
+      nextPage => loadProducerReviews(pageRec, nextPage)
     );
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
@@ -644,7 +674,9 @@ export function updatePropertyPreview() {
   if (!card) return;
 
   const nome = document.getElementById('propNome')?.value.trim() || 'Nome da propriedade';
-  const desc = document.getElementById('propDescricao')?.value.trim() || 'A apresentação e história da sua propriedade aparecerão aqui.';
+  const desc =
+    document.getElementById('propDescricao')?.value.trim() ||
+    'A apresentação e história da sua propriedade aparecerão aqui.';
   const cidade = document.getElementById('propCidade')?.value.trim() || '';
   const estado = document.getElementById('propEstado')?.value.trim().toUpperCase() || '';
   const local = [cidade, estado].filter(Boolean).join(' / ') || 'Localização da propriedade';
@@ -706,11 +738,13 @@ async function loadProducerProperty() {
       if (currentPropertyPhotoUrl) {
         previewSlot.classList.add('property-photo-preview__slot--photo');
         previewSlot.innerHTML = `<img src="${escapeHtml(currentPropertyPhotoUrl)}" alt="Foto atual da propriedade" />`;
-        previewText.textContent = 'Foto atual da propriedade cadastrada. Selecione outro arquivo acima se quiser substituí-la.';
+        previewText.textContent =
+          'Foto atual da propriedade cadastrada. Selecione outro arquivo acima se quiser substituí-la.';
       } else {
         previewSlot.classList.remove('property-photo-preview__slot--photo');
         previewSlot.innerHTML = renderBrandLogoHtml('Imagem da propriedade', 'producer-card__img--default');
-        previewText.textContent = 'Usando logo padrão da Feira Virtual (envie uma foto para personalizar sua propriedade).';
+        previewText.textContent =
+          'Usando logo padrão da Feira Virtual (envie uma foto para personalizar sua propriedade).';
       }
     }
     updatePropertyPreview();

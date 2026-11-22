@@ -81,14 +81,17 @@ export async function loadClientWelcomeBanner(user) {
     const card = document.getElementById('clientWelcomeStatusCard');
     if (!card) return;
     if (!res.ok) {
-      card.innerHTML = '<span class="text-muted">Explore o catálogo abaixo para montar seu próximo pedido.</span>';
+      card.innerHTML =
+        '<span class="text-muted">Explore o catálogo abaixo para montar seu próximo pedido.</span>';
       return;
     }
     const data = await res.json();
     const list = data.results || data || [];
     const ativo = list.find(o => !['CONCLUIDO', 'CANCELADO', 'RECUSADO'].includes(o.status));
     const pendAval = list.filter(
-      o => o.status === 'CONCLUIDO' && (getPendingProductsForOrder(o).length > 0 || !o.avaliacoes_feitas?.produtor),
+      o =>
+        o.status === 'CONCLUIDO' &&
+        (getPendingProductsForOrder(o).length > 0 || !o.avaliacoes_feitas?.produtor)
     );
 
     if (ativo) {
@@ -101,9 +104,11 @@ export async function loadClientWelcomeBanner(user) {
         <p class="text-muted">
           <strong>${escapeHtml(ativo.numero_publico || `#${ativo.id}`)}</strong> • ${escapeHtml(ativo.produtor_nome)} • ${formatCurrency(ativo.total_com_frete || ativo.total)}
         </p>
-        ${pendAval.length > 0
-          ? `<p class="text-muted">Você também tem <strong>${pendAval.length}</strong> compra(s) concluída(s) aguardando avaliação.</p>`
-          : ''}
+        ${
+          pendAval.length > 0
+            ? `<p class="text-muted">Você também tem <strong>${pendAval.length}</strong> compra(s) concluída(s) aguardando avaliação.</p>`
+            : ''
+        }
         <div>
           <button type="button" class="btn btn--outline btn--sm" data-action="my-orders">Acompanhar pedido</button>
         </div>
@@ -134,7 +139,8 @@ export async function loadMyOrders(page = 1, keepModalOpen = false) {
   if (!container) return;
 
   currentOrdersPage = page;
-  container.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando seus pedidos...</p></div>';
+  container.innerHTML =
+    '<div class="catalog-loading"><div class="spinner"></div><p>Carregando seus pedidos...</p></div>';
   if (pagEl) pagEl.innerHTML = '';
 
   if (!keepModalOpen) {
@@ -163,7 +169,7 @@ export async function loadMyOrders(page = 1, keepModalOpen = false) {
     }
 
     renderOrdersList(container, orders);
-    renderPaginationBar(pagEl, data, page, (nextPage) => loadMyOrders(nextPage, true));
+    renderPaginationBar(pagEl, data, page, nextPage => loadMyOrders(nextPage, true));
   } catch (err) {
     container.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -207,32 +213,37 @@ export function switchOrdersTab(tab) {
 }
 
 function renderOrdersList(container, orders) {
-  container.innerHTML = orders.map(o => {
-    const st = statusLabels[o.status] || { label: o.status, class: '' };
-    const canCancel = ['PENDENTE', 'ACEITO'].includes(o.status);
-    const isCompleted = o.status === 'CONCLUIDO';
-    const isPix = o.forma_pagamento === 'PIX' && !['CANCELADO', 'RECUSADO'].includes(o.status);
+  container.innerHTML = orders
+    .map(o => {
+      const st = statusLabels[o.status] || { label: o.status, class: '' };
+      const canCancel = ['PENDENTE', 'ACEITO'].includes(o.status);
+      const isCompleted = o.status === 'CONCLUIDO';
+      const isPix = o.forma_pagamento === 'PIX' && !['CANCELADO', 'RECUSADO'].includes(o.status);
 
-    const pendingProducts = isCompleted ? getPendingProductsForOrder(o) : [];
-    const producerPending = isCompleted && Boolean(o.produtor) && !o.avaliacoes_feitas?.produtor;
-    const allReviewed = isCompleted && pendingProducts.length === 0 && !producerPending;
+      const pendingProducts = isCompleted ? getPendingProductsForOrder(o) : [];
+      const producerPending = isCompleted && Boolean(o.produtor) && !o.avaliacoes_feitas?.produtor;
+      const allReviewed = isCompleted && pendingProducts.length === 0 && !producerPending;
 
-    const timelineHtml = (o.historico || []).length > 0
-      ? `
+      const timelineHtml =
+        (o.historico || []).length > 0
+          ? `
         <div class="order-timeline">
-          ${o.historico.map(h => {
-            const hst = statusLabels[h.status] || { label: h.status };
-            return `<span class="timeline-step"><strong>${escapeHtml(hst.label)}</strong> <small>${formatDate(h.criado_em)}</small></span>`;
-          }).join('')}
+          ${o.historico
+            .map(h => {
+              const hst = statusLabels[h.status] || { label: h.status };
+              return `<span class="timeline-step"><strong>${escapeHtml(hst.label)}</strong> <small>${formatDate(h.criado_em)}</small></span>`;
+            })
+            .join('')}
         </div>
       `
-      : '';
+          : '';
 
-    const modalidadeHtml = o.modalidade === 'ENTREGA'
-      ? `${renderIcon('truck', 14)} Entrega`
-      : `${renderIcon('store', 14)} Retirada`;
+      const modalidadeHtml =
+        o.modalidade === 'ENTREGA'
+          ? `${renderIcon('truck', 14)} Entrega`
+          : `${renderIcon('store', 14)} Retirada`;
 
-    return `
+      return `
       <div class="order-card" data-id="${o.id}">
         <div class="order-card__header">
           <div>
@@ -250,9 +261,13 @@ function renderOrdersList(container, orders) {
           ${o.motivo_cancelamento ? `<p class="text-danger"><strong>Motivo:</strong> ${escapeHtml(o.motivo_cancelamento)}</p>` : ''}
 
           <ul class="order-items-list">
-            ${(o.itens || []).map(it => `
+            ${(o.itens || [])
+              .map(
+                it => `
               <li>${escapeHtml(it.nome_produto)} (${parseFloat(it.quantidade)} ${escapeHtml(formatUnitLabel(it.unidade_medida))}) — ${formatCurrency(it.subtotal)}</li>
-            `).join('')}
+            `
+              )
+              .join('')}
           </ul>
 
           ${timelineHtml}
@@ -263,27 +278,43 @@ function renderOrdersList(container, orders) {
             Total: <strong>${formatCurrency(o.total_com_frete || o.total)}</strong>
           </div>
           <div class="order-card__actions">
-            ${isPix ? `
+            ${
+              isPix
+                ? `
               <button type="button" class="btn btn--primary btn--sm btnShowPix" data-id="${o.id}">
                 <img src="/static/assets/pix-icon.webp" alt="" class="pix-brand-icon" width="16" height="16" />
                 <span>Ver Pix / QR Code</span>
               </button>
-            ` : ''}
-            ${canCancel ? `
+            `
+                : ''
+            }
+            ${
+              canCancel
+                ? `
               <button type="button" class="btn btn--outline btn--sm text-danger btnCancelOrder" data-id="${o.id}">
                 Cancelar
               </button>
-            ` : ''}
-            ${pendingProducts.length > 0 ? `
+            `
+                : ''
+            }
+            ${
+              pendingProducts.length > 0
+                ? `
               <button type="button" class="btn btn--outline btn--sm btnOpenReview" data-id="${o.id}" data-mode="produto">
                 ${renderIcon('star', 14)} Avaliar produto
               </button>
-            ` : ''}
-            ${producerPending ? `
+            `
+                : ''
+            }
+            ${
+              producerPending
+                ? `
               <button type="button" class="btn btn--outline btn--sm btnOpenReview" data-id="${o.id}" data-mode="produtor">
                 ${renderIcon('star', 14)} Avaliar produtor
               </button>
-            ` : ''}
+            `
+                : ''
+            }
             ${allReviewed ? '<span class="badge status--completed">Compra avaliada</span>' : ''}
             <button type="button" class="btn btn--outline btn--sm btnOpenComplaint" data-id="${o.id}">
               ${renderIcon('alert-triangle', 14)} Reclamação
@@ -292,7 +323,8 @@ function renderOrdersList(container, orders) {
         </div>
       </div>
     `;
-  }).join('');
+    })
+    .join('');
 }
 
 function renderMyReviewCard(a) {
@@ -318,7 +350,8 @@ export async function loadMyReviews(page = 1) {
   const container = document.getElementById('myReviewsList');
   const pagEl = document.getElementById('myReviewsPagination');
   if (!container) return;
-  container.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando suas avaliações...</p></div>';
+  container.innerHTML =
+    '<div class="catalog-loading"><div class="spinner"></div><p>Carregando suas avaliações...</p></div>';
   if (pagEl) pagEl.innerHTML = '';
 
   try {
@@ -346,18 +379,22 @@ export async function loadMyReviews(page = 1) {
     container.innerHTML = `
       <div class="review-history-section">
         <h4 class="review-history-section__title">Produtos avaliados (${produtos.length})</h4>
-        ${produtos.length === 0
-          ? '<p class="text-muted">Nenhum produto avaliado nesta página.</p>'
-          : produtos.map(renderMyReviewCard).join('')}
+        ${
+          produtos.length === 0
+            ? '<p class="text-muted">Nenhum produto avaliado nesta página.</p>'
+            : produtos.map(renderMyReviewCard).join('')
+        }
       </div>
       <div class="review-history-section">
         <h4 class="review-history-section__title">Produtores avaliados (${produtores.length})</h4>
-        ${produtores.length === 0
-          ? '<p class="text-muted">Nenhum produtor avaliado nesta página.</p>'
-          : produtores.map(renderMyReviewCard).join('')}
+        ${
+          produtores.length === 0
+            ? '<p class="text-muted">Nenhum produtor avaliado nesta página.</p>'
+            : produtores.map(renderMyReviewCard).join('')
+        }
       </div>
     `;
-    renderPaginationBar(pagEl, data, page, (nextPage) => loadMyReviews(nextPage));
+    renderPaginationBar(pagEl, data, page, nextPage => loadMyReviews(nextPage));
   } catch (err) {
     container.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -367,7 +404,8 @@ export async function loadMyComplaints(page = 1) {
   const container = document.getElementById('myComplaintsList');
   const pagEl = document.getElementById('myComplaintsPagination');
   if (!container) return;
-  container.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando reclamações...</p></div>';
+  container.innerHTML =
+    '<div class="catalog-loading"><div class="spinner"></div><p>Carregando reclamações...</p></div>';
   if (pagEl) pagEl.innerHTML = '';
 
   try {
@@ -380,7 +418,9 @@ export async function loadMyComplaints(page = 1) {
       return;
     }
 
-    container.innerHTML = list.map(r => `
+    container.innerHTML = list
+      .map(
+        r => `
       <div class="order-card">
         <div class="order-card__header">
           <strong>${escapeHtml(r.assunto)}</strong>
@@ -390,8 +430,10 @@ export async function loadMyComplaints(page = 1) {
         ${r.resposta_admin ? `<div class="demo-box" style="margin-top: 8px; margin-bottom: 0;"><strong>Resposta da moderação:</strong> ${escapeHtml(r.resposta_admin)}</div>` : ''}
         <span class="text-muted">${formatDate(r.criado_em)}</span>
       </div>
-    `).join('');
-    renderPaginationBar(pagEl, data, page, (nextPage) => loadMyComplaints(nextPage));
+    `
+      )
+      .join('');
+    renderPaginationBar(pagEl, data, page, nextPage => loadMyComplaints(nextPage));
   } catch (err) {
     container.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -465,7 +507,9 @@ export function openReviewModalForOrder(pedidoId, mode = 'all') {
     });
   }
   if ((mode === 'produtor' || mode === 'all') && producerPending) {
-    opts.push(`<option value="produtor:${pedido.produtor}">Produtor: ${escapeHtml(pedido.produtor_nome)}</option>`);
+    opts.push(
+      `<option value="produtor:${pedido.produtor}">Produtor: ${escapeHtml(pedido.produtor_nome)}</option>`
+    );
   }
 
   if (opts.length === 0) {
@@ -565,9 +609,7 @@ export async function submitReview(payload, editId = null) {
   const isEdit = Boolean(editId);
   const endpoint = isEdit ? `/avaliacoes/${editId}/` : '/avaliacoes/';
   const method = isEdit ? 'PATCH' : 'POST';
-  const body = isEdit
-    ? { nota: payload.nota, comentario: payload.comentario }
-    : payload;
+  const body = isEdit ? { nota: payload.nota, comentario: payload.comentario } : payload;
 
   const res = await apiFetch(endpoint, {
     method,
@@ -580,7 +622,7 @@ export async function submitReview(payload, editId = null) {
 
   showToast(
     isEdit ? 'Avaliação atualizada com sucesso!' : 'Avaliação enviada com sucesso! Obrigado pelo feedback.',
-    'success',
+    'success'
   );
   closeModal('reviewModalOverlay');
 
@@ -665,7 +707,9 @@ export async function loadAddresses() {
       return;
     }
 
-    list.innerHTML = addrs.map(a => `
+    list.innerHTML = addrs
+      .map(
+        a => `
       <div class="address-item">
         <div>
           <strong>${escapeHtml(a.rotulo)}</strong>
@@ -677,7 +721,9 @@ export async function loadAddresses() {
           <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAddress" data-id="${a.id}">${renderIcon('trash-2', 14)} Excluir</button>
         </div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
   } catch (err) {
     list.innerHTML = `
       <div class="auth-error">

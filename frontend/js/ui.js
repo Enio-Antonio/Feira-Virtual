@@ -50,7 +50,11 @@ export function renderStars(nota, size = 14) {
   const n = Math.max(0, Math.min(5, Math.round(Number(nota) || 0)));
   let html = '<span class="stars-row" aria-hidden="true">';
   for (let i = 1; i <= 5; i += 1) {
-    html += renderIcon(i <= n ? 'star-filled' : 'star', size, i <= n ? 'icon--star-filled' : 'icon--star-empty');
+    html += renderIcon(
+      i <= n ? 'star-filled' : 'star',
+      size,
+      i <= n ? 'icon--star-filled' : 'icon--star-empty'
+    );
   }
   html += '</span>';
   return html;
@@ -157,7 +161,7 @@ export function closeModal(overlayId) {
   }
 }
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', e => {
   if (e.target.classList?.contains('modal-overlay') && e.target.id) {
     closeModal(e.target.id);
     return;
@@ -166,7 +170,9 @@ document.addEventListener('click', (e) => {
   const toggleBtn = e.target.closest?.('.password-toggle');
   if (toggleBtn) {
     const targetId = toggleBtn.dataset?.target;
-    const input = targetId ? document.getElementById(targetId) : toggleBtn.parentElement?.querySelector('input');
+    const input = targetId
+      ? document.getElementById(targetId)
+      : toggleBtn.parentElement?.querySelector('input');
     if (!input) return;
     const isPassword = input.type === 'password';
     input.type = isPassword ? 'text' : 'password';
@@ -176,7 +182,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (modalStack.length > 0) {
       e.preventDefault();
@@ -209,9 +215,12 @@ document.addEventListener('keydown', (e) => {
   }
 
   if (e.key === 'Tab') {
-    const activeContainer = modalStack.length > 0
-      ? modalStack[modalStack.length - 1].modal
-      : (document.getElementById('cartDrawer')?.classList.contains('open') ? document.getElementById('cartDrawer') : null);
+    const activeContainer =
+      modalStack.length > 0
+        ? modalStack[modalStack.length - 1].modal
+        : document.getElementById('cartDrawer')?.classList.contains('open')
+          ? document.getElementById('cartDrawer')
+          : null;
     if (!activeContainer) return;
     const focusable = getFocusableElements(activeContainer);
     if (focusable.length === 0) return;
@@ -305,7 +314,10 @@ export function parseCurrencyInput(str) {
 
 // ── Skeletons de Carregamento ─────────────────────────────────────────────
 export function renderProductSkeletons(container, count = 6) {
-  container.innerHTML = Array(count).fill(0).map(() => `
+  container.innerHTML = Array(count)
+    .fill(0)
+    .map(
+      () => `
     <article class="product-card product-card--skeleton" aria-hidden="true">
       <div class="product-card__thumb skeleton-box"></div>
       <div class="skeleton-line" style="width: 40%; height: 12px; margin-bottom: 10px;"></div>
@@ -313,7 +325,9 @@ export function renderProductSkeletons(container, count = 6) {
       <div class="skeleton-line" style="width: 65%; height: 14px; margin-bottom: 16px;"></div>
       <div class="skeleton-line" style="width: 55%; height: 28px; margin-top: auto;"></div>
     </article>
-  `).join('');
+  `
+    )
+    .join('');
 }
 
 // ── Gerador Visual Determinístico de QR Code SVG (Mock Pix, 100% CSP-safe) ─
@@ -348,9 +362,9 @@ export function generateSimpleQrSvg(text) {
       if (isFinder(r, c)) {
         dark = finderOn(r, c);
       } else {
-        hash ^= (r * 31 + c * 17);
+        hash ^= r * 31 + c * 17;
         hash = Math.imul(hash, 16777619);
-        dark = (Math.abs(hash) % 10) < 5;
+        dark = Math.abs(hash) % 10 < 5;
       }
       if (dark) {
         rects += `<rect x="${pad + c * cell}" y="${pad + r * cell}" width="${cell}" height="${cell}" fill="#1C1E18"/>`;
@@ -372,7 +386,7 @@ const UNIT_DISPLAY_LABELS = {
   CAIXA: 'caixa',
   SACO: 'saco',
   MACO: 'maço',
-  'MAÇO': 'maço',
+  MAÇO: 'maço',
 };
 
 export function formatUnitLabel(unidade) {

@@ -2,7 +2,14 @@
  * Gerenciamento de Autenticação, Perfis de Usuário (Multi-perfil) e LGPD.
  */
 import { apiFetch, parseError, tokens } from './api.js?v=20261121a';
-import { clearFormError, closeModal, escapeHtml, openModal, renderIcon, showToast } from './ui.js?v=20261121a';
+import {
+  clearFormError,
+  closeModal,
+  escapeHtml,
+  openModal,
+  renderIcon,
+  showToast,
+} from './ui.js?v=20261121a';
 
 export const authState = {
   user: null,
@@ -70,9 +77,7 @@ export async function register(payload, role = 'cliente') {
   }
 
   const msgExtra =
-    role === 'produtor'
-      ? ' Seu perfil aguarda aprovação do administrador para publicar produtos.'
-      : '';
+    role === 'produtor' ? ' Seu perfil aguarda aprovação do administrador para publicar produtos.' : '';
   showToast(`Cadastro realizado com sucesso!${msgExtra} Faça login para continuar.`, 'success');
   return true;
 }
@@ -202,7 +207,10 @@ export function renderRoleNavigation(user) {
       { tab: 'avaliacoes', label: 'Avaliações' },
     ];
     const html = items
-      .map(it => `<li><button type="button" class="navbar__link navbar__link--btn" data-producer-nav="${it.tab}">${it.label}</button></li>`)
+      .map(
+        it =>
+          `<li><button type="button" class="navbar__link navbar__link--btn" data-producer-nav="${it.tab}">${it.label}</button></li>`
+      )
       .join('');
     if (desktopNav) desktopNav.innerHTML = html;
     if (mobileNav) mobileNav.innerHTML = html;
@@ -226,7 +234,10 @@ export function renderRoleNavigation(user) {
       { tab: 'ganhos', label: 'Ganhos' },
     ];
     const html = items
-      .map(it => `<li><button type="button" class="navbar__link navbar__link--btn" data-delivery-nav="${it.tab}">${it.label}</button></li>`)
+      .map(
+        it =>
+          `<li><button type="button" class="navbar__link navbar__link--btn" data-delivery-nav="${it.tab}">${it.label}</button></li>`
+      )
       .join('');
     if (desktopNav) desktopNav.innerHTML = html;
     if (mobileNav) mobileNav.innerHTML = html;
@@ -251,7 +262,10 @@ export function renderRoleNavigation(user) {
       { tab: 'reclamacoes', label: 'Reclamações' },
     ];
     const html = items
-      .map(it => `<li><button type="button" class="navbar__link navbar__link--btn" data-admin-nav="${it.tab}">${it.label}</button></li>`)
+      .map(
+        it =>
+          `<li><button type="button" class="navbar__link navbar__link--btn" data-admin-nav="${it.tab}">${it.label}</button></li>`
+      )
       .join('');
     if (desktopNav) desktopNav.innerHTML = html;
     if (mobileNav) mobileNav.innerHTML = html;

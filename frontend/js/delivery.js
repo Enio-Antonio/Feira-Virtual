@@ -141,15 +141,19 @@ export function switchDeliveryTab(tab) {
       tabBtn.classList.toggle('active', k === tab);
       tabBtn.setAttribute('aria-selected', String(k === tab));
     }
-    document.querySelectorAll(`[data-delivery-nav="${k}"]`).forEach(el => el.classList.toggle('active', k === tab));
+    document
+      .querySelectorAll(`[data-delivery-nav="${k}"]`)
+      .forEach(el => el.classList.toggle('active', k === tab));
     const el = document.getElementById(id);
     if (el) el.style.display = k === tab ? 'block' : 'none';
   });
 
   if (tab === 'visao_geral') loadDeliveryOverview();
-  else if (tab === 'disponiveis') loadDeliveries('disponiveis', 'deliveryAvailableList', 'deliveryAvailablePagination', 1);
+  else if (tab === 'disponiveis')
+    loadDeliveries('disponiveis', 'deliveryAvailableList', 'deliveryAvailablePagination', 1);
   else if (tab === 'minhas') loadDeliveries('minhas', 'deliveryMineList', 'deliveryMinePagination', 1);
-  else if (tab === 'historico') loadDeliveries('historico', 'deliveryHistoryList', 'deliveryHistoryPagination', 1);
+  else if (tab === 'historico')
+    loadDeliveries('historico', 'deliveryHistoryList', 'deliveryHistoryPagination', 1);
   else if (tab === 'ganhos') loadDeliveryEarnings(1);
   else if (tab === 'veiculo') loadDeliveryVehicle();
 }
@@ -169,7 +173,8 @@ export function refreshCurrentDeliveryTab() {
 async function loadDeliveryOverview() {
   const el = document.getElementById('deliveryOverviewContent');
   if (!el) return;
-  el.innerHTML = '<div class="catalog-loading"><div class="spinner"></div><p>Carregando resumo operacional...</p></div>';
+  el.innerHTML =
+    '<div class="catalog-loading"><div class="spinner"></div><p>Carregando resumo operacional...</p></div>';
 
   try {
     const [resResumo, resDisp] = await Promise.all([
@@ -217,9 +222,11 @@ async function loadDeliveryOverview() {
 
       <div style="margin-top: var(--space-6);">
         <h2 class="workspace-card__title" style="margin-bottom: var(--space-4);">Oportunidades de entrega disponíveis agora</h2>
-        ${dispList.length === 0
-          ? '<div class="workspace-card empty-state"><p>Nenhuma entrega disponível no momento.</p></div>'
-          : `<div class="orders-list">${dispList.map(o => renderDeliveryCard(o, 'disponiveis')).join('')}</div>`}
+        ${
+          dispList.length === 0
+            ? '<div class="workspace-card empty-state"><p>Nenhuma entrega disponível no momento.</p></div>'
+            : `<div class="orders-list">${dispList.map(o => renderDeliveryCard(o, 'disponiveis')).join('')}</div>`
+        }
       </div>
     `;
   } catch (err) {
@@ -257,7 +264,9 @@ async function loadDeliveries(escopo, containerId, paginationId, page = 1) {
     }
 
     el.innerHTML = list.map(o => renderDeliveryCard(o, escopo)).join('');
-    renderPaginationBar(pagEl, data, page, (nextPage) => loadDeliveries(escopo, containerId, paginationId, nextPage));
+    renderPaginationBar(pagEl, data, page, nextPage =>
+      loadDeliveries(escopo, containerId, paginationId, nextPage)
+    );
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -298,11 +307,14 @@ async function loadDeliveryEarnings(page = 1) {
 
       <div class="workspace-card">
         <h2 class="workspace-card__title" style="margin-bottom: var(--space-3);">Extrato de Fretes Concluídos</h2>
-        ${concluidas.length === 0
-          ? '<div class="empty-state"><p>Nenhuma entrega concluída registrada nesta página.</p></div>'
-          : `
+        ${
+          concluidas.length === 0
+            ? '<div class="empty-state"><p>Nenhuma entrega concluída registrada nesta página.</p></div>'
+            : `
             <div class="panel-list">
-              ${concluidas.map(o => `
+              ${concluidas
+                .map(
+                  o => `
                 <div class="panel-list-item">
                   <div class="panel-list-item__info">
                     <strong>${escapeHtml(o.numero_publico || `#${o.id}`)} • ${escapeHtml(o.produtor_nome)}</strong>
@@ -313,12 +325,15 @@ async function loadDeliveryEarnings(page = 1) {
                     <strong>${formatCurrency(o.taxa_entrega)}</strong>
                   </div>
                 </div>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
-          `}
+          `
+        }
       </div>
     `;
-    renderPaginationBar(pagEl, histData, page, (nextPage) => loadDeliveryEarnings(nextPage));
+    renderPaginationBar(pagEl, histData, page, nextPage => loadDeliveryEarnings(nextPage));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -353,7 +368,10 @@ export async function loadDeliveryVehicle() {
     document.getElementById('delivPlaca').value = d.placa || '';
     document.getElementById('delivArea').value = d.area_atuacao || '';
   } catch (err) {
-    showFormError('deliveryVehicleError', err.message || 'Erro ao carregar dados do veículo. Tente atualizar o painel.');
+    showFormError(
+      'deliveryVehicleError',
+      err.message || 'Erro ao carregar dados do veículo. Tente atualizar o painel.'
+    );
   }
 }
 

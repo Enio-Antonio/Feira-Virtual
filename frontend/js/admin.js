@@ -87,7 +87,9 @@ export function switchAdminTab(tab) {
       btn.classList.toggle('active', t === tab);
       btn.setAttribute('aria-selected', String(t === tab));
     }
-    document.querySelectorAll(`[data-admin-nav="${t}"]`).forEach(el => el.classList.toggle('active', t === tab));
+    document
+      .querySelectorAll(`[data-admin-nav="${t}"]`)
+      .forEach(el => el.classList.toggle('active', t === tab));
     const panel = document.getElementById(`adminTab${cap}`);
     if (panel) panel.style.display = t === tab ? 'block' : 'none';
   });
@@ -118,14 +120,19 @@ const PRODUCER_STATUS_LABELS = {
 
 function renderStatsTable(title, entries, labelMap) {
   const keys = Object.keys(entries || {});
-  const rows = keys.length > 0
-    ? keys.map(k => `
+  const rows =
+    keys.length > 0
+      ? keys
+          .map(
+            k => `
       <tr>
         <td>${escapeHtml(labelMap[k]?.label || labelMap[k] || k)}</td>
         <td class="admin-stat-num"><strong>${Number(entries[k]) || 0}</strong></td>
       </tr>
-    `).join('')
-    : '<tr><td colspan="2" class="text-muted">Sem registros</td></tr>';
+    `
+          )
+          .join('')
+      : '<tr><td colspan="2" class="text-muted">Sem registros</td></tr>';
   return `
     <div class="admin-stat-card">
       <h4>${escapeHtml(title)}</h4>
@@ -207,17 +214,15 @@ async function populateAdminProductFilterOptions() {
   const editCat = document.getElementById('adminEditProdCategoria');
 
   try {
-    const [resCat, produtores] = await Promise.all([
-      apiFetch('/categorias/'),
-      fetchAllProducersForFilter(),
-    ]);
+    const [resCat, produtores] = await Promise.all([apiFetch('/categorias/'), fetchAllProducersForFilter()]);
     if (resCat.ok) {
       const dataCat = await resCat.json();
       adminCategoriesCache = dataCat.results || dataCat || [];
       if (catFilter) {
         const cur = catFilter.value;
-        catFilter.innerHTML = '<option value="">Todas as categorias</option>'
-          + adminCategoriesCache.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+        catFilter.innerHTML =
+          '<option value="">Todas as categorias</option>' +
+          adminCategoriesCache.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
         catFilter.value = cur;
       }
       if (editCat) {
@@ -231,8 +236,11 @@ async function populateAdminProductFilterOptions() {
     adminProducersFilterCache = produtores;
     if (prodFilter) {
       const cur = prodFilter.value;
-      prodFilter.innerHTML = '<option value="">Todos os produtores</option>'
-        + adminProducersFilterCache.map(p => `<option value="${p.id}">${escapeHtml(p.nome_propriedade)}</option>`).join('');
+      prodFilter.innerHTML =
+        '<option value="">Todos os produtores</option>' +
+        adminProducersFilterCache
+          .map(p => `<option value="${p.id}">${escapeHtml(p.nome_propriedade)}</option>`)
+          .join('');
       prodFilter.value = cur;
     }
   } catch (_) {}
@@ -266,19 +274,21 @@ export async function loadAdminProducts(page = 1) {
     adminProductsCache = list;
 
     if (list.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>Nenhum produto encontrado com os filtros aplicados.</p></div>';
+      el.innerHTML =
+        '<div class="empty-state"><p>Nenhum produto encontrado com os filtros aplicados.</p></div>';
       return;
     }
 
-    el.innerHTML = list.map(p => {
-      let statusBadge = `<span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Visível' : 'Oculto'}</span>`;
-      if (p.excluido_em) {
-        statusBadge = '<span class="badge status--cancelled">Desativado (histórico)</span>';
-      } else if (p.oculto_moderacao) {
-        statusBadge = '<span class="badge status--cancelled">Oculto pela moderação</span>';
-      }
-      const isHidden = !p.ativo || Boolean(p.oculto_moderacao);
-      return `
+    el.innerHTML = list
+      .map(p => {
+        let statusBadge = `<span class="badge ${p.ativo ? 'badge--success' : 'badge--outline'}">${p.ativo ? 'Visível' : 'Oculto'}</span>`;
+        if (p.excluido_em) {
+          statusBadge = '<span class="badge status--cancelled">Desativado (histórico)</span>';
+        } else if (p.oculto_moderacao) {
+          statusBadge = '<span class="badge status--cancelled">Oculto pela moderação</span>';
+        }
+        const isHidden = !p.ativo || Boolean(p.oculto_moderacao);
+        return `
         <div class="panel-list-item">
           <div class="panel-list-item__info">
             <strong>${escapeHtml(p.nome)}</strong>
@@ -290,17 +300,20 @@ export async function loadAdminProducts(page = 1) {
           </div>
           <div class="panel-list-item__actions">
             <button type="button" class="btn btn--outline btn--sm btnEditAdminProduct" data-id="${p.id}">Editar</button>
-            ${!isHidden
-              ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="produtos" data-tab="produtos" data-id="${p.id}" data-action="ocultar">Ocultar</button>`
-              : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtos" data-tab="produtos" data-id="${p.id}" data-action="reexibir">Reexibir</button>`}
+            ${
+              !isHidden
+                ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="produtos" data-tab="produtos" data-id="${p.id}" data-action="ocultar">Ocultar</button>`
+                : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtos" data-tab="produtos" data-id="${p.id}" data-action="reexibir">Reexibir</button>`
+            }
             <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
               data-resource="produtos" data-tab="produtos" data-kind="produto"
               data-id="${p.id}" data-label="${escapeHtml(p.nome)}">Excluir</button>
           </div>
         </div>
       `;
-    }).join('');
-    renderPaginationBar(pagEl, data, page, (p) => loadAdminProducts(p));
+      })
+      .join('');
+    renderPaginationBar(pagEl, data, page, p => loadAdminProducts(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -390,9 +403,12 @@ export async function loadAdminProducers(page = 1) {
       return;
     }
 
-    el.innerHTML = list.map(p => {
-      const deactivatedBadge = p.excluido_em ? ' <span class="badge status--cancelled">Desativado</span>' : '';
-      return `
+    el.innerHTML = list
+      .map(p => {
+        const deactivatedBadge = p.excluido_em
+          ? ' <span class="badge status--cancelled">Desativado</span>'
+          : '';
+        return `
         <div class="panel-list-item">
           <div class="panel-list-item__info">
             <strong>${escapeHtml(p.nome_propriedade)}</strong>
@@ -407,20 +423,25 @@ export async function loadAdminProducers(page = 1) {
           </div>
           <div class="panel-list-item__actions">
             <button type="button" class="btn btn--outline btn--sm btnAdminProducerDetail" data-id="${p.id}">Detalhes</button>
-            ${p.status !== 'APROVADO'
-              ? `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtores" data-tab="produtores" data-id="${p.id}" data-action="aprovar">Aprovar</button>`
-              : ''}
-            ${p.status !== 'SUSPENSO'
-              ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="produtores" data-tab="produtores" data-id="${p.id}" data-action="suspender">Suspender</button>`
-              : ''}
+            ${
+              p.status !== 'APROVADO'
+                ? `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="produtores" data-tab="produtores" data-id="${p.id}" data-action="aprovar">Aprovar</button>`
+                : ''
+            }
+            ${
+              p.status !== 'SUSPENSO'
+                ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="produtores" data-tab="produtores" data-id="${p.id}" data-action="suspender">Suspender</button>`
+                : ''
+            }
             <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
               data-resource="produtores" data-tab="produtores" data-kind="produtor"
               data-id="${p.id}" data-label="${escapeHtml(p.nome_propriedade)}">Excluir</button>
           </div>
         </div>
       `;
-    }).join('');
-    renderPaginationBar(pagEl, data, page, (p) => loadAdminProducers(p));
+      })
+      .join('');
+    renderPaginationBar(pagEl, data, page, p => loadAdminProducers(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -451,19 +472,25 @@ export async function openAdminProducerDetails(producerId) {
       ${p.descricao ? `<p class="detail-desc">${escapeHtml(p.descricao)}</p>` : ''}
       <div class="admin-detail-section">
         <h4>Produtos vinculados (${produtos.length})</h4>
-        ${produtos.length === 0
-          ? '<p class="text-muted">Nenhum produto cadastrado por este produtor.</p>'
-          : `<div class="panel-list">${produtos.map(it => `
+        ${
+          produtos.length === 0
+            ? '<p class="text-muted">Nenhum produto cadastrado por este produtor.</p>'
+            : `<div class="panel-list">${produtos
+                .map(
+                  it => `
             <div class="panel-list-item">
               <div class="panel-list-item__info">
                 <strong>${escapeHtml(it.nome)}</strong>
                 <span>${escapeHtml(it.categoria_nome || '')} • ${formatCurrency(it.preco)} • Estoque: ${parseFloat(it.estoque)}</span>
               </div>
-              <span class="badge ${it.excluido_em ? 'status--cancelled' : (it.ativo ? 'badge--success' : 'badge--outline')}">
-                ${it.excluido_em ? 'Desativado' : (it.ativo ? 'Ativo' : 'Oculto')}
+              <span class="badge ${it.excluido_em ? 'status--cancelled' : it.ativo ? 'badge--success' : 'badge--outline'}">
+                ${it.excluido_em ? 'Desativado' : it.ativo ? 'Ativo' : 'Oculto'}
               </span>
             </div>
-          `).join('')}</div>`}
+          `
+                )
+                .join('')}</div>`
+        }
       </div>
     `;
   } catch (err) {
@@ -496,12 +523,13 @@ export async function loadAdminClients(page = 1) {
       return;
     }
 
-    el.innerHTML = list.map(u => {
-      const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username;
-      const statusBadge = u.excluido_em
-        ? '<span class="badge status--cancelled">Desativado</span>'
-        : `<span class="badge ${u.is_active ? 'badge--success' : 'badge--outline'}">${u.is_active ? 'Ativo' : 'Bloqueado'}</span>`;
-      return `
+    el.innerHTML = list
+      .map(u => {
+        const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username;
+        const statusBadge = u.excluido_em
+          ? '<span class="badge status--cancelled">Desativado</span>'
+          : `<span class="badge ${u.is_active ? 'badge--success' : 'badge--outline'}">${u.is_active ? 'Ativo' : 'Bloqueado'}</span>`;
+        return `
         <div class="panel-list-item">
           <div class="panel-list-item__info">
             <strong>${escapeHtml(fullName)} <span class="text-muted">(@${escapeHtml(u.username)})</span></strong>
@@ -512,17 +540,20 @@ export async function loadAdminClients(page = 1) {
           </div>
           <div class="panel-list-item__actions">
             <button type="button" class="btn btn--outline btn--sm btnAdminClientDetail" data-id="${u.id}">Detalhes</button>
-            ${u.is_active
-              ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="usuarios" data-tab="clientes" data-id="${u.id}" data-action="bloquear">Bloquear</button>`
-              : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="usuarios" data-tab="clientes" data-id="${u.id}" data-action="reativar">Reativar</button>`}
+            ${
+              u.is_active
+                ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="usuarios" data-tab="clientes" data-id="${u.id}" data-action="bloquear">Bloquear</button>`
+                : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="usuarios" data-tab="clientes" data-id="${u.id}" data-action="reativar">Reativar</button>`
+            }
             <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
               data-resource="usuarios" data-tab="clientes" data-kind="cliente"
               data-id="${u.id}" data-label="${escapeHtml(fullName)}">Excluir</button>
           </div>
         </div>
       `;
-    }).join('');
-    renderPaginationBar(pagEl, data, page, (p) => loadAdminClients(p));
+      })
+      .join('');
+    renderPaginationBar(pagEl, data, page, p => loadAdminClients(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -549,16 +580,18 @@ export async function openAdminClientDetails(userId) {
         <div class="admin-detail-kv"><span>Usuário</span><strong>@${escapeHtml(u.username)} (${escapeHtml(u.tipo)})</strong></div>
         <div class="admin-detail-kv"><span>E-mail</span><strong>${escapeHtml(u.email || '-')}</strong></div>
         <div class="admin-detail-kv"><span>Telefone</span><strong>${escapeHtml(u.telefone || 'Não informado')}</strong></div>
-        <div class="admin-detail-kv"><span>Status</span><strong>${u.excluido_em ? 'Desativado (histórico)' : (u.is_active ? 'Ativo' : 'Bloqueado')}</strong></div>
+        <div class="admin-detail-kv"><span>Status</span><strong>${u.excluido_em ? 'Desativado (histórico)' : u.is_active ? 'Ativo' : 'Bloqueado'}</strong></div>
       </div>
 
       <div class="admin-detail-section">
         <h4>Pedidos realizados (${pedidos.length})</h4>
-        ${pedidos.length === 0
-          ? '<p class="text-muted">Nenhum pedido realizado por este cliente.</p>'
-          : `<div class="panel-list">${pedidos.map(p => {
-            const st = statusLabels[p.status] || { label: p.status, class: '' };
-            return `
+        ${
+          pedidos.length === 0
+            ? '<p class="text-muted">Nenhum pedido realizado por este cliente.</p>'
+            : `<div class="panel-list">${pedidos
+                .map(p => {
+                  const st = statusLabels[p.status] || { label: p.status, class: '' };
+                  return `
               <div class="panel-list-item">
                 <div class="panel-list-item__info">
                   <strong>${escapeHtml(p.numero_publico || `#${p.id}`)} • ${formatCurrency(p.total_com_frete)}</strong>
@@ -567,14 +600,19 @@ export async function openAdminClientDetails(userId) {
                 <span class="badge ${st.class}">${escapeHtml(st.label)}</span>
               </div>
             `;
-          }).join('')}</div>`}
+                })
+                .join('')}</div>`
+        }
       </div>
 
       <div class="admin-detail-section">
         <h4>Avaliações realizadas (${avaliacoes.length})</h4>
-        ${avaliacoes.length === 0
-          ? '<p class="text-muted">Nenhuma avaliação registrada por este cliente.</p>'
-          : avaliacoes.map(a => `
+        ${
+          avaliacoes.length === 0
+            ? '<p class="text-muted">Nenhuma avaliação registrada por este cliente.</p>'
+            : avaliacoes
+                .map(
+                  a => `
             <div class="review-card">
               <div class="review-card__top">
                 <strong>${escapeHtml(a.produto_nome || a.produtor_nome || 'Avaliação')}</strong>
@@ -583,7 +621,10 @@ export async function openAdminClientDetails(userId) {
               ${a.comentario ? `<p>${escapeHtml(a.comentario)}</p>` : ''}
               <span class="text-muted">${formatDate(a.criado_em)}${a.pedido_numero ? ` • Pedido ${escapeHtml(a.pedido_numero)}` : ''}</span>
             </div>
-          `).join('')}
+          `
+                )
+                .join('')
+        }
       </div>
     `;
   } catch (err) {
@@ -608,7 +649,9 @@ export async function loadAdminCategories() {
       return;
     }
 
-    el.innerHTML = adminCategoriesCache.map(c => `
+    el.innerHTML = adminCategoriesCache
+      .map(
+        c => `
       <div class="panel-list-item">
         <div class="panel-list-item__info">
           <strong>${escapeHtml(c.nome)}</strong>
@@ -620,7 +663,9 @@ export async function loadAdminCategories() {
           <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminCat" data-id="${c.id}" data-label="${escapeHtml(c.nome)}">Excluir</button>
         </div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -708,13 +753,15 @@ export async function loadAdminOrders(page = 1) {
     const list = data.results || data || [];
 
     if (list.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>Nenhum pedido encontrado para o filtro selecionado.</p></div>';
+      el.innerHTML =
+        '<div class="empty-state"><p>Nenhum pedido encontrado para o filtro selecionado.</p></div>';
       return;
     }
 
-    el.innerHTML = list.map(o => {
-      const st = statusLabels[o.status] || { label: o.status, class: '' };
-      return `
+    el.innerHTML = list
+      .map(o => {
+        const st = statusLabels[o.status] || { label: o.status, class: '' };
+        return `
         <div class="panel-list-item">
           <div class="panel-list-item__info">
             <strong>${escapeHtml(o.numero_publico || `#${o.id}`)} • ${formatCurrency(o.total_com_frete || o.total)}</strong>
@@ -726,8 +773,9 @@ export async function loadAdminOrders(page = 1) {
           </div>
         </div>
       `;
-    }).join('');
-    renderPaginationBar(pagEl, data, page, (p) => loadAdminOrders(p));
+      })
+      .join('');
+    renderPaginationBar(pagEl, data, page, p => loadAdminOrders(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -759,9 +807,12 @@ export async function loadAdminReviews(pageAv = 1, pageCli = 1) {
     el.innerHTML = `
       <div class="review-history-section">
         <h4 class="review-history-section__title">Avaliações feitas por Clientes (${dataAv.count ?? listAv.length})</h4>
-        ${listAv.length === 0
-          ? '<p class="text-muted">Nenhuma avaliação de produto ou produtor registrada ainda.</p>'
-          : listAv.map(a => `
+        ${
+          listAv.length === 0
+            ? '<p class="text-muted">Nenhuma avaliação de produto ou produtor registrada ainda.</p>'
+            : listAv
+                .map(
+                  a => `
             <div class="review-card">
               <div class="review-card__top">
                 <strong>
@@ -777,18 +828,24 @@ export async function loadAdminReviews(pageAv = 1, pageCli = 1) {
                 • ${formatDate(a.criado_em)}
               </span>
             </div>
-          `).join('')}
+          `
+                )
+                .join('')
+        }
       </div>
     `;
-    renderPaginationBar(pagAv, dataAv, pageAv, (p) => loadAdminReviews(p, pageCli));
+    renderPaginationBar(pagAv, dataAv, pageAv, p => loadAdminReviews(p, pageCli));
 
     if (elCli) {
       elCli.innerHTML = `
         <div class="review-history-section">
           <h4 class="review-history-section__title">Avaliações de Clientes feitas por Produtores (${dataCli.count ?? listCli.length})</h4>
-          ${listCli.length === 0
-            ? '<p class="text-muted">Nenhuma avaliação recíproca registrada até o momento.</p>'
-            : listCli.map(a => `
+          ${
+            listCli.length === 0
+              ? '<p class="text-muted">Nenhuma avaliação recíproca registrada até o momento.</p>'
+              : listCli
+                  .map(
+                    a => `
               <div class="review-card">
                 <div class="review-card__top">
                   <strong>Cliente: ${escapeHtml(a.cliente_nome || '-')}</strong>
@@ -801,10 +858,13 @@ export async function loadAdminReviews(pageAv = 1, pageCli = 1) {
                   • ${formatDate(a.criado_em)}
                 </span>
               </div>
-            `).join('')}
+            `
+                  )
+                  .join('')
+          }
         </div>
       `;
-      renderPaginationBar(pagCli, dataCli, pageCli, (p) => loadAdminReviews(pageAv, p));
+      renderPaginationBar(pagCli, dataCli, pageCli, p => loadAdminReviews(pageAv, p));
     }
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
@@ -828,7 +888,9 @@ export async function loadAdminComplaints(page = 1) {
       return;
     }
 
-    el.innerHTML = list.map(r => `
+    el.innerHTML = list
+      .map(
+        r => `
       <div class="order-card" data-complaint-id="${r.id}">
         <div class="order-card__header">
           <strong>#${r.id} — ${escapeHtml(r.assunto)}</strong>
@@ -847,8 +909,10 @@ export async function loadAdminComplaints(page = 1) {
         </div>
         <button type="button" class="btn btn--primary btn--sm btnSaveComplaint" data-id="${r.id}">Salvar Moderação</button>
       </div>
-    `).join('');
-    renderPaginationBar(pagEl, data, page, (p) => loadAdminComplaints(p));
+    `
+      )
+      .join('');
+    renderPaginationBar(pagEl, data, page, p => loadAdminComplaints(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -879,12 +943,13 @@ export async function loadAdminUsers(page = 1) {
     }
 
     const currentUserId = Number(authState.user?.id || 0);
-    el.innerHTML = list.map(u => {
-      const isSelf = currentUserId && Number(u.id) === currentUserId;
-      const statusBadge = u.excluido_em
-        ? '<span class="badge status--cancelled">Desativado</span>'
-        : `<span class="badge ${u.is_active ? 'badge--success' : 'badge--outline'}">${u.is_active ? 'Ativo' : 'Bloqueado'}</span>`;
-      return `
+    el.innerHTML = list
+      .map(u => {
+        const isSelf = currentUserId && Number(u.id) === currentUserId;
+        const statusBadge = u.excluido_em
+          ? '<span class="badge status--cancelled">Desativado</span>'
+          : `<span class="badge ${u.is_active ? 'badge--success' : 'badge--outline'}">${u.is_active ? 'Ativo' : 'Bloqueado'}</span>`;
+        return `
         <div class="panel-list-item">
           <div class="panel-list-item__info">
             <strong>${escapeHtml(u.username)} <span class="badge badge--outline">${escapeHtml(u.tipo)}</span></strong>
@@ -892,20 +957,28 @@ export async function loadAdminUsers(page = 1) {
           </div>
           <div class="panel-list-item__actions">
             <button type="button" class="btn btn--outline btn--sm btnAdminClientDetail" data-id="${u.id}">Detalhes</button>
-            ${!isSelf ? (u.is_active
-              ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="usuarios" data-tab="usuarios" data-id="${u.id}" data-action="bloquear">Bloquear</button>`
-              : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="usuarios" data-tab="usuarios" data-id="${u.id}" data-action="reativar">Reativar</button>`)
-              : '<span class="text-muted">Sua conta</span>'}
-            ${!isSelf ? `
+            ${
+              !isSelf
+                ? u.is_active
+                  ? `<button type="button" class="btn btn--outline btn--sm btnAdminAction" data-resource="usuarios" data-tab="usuarios" data-id="${u.id}" data-action="bloquear">Bloquear</button>`
+                  : `<button type="button" class="btn btn--primary btn--sm btnAdminAction" data-resource="usuarios" data-tab="usuarios" data-id="${u.id}" data-action="reativar">Reativar</button>`
+                : '<span class="text-muted">Sua conta</span>'
+            }
+            ${
+              !isSelf
+                ? `
               <button type="button" class="btn btn--outline btn--sm text-danger btnDeleteAdminEntity"
                 data-resource="usuarios" data-tab="usuarios" data-kind="usuário"
                 data-id="${u.id}" data-label="${escapeHtml(u.username)}">Excluir</button>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
         </div>
       `;
-    }).join('');
-    renderPaginationBar(pagEl, data, page, (p) => loadAdminUsers(p));
+      })
+      .join('');
+    renderPaginationBar(pagEl, data, page, p => loadAdminUsers(p));
   } catch (err) {
     el.innerHTML = `<div class="auth-error">${escapeHtml(err.message)}</div>`;
   }
@@ -940,11 +1013,13 @@ export function openAdminDeleteConfirm(resource, id, label, tab = null, kind = '
 
   const article = kind === 'categoria' ? 'a' : 'o';
   if (titleEl) titleEl.textContent = `Confirmar exclusão de ${kind}`;
-  if (msgEl) msgEl.textContent = `Tem certeza de que deseja excluir ${article} ${kind} "${pendingDeleteAction.label}"?`;
+  if (msgEl)
+    msgEl.textContent = `Tem certeza de que deseja excluir ${article} ${kind} "${pendingDeleteAction.label}"?`;
   if (hintEl) {
-    hintEl.textContent = resource === 'categorias'
-      ? 'Categorias com produtos vinculados não podem ser excluídas fisicamente; nesse caso, desative a categoria.'
-      : 'Se existirem pedidos, avaliações ou vínculos históricos, o registro será desativado logicamente (ocultado da plataforma) preservando todo o histórico.';
+    hintEl.textContent =
+      resource === 'categorias'
+        ? 'Categorias com produtos vinculados não podem ser excluídas fisicamente; nesse caso, desative a categoria.'
+        : 'Se existirem pedidos, avaliações ou vínculos históricos, o registro será desativado logicamente (ocultado da plataforma) preservando todo o histórico.';
   }
 
   openModal('adminConfirmModalOverlay');

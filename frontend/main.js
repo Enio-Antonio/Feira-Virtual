@@ -124,7 +124,9 @@ function showRecoverRequestMode() {
   const sentBox = document.getElementById('recoverSentState');
   const resetForm = document.getElementById('resetConfirmForm');
   if (heading) heading.textContent = 'Recuperação de Senha';
-  if (subtitle) subtitle.textContent = 'Informe seu e-mail cadastrado e enviaremos um link seguro para você cadastrar uma nova senha.';
+  if (subtitle)
+    subtitle.textContent =
+      'Informe seu e-mail cadastrado e enviaremos um link seguro para você cadastrar uma nova senha.';
   if (recForm) recForm.style.display = 'block';
   if (sentBox) sentBox.style.display = 'none';
   if (resetForm) resetForm.style.display = 'none';
@@ -243,7 +245,7 @@ function handleUserAction(action) {
 document.addEventListener('DOMContentLoaded', () => {
   // ── Barra de loading global ────────────────────────────────────────────
   const loadingBar = document.getElementById('globalLoadingBar');
-  window.addEventListener('fv:loading', (e) => {
+  window.addEventListener('fv:loading', e => {
     loadingBar?.classList.toggle('active', Boolean(e.detail));
   });
 
@@ -296,12 +298,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducers(1);
   }
 
-  window.addEventListener('fv:auth-changed', (e) => {
+  window.addEventListener('fv:auth-changed', e => {
     loadCart();
     syncRoleWorkspace(e.detail);
   });
 
-  window.addEventListener('fv:open-pix', (e) => {
+  window.addEventListener('fv:open-pix', e => {
     if (e.detail) showPixDetails(e.detail);
   });
 
@@ -344,8 +346,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Delegação da Navbar / Auth Area / Banner do Cliente ────────────────
-  const bindActionContainer = (el) => {
-    el?.addEventListener('click', (e) => {
+  const bindActionContainer = el => {
+    el?.addEventListener('click', e => {
       const target = e.target;
       if (target.closest('#btnOpenLogin, #btnMobileLogin')) {
         closeUserDropdownAndMobile();
@@ -379,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindActionContainer(document.getElementById('mobileAuthArea'));
   bindActionContainer(document.getElementById('clientWelcomeBanner'));
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', e => {
     if (!e.target.closest('.user-menu-dropdown')) {
       const menu = document.getElementById('userDropdownMenu');
       const toggle = document.getElementById('userMenuToggle');
@@ -391,7 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Modal de Auth (Login, Registro Multi-perfil, Recuperação) ──────────
-  document.getElementById('btnCloseAuthModal')?.addEventListener('click', () => closeModal('authModalOverlay'));
+  document
+    .getElementById('btnCloseAuthModal')
+    ?.addEventListener('click', () => closeModal('authModalOverlay'));
   document.getElementById('tabLogin')?.addEventListener('click', () => switchAuthTab('login'));
   document.getElementById('tabRegister')?.addEventListener('click', () => switchAuthTab('register'));
   document.getElementById('tabRecover')?.addEventListener('click', () => {
@@ -420,12 +424,16 @@ document.addEventListener('DOMContentLoaded', () => {
         demoBox.innerHTML = `
           <p><strong>Acesso rápido (ambiente local):</strong></p>
           <div class="demo-btn-row">
-            ${cfg.demo_accounts.map((acc, idx) => `
+            ${cfg.demo_accounts
+              .map(
+                (acc, idx) => `
               <button type="button" class="btn-link btnDemoQuickFill" data-idx="${idx}"><code>${escapeHtml(acc.label)}</code></button>
-            `).join(' • ')}
+            `
+              )
+              .join(' • ')}
           </div>
         `;
-        demoBox.addEventListener('click', (e) => {
+        demoBox.addEventListener('click', e => {
           const btn = e.target.closest('.btnDemoQuickFill');
           if (!btn) return;
           const acc = cfg.demo_accounts[Number(btn.dataset.idx)];
@@ -459,7 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sentBox = document.getElementById('recoverSentState');
     const resetForm = document.getElementById('resetConfirmForm');
     if (heading) heading.textContent = 'Defina sua nova senha';
-    if (subtitle) subtitle.textContent = 'Escolha uma senha segura com no mínimo 8 caracteres para sua conta.';
+    if (subtitle)
+      subtitle.textContent = 'Escolha uma senha segura com no mínimo 8 caracteres para sua conta.';
     if (recForm) recForm.style.display = 'none';
     if (sentBox) sentBox.style.display = 'none';
     if (resetForm) resetForm.style.display = 'block';
@@ -475,13 +484,13 @@ document.addEventListener('DOMContentLoaded', () => {
   handlePasswordResetHash();
 
   document.querySelectorAll('input[name="regRole"]').forEach(radio => {
-    radio.addEventListener('change', (e) => updateRegisterRoleFields(e.target.value));
+    radio.addEventListener('change', e => updateRegisterRoleFields(e.target.value));
   });
 
-  document.getElementById('regTelefone')?.addEventListener('input', (e) => maskPhone(e.target));
-  document.getElementById('profTelefone')?.addEventListener('input', (e) => maskPhone(e.target));
+  document.getElementById('regTelefone')?.addEventListener('input', e => maskPhone(e.target));
+  document.getElementById('profTelefone')?.addEventListener('input', e => maskPhone(e.target));
 
-  document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+  document.getElementById('loginForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('loginError');
     const u = document.getElementById('loginUsername').value.trim();
@@ -494,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('registerForm')?.addEventListener('submit', async (e) => {
+  document.getElementById('registerForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('registerError');
     clearFormFieldErrors(e.target);
@@ -549,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('recoverForm')?.addEventListener('submit', async (e) => {
+  document.getElementById('recoverForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('recoverError');
     try {
@@ -563,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('resetConfirmForm')?.addEventListener('submit', async (e) => {
+  document.getElementById('resetConfirmForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('resetError');
     const nova = document.getElementById('resetNovaSenha').value;
@@ -596,11 +605,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('btnConfirmDeleteAccount');
     if (btn) btn.disabled = !(checked && pw.length > 0);
   };
-  document.getElementById('btnCloseDeleteAccountModal')?.addEventListener('click', () => closeModal('deleteAccountModalOverlay'));
-  document.getElementById('btnCancelDeleteAccount')?.addEventListener('click', () => closeModal('deleteAccountModalOverlay'));
+  document
+    .getElementById('btnCloseDeleteAccountModal')
+    ?.addEventListener('click', () => closeModal('deleteAccountModalOverlay'));
+  document
+    .getElementById('btnCancelDeleteAccount')
+    ?.addEventListener('click', () => closeModal('deleteAccountModalOverlay'));
   document.getElementById('deleteAccountPassword')?.addEventListener('input', syncDeleteAccountBtn);
   document.getElementById('deleteAccountConfirmCheck')?.addEventListener('change', syncDeleteAccountBtn);
-  document.getElementById('deleteAccountForm')?.addEventListener('submit', async (e) => {
+  document.getElementById('deleteAccountForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('deleteAccountError');
     const pw = document.getElementById('deleteAccountPassword')?.value || '';
@@ -616,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('searchInput');
   const clearSearchBtn = document.getElementById('btnClearSearch');
 
-  searchInput?.addEventListener('input', (e) => {
+  searchInput?.addEventListener('input', e => {
     const val = e.target.value.trim();
     if (clearSearchBtn) clearSearchBtn.style.display = val ? 'inline-flex' : 'none';
     clearTimeout(searchTimer);
@@ -633,17 +646,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts(1);
   });
 
-  document.getElementById('tipoProducaoSelect')?.addEventListener('change', (e) => {
+  document.getElementById('tipoProducaoSelect')?.addEventListener('change', e => {
     catalogState.selectedProductionType = e.target.value;
     loadProducts(1);
   });
 
-  document.getElementById('orderingSelect')?.addEventListener('change', (e) => {
+  document.getElementById('orderingSelect')?.addEventListener('change', e => {
     catalogState.ordering = e.target.value;
     loadProducts(1);
   });
 
-  document.getElementById('categoryPills')?.addEventListener('click', (e) => {
+  document.getElementById('categoryPills')?.addEventListener('click', e => {
     const pill = e.target.closest('.pill');
     if (!pill) return;
     catalogState.selectedCategory = pill.dataset.category || '';
@@ -651,7 +664,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts(1);
   });
 
-  document.getElementById('paginationControls')?.addEventListener('click', (e) => {
+  document.getElementById('paginationControls')?.addEventListener('click', e => {
     if (e.target.closest('#btnPrevPage') && catalogState.currentPage > 1) {
       loadProducts(catalogState.currentPage - 1);
     } else if (e.target.closest('#btnNextPage') && catalogState.currentPage < catalogState.totalPages) {
@@ -659,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('activeProducerFilter')?.addEventListener('click', (e) => {
+  document.getElementById('activeProducerFilter')?.addEventListener('click', e => {
     if (e.target.closest('#btnClearProducerFilter')) {
       catalogState.selectedProducer = null;
       catalogState.selectedProducerName = '';
@@ -667,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('productsGrid')?.addEventListener('click', (e) => {
+  document.getElementById('productsGrid')?.addEventListener('click', e => {
     const addBtn = e.target.closest('.btnAddToCart');
     if (addBtn) {
       const { min } = getUnitStep(addBtn.dataset.unit);
@@ -685,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('productsGrid')?.addEventListener('keydown', (e) => {
+  document.getElementById('productsGrid')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       const detailBtn = e.target.closest('.btnProductDetail');
       if (detailBtn) {
@@ -695,12 +708,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('producerShowcase')?.addEventListener('click', (e) => {
+  document.getElementById('producerShowcase')?.addEventListener('click', e => {
     const btn = e.target.closest('.btnProducerDetail');
     if (btn) openProducerDetail(Number(btn.dataset.id));
   });
 
-  document.getElementById('productDetailBody')?.addEventListener('click', (e) => {
+  document.getElementById('productDetailBody')?.addEventListener('click', e => {
     const prodBtn = e.target.closest('.btnProducerDetail');
     if (prodBtn) {
       closeModal('productDetailModalOverlay');
@@ -708,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('producerDetailBody')?.addEventListener('click', (e) => {
+  document.getElementById('producerDetailBody')?.addEventListener('click', e => {
     const filterBtn = e.target.closest('#btnFilterByProducer');
     if (filterBtn) {
       catalogState.selectedProducer = Number(filterBtn.dataset.id);
@@ -719,8 +732,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('btnCloseProductDetailModal')?.addEventListener('click', () => closeModal('productDetailModalOverlay'));
-  document.getElementById('btnCloseProducerDetailModal')?.addEventListener('click', () => closeModal('producerDetailModalOverlay'));
+  document
+    .getElementById('btnCloseProductDetailModal')
+    ?.addEventListener('click', () => closeModal('productDetailModalOverlay'));
+  document
+    .getElementById('btnCloseProducerDetailModal')
+    ?.addEventListener('click', () => closeModal('producerDetailModalOverlay'));
 
   // ── Carrinho e Checkout ────────────────────────────────────────────────
   document.getElementById('btnOpenCart')?.addEventListener('click', openCartDrawer);
@@ -728,9 +745,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('cartOverlay')?.addEventListener('click', closeCartDrawer);
   document.getElementById('btnClearCart')?.addEventListener('click', clearCart);
   document.getElementById('btnCheckout')?.addEventListener('click', openCheckout);
-  document.getElementById('btnCloseCheckoutModal')?.addEventListener('click', () => closeModal('checkoutModalOverlay'));
+  document
+    .getElementById('btnCloseCheckoutModal')
+    ?.addEventListener('click', () => closeModal('checkoutModalOverlay'));
 
-  document.getElementById('cartItemsList')?.addEventListener('click', (e) => {
+  document.getElementById('cartItemsList')?.addEventListener('click', e => {
     if (e.target.closest('#btnContinueShopping')) {
       closeCartDrawer();
       return;
@@ -752,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.querySelectorAll('input[name="modalidade"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
+    radio.addEventListener('change', e => {
       const val = e.target.value;
       document.getElementById('enderecoGroup').style.display = val === 'ENTREGA' ? 'block' : 'none';
       document.querySelectorAll('.radio-card').forEach(c => {
@@ -763,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.querySelectorAll('input[name="forma_pagamento"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
+    radio.addEventListener('change', e => {
       const val = e.target.value;
       document.querySelectorAll('.payment-option').forEach(c => {
         c.classList.toggle('active', c.querySelector('input')?.value === val);
@@ -777,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
     openModal('addressesModalOverlay');
   });
 
-  document.getElementById('checkoutForm')?.addEventListener('submit', async (e) => {
+  document.getElementById('checkoutForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('checkoutError');
     const modalidade = document.querySelector('input[name="modalidade"]:checked')?.value || 'RETIRADA';
@@ -802,12 +821,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Pedidos, Pix, Avaliações, Reclamações, Endereços e Perfil ──────────
-  document.getElementById('btnCloseMyOrdersModal')?.addEventListener('click', () => closeModal('myOrdersModalOverlay'));
+  document
+    .getElementById('btnCloseMyOrdersModal')
+    ?.addEventListener('click', () => closeModal('myOrdersModalOverlay'));
   document.getElementById('tabOrdersList')?.addEventListener('click', () => switchOrdersTab('pedidos'));
   document.getElementById('tabMyReviews')?.addEventListener('click', () => switchOrdersTab('avaliacoes'));
   document.getElementById('tabMyComplaints')?.addEventListener('click', () => switchOrdersTab('reclamacoes'));
 
-  document.getElementById('myOrdersList')?.addEventListener('click', (e) => {
+  document.getElementById('myOrdersList')?.addEventListener('click', e => {
     const pixBtn = e.target.closest('.btnShowPix');
     if (pixBtn) {
       showPixDetails(Number(pixBtn.dataset.id));
@@ -829,7 +850,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('myReviewsList')?.addEventListener('click', (e) => {
+  document.getElementById('myReviewsList')?.addEventListener('click', e => {
     const editBtn = e.target.closest('.btnEditMyReview');
     if (editBtn) {
       openEditReviewModal(Number(editBtn.dataset.id));
@@ -854,8 +875,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('btnCloseReviewModal')?.addEventListener('click', () => closeModal('reviewModalOverlay'));
-  document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
+  document
+    .getElementById('btnCloseReviewModal')
+    ?.addEventListener('click', () => closeModal('reviewModalOverlay'));
+  document.getElementById('reviewForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('reviewError');
     const editId = document.getElementById('reviewEditId')?.value.trim() || '';
@@ -879,8 +902,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('btnCloseComplaintModal')?.addEventListener('click', () => closeModal('complaintModalOverlay'));
-  document.getElementById('complaintForm')?.addEventListener('submit', async (e) => {
+  document
+    .getElementById('btnCloseComplaintModal')
+    ?.addEventListener('click', () => closeModal('complaintModalOverlay'));
+  document.getElementById('complaintForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('complaintError');
     const payload = {
@@ -902,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnCancelAddressEdit')?.addEventListener('click', resetAddressForm);
 
   const cepInput = document.getElementById('addrCep');
-  cepInput?.addEventListener('input', async (e) => {
+  cepInput?.addEventListener('input', async e => {
     maskCEP(e.target);
     const clean = e.target.value.replace(/\D/g, '');
     const statusEl = document.getElementById('addrCepStatus');
@@ -923,7 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('addressForm')?.addEventListener('submit', async (e) => {
+  document.getElementById('addressForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('addressError');
     const editId = document.getElementById('addrEditId')?.value.trim() || null;
@@ -944,7 +969,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('addressesList')?.addEventListener('click', (e) => {
+  document.getElementById('addressesList')?.addEventListener('click', e => {
     if (e.target.closest('.btnRetryAddresses')) {
       loadAddresses();
       return;
@@ -958,8 +983,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (delBtn) deleteAddress(Number(delBtn.dataset.id));
   });
 
-  document.getElementById('btnCloseProfileModal')?.addEventListener('click', () => closeModal('profileModalOverlay'));
-  document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
+  document
+    .getElementById('btnCloseProfileModal')
+    ?.addEventListener('click', () => closeModal('profileModalOverlay'));
+  document.getElementById('profileForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     clearFormError('profileError');
     try {
@@ -976,7 +1003,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Navegação por Perfil (Navbar Desktop, Mobile, Footer e Atalhos) ────
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', e => {
     const prodNav = e.target.closest('[data-producer-nav]');
     if (prodNav) {
       closeUserDropdownAndMobile();
@@ -1001,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Painel Dedicado do Produtor Rural ──────────────────────────────────
-  document.getElementById('producerPanelTabs')?.addEventListener('click', (e) => {
+  document.getElementById('producerPanelTabs')?.addEventListener('click', e => {
     const tabBtn = e.target.closest('[data-producer-tab]');
     if (tabBtn) switchProducerTab(tabBtn.dataset.producerTab);
   });
@@ -1015,21 +1042,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('producerProductForm')?.addEventListener('input', updateProductPreview);
   document.getElementById('producerProductForm')?.addEventListener('change', updateProductPreview);
-  document.getElementById('producerProductForm')?.addEventListener('submit', (e) => {
+  document.getElementById('producerProductForm')?.addEventListener('submit', e => {
     e.preventDefault();
     saveProducerProduct();
   });
-  document.getElementById('producerProductsList')?.addEventListener('click', (e) => {
+  document.getElementById('producerProductsList')?.addEventListener('click', e => {
     const editBtn = e.target.closest('.btnEditProdProduct');
     if (editBtn) openProductForm(Number(editBtn.dataset.id));
     const delBtn = e.target.closest('.btnDeleteProdProduct');
     if (delBtn) deleteProducerProduct(Number(delBtn.dataset.id));
   });
-  document.getElementById('producerOrderFilters')?.addEventListener('click', (e) => {
+  document.getElementById('producerOrderFilters')?.addEventListener('click', e => {
     const pill = e.target.closest('.pill');
     if (pill) setProducerOrderStatusFilter(pill.dataset.producerStatus || '');
   });
-  document.getElementById('producerOrdersList')?.addEventListener('click', (e) => {
+  document.getElementById('producerOrdersList')?.addEventListener('click', e => {
     const rateBtn = e.target.closest('.btnRateClient');
     if (rateBtn) {
       openClientReviewModal(Number(rateBtn.dataset.id));
@@ -1040,46 +1067,56 @@ document.addEventListener('DOMContentLoaded', () => {
       handleProducerOrderAction(Number(actBtn.dataset.id), actBtn.dataset.action, actBtn.dataset.next || '');
     }
   });
-  document.getElementById('btnCloseClientReviewModal')?.addEventListener('click', () => closeModal('clientReviewModalOverlay'));
-  document.getElementById('clientReviewForm')?.addEventListener('submit', (e) => {
+  document
+    .getElementById('btnCloseClientReviewModal')
+    ?.addEventListener('click', () => closeModal('clientReviewModalOverlay'));
+  document.getElementById('clientReviewForm')?.addEventListener('submit', e => {
     e.preventDefault();
     submitClientReview();
   });
   document.getElementById('producerPropertyForm')?.addEventListener('input', updatePropertyPreview);
   document.getElementById('producerPropertyForm')?.addEventListener('change', updatePropertyPreview);
-  document.getElementById('producerPropertyForm')?.addEventListener('submit', (e) => {
+  document.getElementById('producerPropertyForm')?.addEventListener('submit', e => {
     e.preventDefault();
     saveProducerProperty();
   });
 
   // ── Painel Dedicado do Entregador ──────────────────────────────────────
   document.getElementById('btnRefreshDelivery')?.addEventListener('click', refreshCurrentDeliveryTab);
-  document.getElementById('deliveryPanelTabs')?.addEventListener('click', (e) => {
+  document.getElementById('deliveryPanelTabs')?.addEventListener('click', e => {
     const tabBtn = e.target.closest('[data-delivery-tab]');
     if (tabBtn) switchDeliveryTab(tabBtn.dataset.deliveryTab);
   });
-  document.getElementById('deliveryMineFilters')?.addEventListener('click', (e) => {
+  document.getElementById('deliveryMineFilters')?.addEventListener('click', e => {
     const pill = e.target.closest('.pill');
     if (pill) setDeliveryMineGroup(pill.dataset.deliveryGroup || '');
   });
-  document.getElementById('deliveryWorkspace')?.addEventListener('click', (e) => {
+  document.getElementById('deliveryWorkspace')?.addEventListener('click', e => {
     const btn = e.target.closest('.btnDeliveryAction');
     if (btn) handleDeliveryAction(Number(btn.dataset.id), btn.dataset.action);
   });
-  document.getElementById('deliveryVehicleForm')?.addEventListener('submit', (e) => {
+  document.getElementById('deliveryVehicleForm')?.addEventListener('submit', e => {
     e.preventDefault();
     saveDeliveryVehicle();
   });
 
   // ── Painel Dedicado Administrativo (#adminWorkspace) ───────────────────
   document.getElementById('btnAdminViewStorefront')?.addEventListener('click', openAdminStorefrontPreview);
-  document.getElementById('btnBackToAdminWorkspace')?.addEventListener('click', () => openAdminPanel('indicadores'));
-  document.getElementById('btnCloseAdminDetailModal')?.addEventListener('click', () => closeModal('adminDetailModalOverlay'));
-  document.getElementById('btnCloseAdminConfirmModal')?.addEventListener('click', () => closeModal('adminConfirmModalOverlay'));
-  document.getElementById('btnCancelAdminConfirm')?.addEventListener('click', () => closeModal('adminConfirmModalOverlay'));
+  document
+    .getElementById('btnBackToAdminWorkspace')
+    ?.addEventListener('click', () => openAdminPanel('indicadores'));
+  document
+    .getElementById('btnCloseAdminDetailModal')
+    ?.addEventListener('click', () => closeModal('adminDetailModalOverlay'));
+  document
+    .getElementById('btnCloseAdminConfirmModal')
+    ?.addEventListener('click', () => closeModal('adminConfirmModalOverlay'));
+  document
+    .getElementById('btnCancelAdminConfirm')
+    ?.addEventListener('click', () => closeModal('adminConfirmModalOverlay'));
   document.getElementById('btnProceedAdminConfirm')?.addEventListener('click', () => confirmAdminDelete());
 
-  document.getElementById('adminPanelTabs')?.addEventListener('click', (e) => {
+  document.getElementById('adminPanelTabs')?.addEventListener('click', e => {
     const tabBtn = e.target.closest('[data-admin-tab]');
     if (tabBtn) switchAdminTab(tabBtn.dataset.adminTab);
   });
@@ -1100,31 +1137,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const wrap = document.getElementById('adminProductEditWrap');
     if (wrap) wrap.style.display = 'none';
   });
-  document.getElementById('adminProductEditForm')?.addEventListener('submit', (e) => {
+  document.getElementById('adminProductEditForm')?.addEventListener('submit', e => {
     e.preventDefault();
     saveAdminProductEdit();
   });
 
   // Filtros de Produtores, Clientes e Usuários (Admin)
   bindDebouncedAdminSearch('adminProducerSearch', loadAdminProducers);
-  document.getElementById('adminProducerStatusFilter')?.addEventListener('change', () => loadAdminProducers(1));
+  document
+    .getElementById('adminProducerStatusFilter')
+    ?.addEventListener('change', () => loadAdminProducers(1));
   bindDebouncedAdminSearch('adminClientSearch', loadAdminClients);
   document.getElementById('adminClientStatusFilter')?.addEventListener('change', () => loadAdminClients(1));
   bindDebouncedAdminSearch('adminUserSearch', loadAdminUsers);
   document.getElementById('adminUserTypeFilter')?.addEventListener('change', () => loadAdminUsers(1));
 
-  document.getElementById('btnNewAdminCategory')?.addEventListener('click', () => openAdminCategoryForm(null));
+  document
+    .getElementById('btnNewAdminCategory')
+    ?.addEventListener('click', () => openAdminCategoryForm(null));
   document.getElementById('btnCancelAdminCategory')?.addEventListener('click', () => {
     const wrap = document.getElementById('adminCategoryFormWrap');
     if (wrap) wrap.style.display = 'none';
   });
-  document.getElementById('adminCategoryForm')?.addEventListener('submit', (e) => {
+  document.getElementById('adminCategoryForm')?.addEventListener('submit', e => {
     e.preventDefault();
     saveAdminCategory();
   });
   document.getElementById('adminOrderStatusFilter')?.addEventListener('change', () => loadAdminOrders(1));
 
-  document.getElementById('adminWorkspace')?.addEventListener('click', (e) => {
+  document.getElementById('adminWorkspace')?.addEventListener('click', e => {
     const editProdBtn = e.target.closest('.btnEditAdminProduct');
     if (editProdBtn) {
       openAdminProductEdit(Number(editProdBtn.dataset.id));
@@ -1147,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Number(delEntityBtn.dataset.id),
         delEntityBtn.dataset.label || '',
         delEntityBtn.dataset.tab || null,
-        delEntityBtn.dataset.kind || 'registro',
+        delEntityBtn.dataset.kind || 'registro'
       );
       return;
     }
@@ -1157,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         actBtn.dataset.resource,
         Number(actBtn.dataset.id),
         actBtn.dataset.action,
-        actBtn.dataset.tab || null,
+        actBtn.dataset.tab || null
       );
       return;
     }

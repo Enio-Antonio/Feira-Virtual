@@ -1,12 +1,18 @@
 <p align="center">
-  <img src="frontend/assets/logo-horizontal.png" alt="Logo Feira Virtual" width="240" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="frontend/assets/logo-horizontal-white.png" />
+    <source media="(prefers-color-scheme: light)" srcset="frontend/assets/logo-horizontal.png" />
+    <img src="frontend/assets/logo-horizontal.png" alt="Logo Feira Virtual" width="260" />
+  </picture>
 </p>
 
 <h1 align="center">Feira Virtual — Plataforma de Venda Direta</h1>
 
 <p align="center">
   <strong>Disciplina:</strong> Engenharia de Software &nbsp;|&nbsp; <strong>Código:</strong> DCA3603<br />
-  <strong>Integrantes:</strong> Débora Nicolly Araújo da Silva · Douglas Amon Passos dos Anjos · Caio de Miranda Silva · Paulo Guilherme Xavier da Silva
+  <strong>Integrantes:</strong><br />
+  Débora Nicolly Araújo da Silva · Douglas Amon Passos dos Anjos<br />
+  Caio de Miranda Silva · Paulo Guilherme Xavier da Silva
 </p>
 
 <p align="center">

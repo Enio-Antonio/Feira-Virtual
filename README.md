@@ -10,7 +10,7 @@
 
 <p align="center">
   <strong>Integrantes:</strong><br />
-  Débora Nicolly Araújo da Silva · Douglas Amon Passos dos Anjos · Caio de Miranda Silva
+  Débora Nicolly Araújo da Silva · Douglas Amon Passos dos Anjos · Caio de Miranda Silva · Paulo Guilherme Xavier da Silva 
 </p>
 
 <p align="center">

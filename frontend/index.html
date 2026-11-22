@@ -31,7 +31,7 @@
   <link rel="manifest" href="{% static 'assets/manifest.webmanifest' %}" />
 
   <!-- Estilos (servido pelo WhiteNoise com cache imutável, sem requisições externas) -->
-  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261121a" />
+  <link rel="stylesheet" href="{% static 'style.css' %}?v=20261121b" />
 </head>
 
 <body>
@@ -218,7 +218,9 @@
               </div>
             </div>
             <div class="product-card-hero__body">
-              <span class="product-card-hero__category">Hortaliças · Orgânico</span>
+              <div class="product-card-hero__meta-row" id="heroProductMetaRow">
+                <span class="product-card-hero__category">Hortaliças · Orgânico</span>
+              </div>
               <h3 class="product-card-hero__name">Alface Crespa</h3>
               <p class="product-card-hero__producer">
                 <svg class="icon" width="14" height="14" aria-hidden="true"><use href="{% static 'assets/icons.svg' %}#icon-map-pin"></use></svg>
@@ -1617,7 +1619,7 @@
   <!-- Container de Toasts flutuantes -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="{% static 'main.js' %}?v=20261121a"></script>
+  <script type="module" src="{% static 'main.js' %}?v=20261121b"></script>
 </body>
 
 </html>

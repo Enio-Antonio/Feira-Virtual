@@ -102,7 +102,7 @@ import {
   openProducerDetail,
   openProductDetail,
   renderCategoryPills,
-} from './js/products.js?v=20261121a';
+} from './js/products.js?v=20261121b';
 import {
   clearFormError,
   clearFormFieldErrors,

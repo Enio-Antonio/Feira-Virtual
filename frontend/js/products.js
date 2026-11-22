@@ -157,11 +157,20 @@ function hasValidRating(p) {
   return total > 0 && Number.isFinite(media) && media > 0;
 }
 
-function formatRatingCompact(p) {
+function renderRatingBadgeHtml(p, extraClass = '') {
   if (!hasValidRating(p)) return '';
-  const mediaStr = Number(p.nota_media).toFixed(1).replace('.', ',');
+  const mediaNum = Number(p.nota_media);
+  const mediaStr = mediaNum.toFixed(1).replace('.', ',');
   const total = Number(p.total_avaliacoes);
-  return `${renderIcon('star-filled', 13, 'icon--star-filled')} ${mediaStr} (${total})`;
+  const label = total === 1 ? '1 avaliação' : `${total} avaliações`;
+  const cls = ['product-rating-badge', extraClass].filter(Boolean).join(' ');
+  return `
+    <span class="${cls}" aria-label="Avaliação ${mediaStr} de 5 (${label})" title="Nota ${mediaStr} de 5 (${label})">
+      <span class="product-rating-badge__star" aria-hidden="true">${renderIcon('star-filled', 14, 'product-rating-badge__icon')}</span>
+      <strong class="product-rating-badge__score">${mediaStr}</strong>
+      <span class="product-rating-badge__count">(${total})</span>
+    </span>
+  `;
 }
 
 function formatRatingSummaryHtml(p) {
@@ -181,20 +190,25 @@ function formatRatingSummaryHtml(p) {
 
 function updateHeroProductRating(products) {
   const header = document.getElementById('heroProductHeader');
-  if (!header) return;
+  if (header) {
+    const legacyBadge = header.querySelector('.product-card-hero__badge');
+    if (legacyBadge) legacyBadge.remove();
+  }
 
-  const existingBadge = header.querySelector('.product-card-hero__badge');
-  if (existingBadge) existingBadge.remove();
+  const metaRow = document.getElementById('heroProductMetaRow');
+  if (!metaRow) return;
+
+  const existing = metaRow.querySelector('.product-rating-badge');
+  if (existing) existing.remove();
 
   if (!Array.isArray(products) || products.length === 0) return;
   const heroProd =
     products.find(p => String(p.nome || '').toLowerCase().includes('alface')) || products[0];
 
   if (hasValidRating(heroProd)) {
-    const badge = document.createElement('div');
-    badge.className = 'product-card-hero__badge';
-    badge.innerHTML = `<span>${formatRatingCompact(heroProd)}</span>`;
-    header.appendChild(badge);
+    const temp = document.createElement('div');
+    temp.innerHTML = renderRatingBadgeHtml(heroProd, 'product-rating-badge--sm');
+    if (temp.firstElementChild) metaRow.appendChild(temp.firstElementChild);
   }
 }
 
@@ -219,7 +233,7 @@ function renderProductsGrid(products) {
     const thumbMedia = customImgUrl
       ? `<img src="${escapeHtml(customImgUrl)}" alt="${escapeHtml(p.nome)}" class="product-card__img" loading="lazy" />`
       : renderBrandLogoHtml(p.nome, 'product-card__img product-card__img--default');
-    const nota = formatRatingCompact(p);
+    const ratingBadgeHtml = renderRatingBadgeHtml(p);
     const unidadeLabel = formatUnitLabel(p.unidade_medida);
 
     return `
@@ -228,14 +242,16 @@ function renderProductsGrid(products) {
           ${thumbMedia}
           <div class="product-card__badges">
             ${typeBadges[p.tipo_producao] || ''}
-            ${nota ? `<span class="badge badge--outline">${nota}</span>` : ''}
           </div>
           <span class="product-card__stock-tag">
             ${semEstoque ? 'Esgotado' : `${parseFloat(p.estoque)} em estoque`}
           </span>
         </div>
 
-        <span class="product-card__category">${escapeHtml(p.categoria_nome || 'Feira')}</span>
+        <div class="product-card__meta-row">
+          <span class="product-card__category">${escapeHtml(p.categoria_nome || 'Feira')}</span>
+          ${ratingBadgeHtml}
+        </div>
         <h3 class="product-card__title btnProductDetail" data-id="${p.id}" role="button" tabindex="0">
           ${escapeHtml(p.nome)}
         </h3>
@@ -473,7 +489,7 @@ export async function loadProducers(page = 1) {
     }
 
     container.innerHTML = produtores.map(p => {
-      const ratingBadge = formatRatingCompact(p);
+      const ratingBadgeHtml = renderRatingBadgeHtml(p, 'product-rating-badge--sm');
       return `
         <article class="producer-card">
           <div class="producer-card__top">
@@ -486,7 +502,7 @@ export async function loadProducers(page = 1) {
           <p class="producer-card__desc">${escapeHtml(p.descricao || 'Produção familiar local e sustentável.')}</p>
           <div class="producer-card__footer">
             <div class="producer-card__badges">
-              ${ratingBadge ? `<span class="badge badge--outline">${ratingBadge}</span>` : ''}
+              ${ratingBadgeHtml}
               ${p.aceita_pix ? PIX_BADGE_HTML : ''}
               ${p.possui_maquininha ? `<span class="payment-badge">${renderIcon('credit-card', 14)} Cartão</span>` : ''}
               ${p.aceita_dinheiro ? `<span class="payment-badge">${renderIcon('banknote', 14)} Dinheiro</span>` : ''}

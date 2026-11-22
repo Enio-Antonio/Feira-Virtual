@@ -2,11 +2,15 @@
   <img src="frontend/assets/logo-horizontal.png" alt="Logo Feira Virtual" width="300" />
 </p>
 
-<h1 align="center">Feira Virtual — Plataforma Digital para Agricultura Familiar</h1>
+<h1 align="center">Feira Virtual — Plataforma de Venda Direta</h1>
 
 <p align="center">
-  <strong>Documentação Técnica e Acadêmica — Engenharia de Software</strong><br />
-  Plataforma web de comercialização direta entre produtores da agricultura familiar, consumidores e entregadores parceiros.
+  <strong>Disciplina:</strong> Engenharia de Software &nbsp;|&nbsp; <strong>Código da disciplina:</strong> DCA3603
+</p>
+
+<p align="center">
+  <strong>Integrantes:</strong><br />
+  Débora Nicolly Araújo da Silva · Douglas Amon Passos dos Anjos · Caio de Miranda Silva
 </p>
 
 <p align="center">
@@ -16,7 +20,7 @@
   <img src="https://img.shields.io/badge/Auth-SimpleJWT-000000?style=flat&logo=jsonwebtokens&logoColor=white" alt="SimpleJWT" />
   <img src="https://img.shields.io/badge/Banco-MySQL%208.4%20%7C%20SQLite-4479A1?style=flat&logo=mysql&logoColor=white" alt="MySQL 8.4 e SQLite" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker Compose" />
-  <img src="https://img.shields.io/badge/Frontend-HTML5%20%7C%20CSS3%20%7C%20ES%20Modules-F7990C?style=flat" alt="Frontend Vanilla ES Modules" />
+  <img src="https://img.shields.io/badge/Frontend-HTML5%20%7C%20CSS3%20%7C%20ES%20Modules-F7990C?style=flat" alt="Frontend HTML5 CSS3 ES Modules" />
   <img src="https://img.shields.io/badge/Testes-42%20aprovados-246F11?style=flat" alt="42 testes aprovados" />
 </p>
 
@@ -24,78 +28,101 @@
 
 ## Sumário
 
-1. [Apresentação da Ideia, Motivação, ODS e Aplicação de Padrões](#1-apresentação-da-ideia-motivação-ods-e-aplicação-de-padrões)
-   - [1.1. Apresentação da Ideia](#11-apresentação-da-ideia)
-   - [1.2. Motivação e Objetivos](#12-motivação-e-objetivos)
-   - [1.3. Objetivos de Desenvolvimento Sustentável (ODS)](#13-objetivos-de-desenvolvimento-sustentável-ods)
-   - [1.4. Visão Geral das Aplicações de Padrões de Projeto](#14-visão-geral-das-aplicações-de-padrões-de-projeto)
-2. [Padrões de Projeto Aplicados](#2-padrões-de-projeto-aplicados)
-   - [2.1. Service Layer](#21-service-layer-padrão-arquitetural--corporativo)
-   - [2.2. Strategy e Factory Function](#22-strategy-e-factory-function-padrão-gof-comportamental)
-   - [2.3. Adapter](#23-adapter-padrão-gof-estrutural)
-   - [2.4. Template Method em RBAC](#24-template-method--hierarquia-rbac-padrão-gof-comportamental)
-   - [2.5. Facade no Front-End](#25-facade--interceptador-http-no-front-end-padrão-estrutural)
-   - [2.6. Organização Modular e Separação de Responsabilidades](#26-organização-modular-e-separação-de-responsabilidades-padrão-arquitetural)
-3. [Acompanhamento do Projeto](#3-acompanhamento-do-projeto)
-   - [3.1. Evolução Cronológica (Git)](#31-evolução-cronológica-baseada-no-histórico-do-git-dev)
-   - [3.2. Tabela de Acompanhamento](#32-tabela-de-acompanhamento)
-   - [3.3. Arquitetura, Tecnologias e Perfis](#33-arquitetura-tecnologias-e-funcionalidades-por-perfil)
-4. [Conteinerizado](#4-conteinerizado)
-5. [API com os Principais Requisitos](#5-api-com-os-principais-requisitos)
-6. [Autenticação e Autorização](#6-autenticação-e-autorização)
-7. [CI e Testes](#7-ci-e-testes)
-8. [Front-End e Demonstração](#8-front-end-e-demonstração)
-9. [Matriz Resumida dos Requisitos](#9-matriz-resumida-dos-requisitos)
-10. [Estrutura dos Módulos e Considerações Finais](#10-estrutura-dos-módulos-e-considerações-finais)
+1. [Princípios de Projeto e Engenharia de Software](#1-princípios-de-projeto-e-engenharia-de-software)
+2. [Apresentação do Projeto](#2-apresentação-do-projeto)
+3. [Motivação e Objetivos](#3-motivação-e-objetivos)
+4. [Relação com os Objetivos de Desenvolvimento Sustentável (ODS)](#4-relação-com-os-objetivos-de-desenvolvimento-sustentável-ods)
+5. [Padrões de Projeto Aplicados](#5-padrões-de-projeto-aplicados)
+6. [Acompanhamento do Desenvolvimento](#6-acompanhamento-do-desenvolvimento)
+7. [Apresentação do Projeto e Requisitos de Avaliação](#7-apresentação-do-projeto-e-requisitos-de-avaliação)
+   - [7.1. Projeto Conteinerizado](#71-projeto-conteinerizado)
+   - [7.2. API com os Principais Requisitos](#72-api-com-os-principais-requisitos)
+   - [7.3. Autenticação e Autorização](#73-autenticação-e-autorização)
+   - [7.4. CI e Testes](#74-ci-e-testes)
+   - [7.5. Front-End e Demonstração](#75-front-end-e-demonstração)
+8. [Arquitetura e Tecnologias](#8-arquitetura-e-tecnologias)
+9. [Organização dos Diretórios](#9-organização-dos-diretórios)
+10. [Pré-requisitos](#10-pré-requisitos)
+11. [Configuração Local sem Docker](#11-configuração-local-sem-docker)
+12. [Inicialização com Docker](#12-inicialização-com-docker)
+13. [Principais Endpoints da API](#13-principais-endpoints-da-api)
+14. [Execução dos Testes](#14-execução-dos-testes)
+15. [Considerações Finais](#15-considerações-finais)
 
 ---
 
-## 1. Apresentação da Ideia, Motivação, ODS e Aplicação de Padrões
+## 1. Princípios de Projeto e Engenharia de Software
 
-### 1.1. Apresentação da Ideia
+O desenvolvimento de aplicações web confiáveis e sustentáveis exige decisões estruturais fundamentadas em princípios consolidados da Engenharia de Software. Sem essa disciplina, sistemas crescem de forma acoplada, tornam-se difíceis de testar e acumulam vulnerabilidades e regressões a cada nova funcionalidade.
 
-A **Feira Virtual** é uma plataforma web desenvolvida no contexto da disciplina de Engenharia de Software com o propósito de viabilizar a **comercialização direta entre produtores da agricultura familiar e consumidores**, integrando também **entregadores parceiros** e **administradores** em um único ambiente digital.
+Os principais princípios que orientam o projeto arquitetural de sistemas web e sua aplicação verificável na **Feira Virtual** são apresentados a seguir:
 
-Em vez de limitar-se a um catálogo estático, a aplicação estrutura o ciclo completo da venda agrícola:
+| Princípio | Definição e Importância | Aplicação e Evidência na Feira Virtual |
+|---|---|---|
+| **Modularidade** | Divisão do sistema em unidades independentes e compreensíveis, cada qual tratando de um subdomínio claro. | O backend é segmentado em cinco aplicativos Django (`usuarios`, `catalogo`, `pedidos`, `avaliacoes`, `painel`), mais `config`; o frontend divide-se em `frontend/main.js` e 9 ES Modules em `frontend/js/`. |
+| **Separação de responsabilidades** | Cada camada ou módulo concentra apenas tarefas ligadas à sua finalidade, evitando misturar apresentação, transporte HTTP e regras de negócio. | Views (`*/views.py`) tratam o protocolo HTTP, serializers (`*/serializers.py`) validam e serializam contratos, e `pedidos/services.py` encapsula a lógica transacional de pedidos e estoque. |
+| **Baixo acoplamento** | Redução de dependências rígidas entre componentes, facilitando substituições e evolução isolada. | Contratos abstratos em `pedidos/pix.py` (`GatewayPixBase`) e `pedidos/notificacoes.py` (`NotificadorBase`) desacoplam o domínio de provedores externos; o frontend comunica-se exclusivamente via `/api/` (`frontend/js/api.js`). |
+| **Alta coesão** | Agrupamento de modelos, regras, endpoints e testes fortemente relacionados dentro do mesmo módulo. | Cada app reúne seus próprios `models.py`, `serializers.py`, `views.py`, `urls.py` e `tests.py` (por exemplo, toda a gestão de avaliações e reclamações reside em `avaliacoes/`). |
+| **Reutilização de código** | Eliminação de duplicação por meio de abstrações compartilhadas e utilitários centralizados. | Hierarquia `_PorTipo` em `usuarios/permissions.py`; função `mudar_status()` reutilizada por Cliente, Produtor e Entregador em `pedidos/services.py`; utilitários `apiFetch()`, `escapeHtml()` e `renderIcon()` em `frontend/js/`. |
+| **Manutenibilidade** | Facilidade de diagnosticar defeitos, aplicar correções e evoluir o software com baixo risco de regressão. | Suíte de 42 testes automatizados (`*/tests.py`), logs estruturados (`config/settings.py`), trilha `LogAuditoria` (`painel/models.py`) e histórico versionado com commits semânticos no Git. |
+| **Segurança** | Proteção de dados, autenticação robusta, controle de acesso por perfil e defesa contra ataques comuns em aplicações web. | RBAC em `usuarios/permissions.py`, isolamento de querysets contra IDOR, CSP estrita (`config/middleware.py`), proteção contra *Path Traversal* (`config/urls.py`), throttles por escopo, validação binária de uploads (`config/validators.py`) e fluxos LGPD. |
+| **Escalabilidade** | Organização da aplicação de modo a permitir crescimento de carga, volume de dados e evolução de infraestrutura. | Paginação global (`PAGE_SIZE = 20`), índices de banco de dados nos modelos, consultas otimizadas com `select_related`/`prefetch_related`, Gunicorn multi-worker, WhiteNoise e suporte a MySQL 8.4. *(Nota: em múltiplas réplicas horizontais, o armazenamento local em `/media/` exigiria migração para storage de objetos como S3/R2.)* |
 
-- **Divulgação de produtos agrícolas** com preço, unidade de medida (`kg`, `g`, `L`, `ml`, `unidade`, `caixa`, `saco`, `maço`), estoque disponível e classificação por tipo de cultivo (orgânico certificado, agroecológico ou convencional).
-- **Cadastro e gestão de propriedades rurais**, sujeitas à validação administrativa antes da exibição pública.
-- **Comercialização direta** por meio de carrinho unificado com divisão automática de pedidos por produtor no checkout.
-- **Gerenciamento de pedidos e controle transacional de estoque**, com baixa no aceite do produtor e estorno em casos de recusa ou cancelamento.
-- **Organização logística das entregas**, com painel próprio para entregadores aceitarem pedidos prontos e acompanharem o trajeto até a conclusão.
-- **Avaliação de produtos, produtores e avaliação recíproca de clientes**, vinculadas exclusivamente a pedidos concluídos.
+---
 
-### 1.2. Motivação e Objetivos
+## 2. Apresentação do Projeto
 
-Pequenos produtores da agricultura familiar frequentemente enfrentam barreiras para divulgar sua produção e alcançar compradores locais de forma organizada. Entre os problemas que motivaram a criação da Feira Virtual, destacam-se:
+A **Feira Virtual** é uma plataforma web full-stack projetada para apoiar a **comercialização direta entre produtores rurais da agricultura familiar e consumidores finais**, incorporando também **entregadores parceiros** e **administradores** em um único ambiente integrado.
 
-- **Baixa visibilidade comercial** para produtores locais fora de feiras presenciais restritas.
-- **Dependência de intermediários** no escoamento da produção, reduzindo o contato direto com o consumidor final.
-- **Dificuldade de conexão entre campo e cidade**, tanto para o produtor divulgar disponibilidade atualizada quanto para o consumidor conhecer a origem e o tipo de cultivo dos alimentos.
-- **Desorganização operacional** na gestão manual de pedidos, estoques e entregas.
-- **Ausência de um ambiente digital integrado** que conecte venda, controle de estoque, entrega e retorno de qualidade.
+Mais do que uma vitrine de produtos, a aplicação estrutura todo o ciclo operacional da compra agrícola:
 
-A partir desse cenário, a solução foi concebida com os seguintes **objetivos**:
+- Divulgação de propriedades rurais e produtos frescos com preço, unidade de medida (`kg`, `g`, `L`, `ml`, `unidade`, `caixa`, `saco`, `maço`), estoque e tipo de cultivo (`Orgânico certificado`, `Agroecológico`, `Convencional`).
+- Carrinho unificado com separação automática de pedidos por produtor no momento do checkout.
+- Controle transacional de estoque (baixa no aceite do produtor e devolução em caso de recusa ou cancelamento).
+- Coordenação de entregas por entregadores cadastrados, com rastreamento de estados e privacidade do endereço do cliente até o aceite da entrega.
+- Avaliações vinculadas a compras concluídas (de produtos, de produtores e avaliação recíproca do produtor ao cliente) e canal de reclamações moderado pela administração.
 
-1. Dar visibilidade aos pequenos produtores rurais e às suas propriedades.
-2. Facilitar a comercialização de produtos agrícolas em ambiente digital acessível.
-3. Aproximar produtores e consumidores com transparência sobre origem, cultivo e avaliações.
-4. Contribuir para reduzir a dependência de intermediários na comercialização.
-5. Organizar pedidos, estoques e processos de entrega de forma consistente e rastreável.
-6. Incentivar o comércio local e a agricultura familiar por meio da tecnologia.
+Cada perfil acessa uma experiência dedicada às suas atribuições: **Cliente**, **Produtor Rural**, **Entregador** e **Administrador**.
 
-> **Nota metodológica:** por tratar-se de um projeto acadêmico, benefícios socioeconômicos como redução efetiva de intermediários, elevação de renda ou redução de perdas de alimentos são apresentados como **objetivos e contribuições potenciais da proposta**, não como impactos empíricos já comprovados.
+---
 
-### 1.3. Objetivos de Desenvolvimento Sustentável (ODS)
+## 3. Motivação e Objetivos
 
-A proposta da Feira Virtual alinha-se à **Agenda 2030 da Organização das Nações Unidas (ONU)**, relacionando suas funcionalidades reais a três Objetivos de Desenvolvimento Sustentável documentados pela [ONU Brasil](https://brasil.un.org/pt-br/sdgs):
+### 3.1. Motivação
+
+Produtores da agricultura familiar frequentemente enfrentam entraves operacionais e comerciais que limitam seu acesso direto aos consumidores. O desenvolvimento da Feira Virtual foi motivado pelos seguintes problemas recorrentes:
+
+- **Dificuldade de divulgação e comercialização:** pequenos produtores nem sempre dispõem de canais digitais próprios para apresentar seus produtos sazonais e preços atualizados.
+- **Dependência de intermediários:** a ausência de contato direto com o comprador final costuma reduzir a autonomia comercial e a margem de retorno do agricultor.
+- **Distanciamento entre produtores locais e consumidores:** moradores urbanos encontram dificuldade para descobrir produtores próximos, verificar disponibilidade real e conhecer a origem e o modo de cultivo dos alimentos.
+- **Gestão fragmentada de pedidos, estoques e entregas:** controles informais elevam erros de disponibilidade, atrasos na preparação e falta de rastreabilidade nas entregas.
+- **Ausência de um ambiente digital integrado:** ferramentas genéricas raramente contemplam em conjunto a vitrine rural, o controle transacional de estoque, a logística de entrega local e a moderação administrativa.
+
+A Feira Virtual procura contribuir para enfrentar esses desafios oferecendo uma arquitetura web unificada, responsiva e orientada a regras de negócio consistentes.
+
+> **Nota metodológica:** por se tratar de um sistema desenvolvido em contexto acadêmico, ainda sem implantação comercial em escala, os benefícios sociais e econômicos descritos representam **objetivos e contribuições potenciais da solução**, não resultados empíricos comprovados.
+
+### 3.2. Objetivos do Projeto
+
+1. **Viabilizar a venda direta** de produtos da agricultura familiar entre produtores e consumidores.
+2. **Facilitar a divulgação de propriedades e produtos rurais**, com busca textual, filtros por categoria e classificação do tipo de produção.
+3. **Promover transparência nas informações e nos preços**, exibindo dados do produtor, estoque disponível, formas de pagamento aceitas e avaliações reais pós-compra.
+4. **Organizar pedidos e controle de estoque**, protegendo a consistência dos saldos em cenários concorrentes.
+5. **Facilitar o gerenciamento das entregas**, integrando entregadores ao fluxo de pedidos prontos com controle rígido de transições de estado.
+6. **Disponibilizar ambientes específicos por perfil**, separando claramente as interfaces e permissões de clientes, produtores rurais, entregadores e administradores.
+
+---
+
+## 4. Relação com os Objetivos de Desenvolvimento Sustentável (ODS)
+
+A proposta da Feira Virtual dialoga com a **Agenda 2030 da Organização das Nações Unidas (ONU)**, tomando como referência as páginas oficiais das [Nações Unidas Brasil](https://brasil.un.org/pt-br/sdgs). Os três ODS mais alinhados às funcionalidades implementadas são:
 
 <table>
   <thead>
     <tr>
       <th width="130">Ícone</th>
       <th>Objetivo e Meta de Referência (ONU Brasil)</th>
-      <th>Relação com as Funcionalidades Reais da Feira Virtual</th>
+      <th>Contribuição Potencial e Vínculo com o Sistema</th>
     </tr>
   </thead>
   <tbody>
@@ -107,10 +134,10 @@ A proposta da Feira Virtual alinha-se à **Agenda 2030 da Organização das Naç
       </td>
       <td>
         <strong><a href="https://brasil.un.org/pt-br/sdgs/2">ODS 2 — Fome Zero e Agricultura Sustentável</a></strong><br />
-        <em>Meta 2.3:</em> dobrar a produtividade agrícola e a renda dos pequenos produtores de alimentos — em especial agricultores familiares —, inclusive por meio de acesso seguro a mercados e oportunidades de agregação de valor.
+        <em>Meta 2.3:</em> até 2030, dobrar a produtividade agrícola e a renda dos pequenos produtores de alimentos — particularmente agricultores familiares —, inclusive por meio de acesso a mercados e oportunidades de agregação de valor.
       </td>
       <td>
-        A vitrine pública de produtores aprovados (<code>GET /api/produtores/</code>), o cadastro de propriedades (<code>PerfilProdutor</code>) e o catálogo de venda direta (<code>GET /api/produtos/</code>) oferecem um canal digital para ampliar a visibilidade e facilitar o acesso ao mercado por pequenos agricultores.
+        A vitrine de produtores aprovados (<code>GET /api/produtores/</code>), o perfil da propriedade rural (<code>PerfilProdutor</code>) e o catálogo de venda direta (<code>GET /api/produtos/</code>) estruturam um canal digital voltado à valorização da agricultura familiar e à ampliação do acesso ao mercado.
       </td>
     </tr>
     <tr>
@@ -121,10 +148,10 @@ A proposta da Feira Virtual alinha-se à **Agenda 2030 da Organização das Naç
       </td>
       <td>
         <strong><a href="https://brasil.un.org/pt-br/sdgs/8">ODS 8 — Trabalho Decente e Crescimento Econômico</a></strong><br />
-        <em>Meta 8.3:</em> promover atividades produtivas, geração de trabalho decente, empreendedorismo, criatividade, inovação e o fortalecimento de micro e pequenos empreendimentos.
+        <em>Meta 8.3:</em> promover políticas e iniciativas orientadas para o desenvolvimento que apoiem atividades produtivas, geração de trabalho decente, empreendedorismo, criatividade, inovação e o fortalecimento de micro e pequenos empreendimentos.
       </td>
       <td>
-        Os painéis dedicados de Produtor Rural (gestão de catálogo, pedidos e resumo de vendas em <code>/api/produtor/pedidos/resumo/</code> e <code>/vendas/</code>) e de Entregador (gestão e extrato de entregas em <code>/api/entregas/</code>) apoiam a organização do trabalho local e podem fomentar oportunidades econômicas na cadeia curta.
+        Os workspaces dedicados de Produtor Rural (gestão de produtos, pedidos e relatórios de vendas em <code>/api/produtor/pedidos/resumo/</code> e <code>/vendas/</code>) e de Entregador (<code>/api/entregas/</code> e <code>/resumo/</code>) oferecem suporte operacional que pode fortalecer o empreendedorismo local e a geração de oportunidades para produtores e entregadores parceiros.
       </td>
     </tr>
     <tr>
@@ -135,133 +162,258 @@ A proposta da Feira Virtual alinha-se à **Agenda 2030 da Organização das Naç
       </td>
       <td>
         <strong><a href="https://brasil.un.org/pt-br/sdgs/12">ODS 12 — Consumo e Produção Responsáveis</a></strong><br />
-        <em>Meta 12.3:</em> reduzir o desperdício de alimentos nos níveis de varejo e do consumidor e reduzir perdas ao longo das cadeias de produção e abastecimento.
+        <em>Meta 12.3:</em> até 2030, reduzir o desperdício de alimentos nos níveis de varejo e do consumidor e reduzir as perdas ao longo das cadeias de produção e abastecimento.
       </td>
       <td>
-        A classificação explícita por tipo de cultivo (<code>ORGANICO_CERTIFICADO</code>, <code>AGROECOLOGICO</code> e <code>CONVENCIONAL</code>), a transparência de origem e o controle rigoroso de estoque/pedidos sob demanda (<code>pedidos/services.py</code>) favorecem uma comercialização mais organizada e consciente. <strong>Ressalva explícita:</strong> o sistema não mede diretamente a redução de desperdício ou de perdas pós-colheita.
+        A transparência sobre o tipo de produção (<code>ORGANICO_CERTIFICADO</code>, <code>AGROECOLOGICO</code>, <code>CONVENCIONAL</code>), a aproximação entre produtor e comprador e o controle rigoroso de estoques e pedidos sob demanda (<code>pedidos/services.py</code>) podem favorecer práticas mais conscientes e organizadas. <strong>Limitação explícita:</strong> o sistema não mede diretamente índices de redução de desperdício ou perdas de alimentos.
       </td>
     </tr>
   </tbody>
 </table>
 
-> **Aviso de uso dos ícones (Diretrizes da ONU):** os ícones dos ODS são empregados estritamente com finalidade acadêmica e informativa, segundo as orientações da [ONU Brasil](https://brasil.un.org/pt-br/node/110468). A Feira Virtual é um projeto universitário independente e não possui vínculo institucional nem endosso oficial da ONU.
-
-### 1.4. Visão Geral das Aplicações de Padrões de Projeto
-
-Para sustentar esses objetivos com manutenibilidade, segurança e extensibilidade, a implementação aplicou padrões de projeto e decisões arquiteturais concretas — incluindo **Service Layer** para isolar a lógica transacional de pedidos/estoque, **Strategy** para abstrair pagamento Pix e canais de notificação, **Adapter** para compatibilizar o driver `PyMySQL` ao Django, **Template Method** na autorização RBAC, **Facade** no cliente HTTP com renovação JWT e **Monólito Modular** por domínio — detalhados com evidências diretas do código na [Seção 2](#2-padrões-de-projeto-aplicados).
+> **Aviso sobre o uso dos ícones (ONU):** os ícones oficiais dos ODS são utilizados estritamente para fins acadêmicos e informativos, conforme as diretrizes da [ONU Brasil](https://brasil.un.org/pt-br/node/110468). Este projeto acadêmico não possui vínculo institucional nem endosso oficial da Organização das Nações Unidas.
 
 ---
 
-## 2. Padrões de Projeto Aplicados
+## 5. Padrões de Projeto Aplicados
 
-Para manter precisão conceitual em Engenharia de Software, as decisões estruturais da Feira Virtual são distinguidas em três categorias:
+**Padrões de Projeto (*Design Patterns*)** são soluções recorrentes e documentadas para problemas comuns de design de software orientado a objetos e de arquitetura. Sua adoção orientada por necessidade concreta melhora a legibilidade, reduz o acoplamento, favorece a reutilização e facilita a evolução do sistema.
 
+Na análise da Feira Virtual, distingue-se rigorosamente:
 - **Padrões de Projeto GoF (Gang of Four):** `Strategy`, `Adapter` e `Template Method`.
-- **Padrões Arquiteturais / Corporativos:** `Service Layer`, `Facade` (API Client) e `Monólito Modular`.
-- **Boas Práticas de Engenharia de Software:** *snapshot* imutável em `ItemPedido`, *soft delete* com `LogAuditoria`, proteção de concorrência com `select_for_update()` e middleware CSP (`config/middleware.py`).
+- **Padrões Arquiteturais / Corporativos:** `Service Layer` e `Facade` (além do estilo arquitetural de *Monólito Modular*).
+- **Princípios e Boas Práticas de Engenharia:** *snapshot* imutável de pedido (`ItemPedido`), *soft delete* com trilha `LogAuditoria`, proteção de concorrência (`select_for_update()`) e middleware de segurança CSP.
 
-### 2.1. Service Layer (Padrão Arquitetural / Corporativo)
+### 5.1. Service Layer — Camada de Serviços *(Padrão Arquitetural / Corporativo)*
 
-| Informação | Descrição |
+| Elemento | Descrição |
 |---|---|
 | **Padrão** | Service Layer (Camada de Serviços) |
-| **Objetivo** | Evitar que regras de negócio complexas, controle transacional e validações de domínio fiquem acoplados ou duplicados nas views HTTP e nos serializers. |
-| **Aplicação** | Centraliza a finalização do carrinho, a divisão automática em um pedido por produtor, a validação de pagamento, o controle transacional de estoque (baixa e estorno) e a máquina de estados de pedidos. |
-| **Evidência** | [`pedidos/services.py`](pedidos/services.py): `finalizar_carrinho()`, `mudar_status()`, `validar_pagamento()`, `_baixar_estoque()`, `_devolver_estoque()`, `_registrar()` e `TRANSICOES`; consumidos por `PedidoClienteViewSet`, `PedidoProdutorViewSet` e `EntregaViewSet` em `pedidos/views.py`. |
-| **Benefícios** | Views mais enxutas, reutilização consistente das mesmas regras para Cliente, Produtor e Entregador, atomicidade com `@transaction.atomic` + `select_for_update()` e alta testabilidade. |
+| **Objetivo** | Isolar regras de negócio complexas e controle transacional das camadas de apresentação/transporte (views HTTP e serializers), evitando duplicação e inconsistências de estado. |
+| **Aplicação** | Concentra a finalização do carrinho com divisão automática por produtor, a validação de formas de pagamento aceitas, o controle transacional de estoque (baixa no aceite e estorno no cancelamento/recusa) e a máquina de estados dos pedidos. |
+| **Evidência** | [`pedidos/services.py`](pedidos/services.py): `finalizar_carrinho()`, `mudar_status()`, `validar_pagamento()`, `_baixar_estoque()`, `_devolver_estoque()`, `_registrar()` e o mapa `TRANSICOES`; consumidos em `pedidos/views.py` por `PedidoClienteViewSet`, `PedidoProdutorViewSet` e `EntregaViewSet`. |
+| **Benefícios** | Views mais enxutas, reutilização única da máquina de estados para os diferentes perfis, garantias ACID via `@transaction.atomic` e `select_for_update()`, e maior facilidade de escrita de testes. |
 
-### 2.2. Strategy e Factory Function (Padrão GoF Comportamental)
+### 5.2. Strategy — Estratégia *(Padrão GoF Comportamental)*
 
-| Informação | Descrição |
+| Elemento | Descrição |
 |---|---|
-| **Padrão** | Strategy (com abstração de provedores, função fábrica e orquestrador) |
-| **Objetivo** | Desacoplar as regras de pedido das implementações concretas de cobrança Pix e de envio de notificações, permitindo trocar ou adicionar provedores sem alterar o núcleo do sistema. |
-| **Aplicação** | `GatewayPixBase` define o contrato (`gerar_cobranca()` e `validar_assinatura_webhook()`), implementado por `MockPixGateway` e resolvido por `obter_gateway_pix()`. Em notificações, `NotificadorBase` define `notificar()`, com implementações `NotificadorEmail` e `NotificadorWhatsApp` executadas por `CentralNotificacoes.disparar()`. |
+| **Padrão** | Strategy (combinado a função fábrica e orquestrador de provedores) |
+| **Objetivo** | Definir uma família de algoritmos ou provedores intercambiáveis sob uma interface comum, desacoplando o núcleo de negócio das implementações específicas de pagamento Pix e de notificação. |
+| **Aplicação** | Em `pedidos/pix.py`, `GatewayPixBase` estabelece o contrato (`gerar_cobranca()` e `validar_assinatura_webhook()`), implementado por `MockPixGateway` e resolvido por `obter_gateway_pix()`. Em `pedidos/notificacoes.py`, `NotificadorBase` define `notificar()`, implementado por `NotificadorEmail` e `NotificadorWhatsApp` e coordenado por `CentralNotificacoes.disparar()`. |
 | **Evidência** | [`pedidos/pix.py`](pedidos/pix.py) (`GatewayPixBase`, `MockPixGateway`, `obter_gateway_pix()`) e [`pedidos/notificacoes.py`](pedidos/notificacoes.py) (`NotificadorBase`, `NotificadorEmail`, `NotificadorWhatsApp`, `CentralNotificacoes`). |
-| **Benefícios** | Facilita futuras integrações com provedores externos sem impactar `pedidos/services.py` nem `pedidos/views.py`, além de isolar eventuais falhas de um canal de notificação sem interromper os demais. |
+| **Benefícios** | Permite introduzir futuros gateways reais de pagamento ou novos canais de notificação sem modificar `pedidos/services.py` ou as views, além de isolar exceções de um canal dentro de `CentralNotificacoes`. |
 
-> **Transparência sobre simulações:** `MockPixGateway` é uma implementação **simulada** (`"simulado": True`) para testes e ambiente local (com validação HMAC-SHA256 no webhook), e `NotificadorWhatsApp` apenas registra log estruturado (`[WHATSAPP MOCK]`). `NotificadorEmail` utiliza `console.EmailBackend` em dev (com suporte a SMTP via variáveis `EMAIL_*`). **Não há integração financeira ou de WhatsApp real ativa.**
+> **Aviso de transparência:** `MockPixGateway` é uma implementação **simulada** (`"simulado": True`) destinada a desenvolvimento, demonstração e testes de assinatura HMAC-SHA256; `NotificadorWhatsApp` apenas registra log estruturado (`[WHATSAPP MOCK]`), e `NotificadorEmail` usa `console.EmailBackend` em desenvolvimento (suportando SMTP em produção via `EMAIL_*`). **Não há integração ativa com provedores financeiros ou de WhatsApp externos.**
 
-### 2.3. Adapter (Padrão GoF Estrutural)
+### 5.3. Adapter — Adaptador *(Padrão GoF Estrutural)*
 
-| Informação | Descrição |
+| Elemento | Descrição |
 |---|---|
 | **Padrão** | Adapter (Adaptador) |
-| **Objetivo** | Compatibilizar o driver Python puro `PyMySQL` com a interface `MySQLdb` esperada internamente pelo backend `django.db.backends.mysql` do Django. |
-| **Aplicação** | Na inicialização do módulo `config`, o projeto define `pymysql.version_info` e executa `pymysql.install_as_MySQLdb()`, permitindo conectar ao MySQL 8.4 sem compilar bibliotecas nativas em C (`mysqlclient` / `gcc`). |
-| **Evidência** | [`config/__init__.py`](config/__init__.py) (`pymysql.install_as_MySQLdb()`) e [`entrypoint.sh`](entrypoint.sh). |
-| **Benefícios** | Build Docker mais simples e leve (`python:3.12-slim` sem compilador C) e troca transparente entre SQLite e MySQL via variável `DB_ENGINE`. |
+| **Objetivo** | Converter a interface de uma biblioteca disponível na interface esperada por um framework cliente sem modificar o código-fonte de nenhum dos dois. |
+| **Aplicação** | Na inicialização do pacote de configuração do Django, o sistema ajusta `pymysql.version_info` e executa `pymysql.install_as_MySQLdb()`, adaptando o driver Python puro `PyMySQL` à interface `MySQLdb` esperada pelo backend `django.db.backends.mysql`. |
+| **Evidência** | [`config/__init__.py`](config/__init__.py) (`pymysql.version_info = (2, 2, 1, "final", 0)` e `pymysql.install_as_MySQLdb()`) e [`entrypoint.sh`](entrypoint.sh). |
+| **Benefícios** | Dispensa compilação de extensões C (`mysqlclient`/`gcc`) no ambiente local e na imagem Docker (`python:3.12-slim`), mantendo troca transparente entre SQLite e MySQL via `DB_ENGINE`. |
 
-### 2.4. Template Method / Hierarquia RBAC (Padrão GoF Comportamental)
+### 5.4. Outros Padrões Identificados no Código
 
-| Informação | Descrição |
+#### Template Method em Permissões RBAC *(Padrão GoF Comportamental)*
+
+| Elemento | Descrição |
 |---|---|
-| **Padrão** | Template Method (aplicado à autorização por perfil no DRF) |
-| **Objetivo** | Padronizar a checagem de autenticação e tipo de usuário em todos os endpoints sem repetir lógica condicional nas views. |
-| **Aplicação** | A classe base `_PorTipo` implementa o fluxo comum em `has_permission()`, delegando às subclasses apenas a definição do atributo `tipo`. `AdminEscreveTodosLeem` complementa o modelo para recursos de leitura pública e escrita administrativa. |
-| **Evidência** | [`usuarios/permissions.py`](usuarios/permissions.py): `_PorTipo`, `EhCliente`, `EhProdutor`, `EhEntregador`, `EhAdmin` e `AdminEscreveTodosLeem`. |
-| **Benefícios** | Controle de acesso declarativo por ViewSet/APIView, reduzindo risco de falhas de permissão e facilitando auditoria. |
+| **Padrão** | Template Method |
+| **Objetivo** | Definir o esqueleto da validação de autenticação e perfil em uma classe base, delegando às subclasses apenas a variação específica do tipo de usuário autorizado. |
+| **Aplicação** | `_PorTipo` implementa `has_permission()`, enquanto cada subclasse declara apenas o atributo `tipo` correspondente ao perfil exigido pelo endpoint. |
+| **Evidência** | [`usuarios/permissions.py`](usuarios/permissions.py): `_PorTipo`, `EhCliente`, `EhProdutor`, `EhEntregador` e `EhAdmin` (complementadas por `AdminEscreveTodosLeem`). |
+| **Benefícios** | Elimina repetição condicional de permissões nas views e centraliza a política RBAC em um ponto auditável. |
 
-### 2.5. Facade / Interceptador HTTP no Front-End (Padrão Estrutural)
+#### Facade no Cliente HTTP do Front-End *(Padrão GoF Estrutural)*
 
-| Informação | Descrição |
+| Elemento | Descrição |
 |---|---|
-| **Padrão** | Facade (Cliente HTTP centralizado no frontend) |
-| **Objetivo** | Encapsular o envio de requisições autenticadas com Bearer JWT, a renovação automática de tokens expirados (`401`) com enfileiramento de chamadas simultâneas e o tratamento uniforme de erros. |
-| **Aplicação** | Todos os módulos de interface (`auth.js`, `products.js`, `cart.js`, `orders.js`, `producer.js`, `delivery.js`, `admin.js`) consomem a API através de `apiFetch()`, que coordena `refreshAccessToken()` e dispara eventos globais (`fv:loading`, `fv:auth-expired`). |
+| **Padrão** | Facade (Fachada de comunicação com a API) |
+| **Objetivo** | Oferecer uma interface unificada e simples para todos os módulos de tela consumirem a API REST, ocultando detalhes de cabeçalhos JWT, renovação de sessão (`401`), enfileiramento concorrente e normalização de erros. |
+| **Aplicação** | Os 8 módulos de interface em `frontend/js/` invocam `apiFetch()` e `parseError()`, delegando o gerenciamento de tokens (`tokens`), `refreshAccessToken()`, `processQueue()` e eventos globais (`fv:loading`, `fv:auth-expired`). |
 | **Evidência** | [`frontend/js/api.js`](frontend/js/api.js): `apiFetch()`, `refreshAccessToken()`, `processQueue()`, `tokens` e `parseError()`. |
-| **Benefícios** | Elimina duplicação de autenticação/tratamento de erro nos 8 módulos de tela e previne condições de corrida na renovação do token. |
-
-### 2.6. Organização Modular e Separação de Responsabilidades (Padrão Arquitetural)
-
-| Informação | Descrição |
-|---|---|
-| **Padrão** | Monólito Modular (Separação de Responsabilidades por Domínio) |
-| **Objetivo** | Estruturar a aplicação com fronteiras nítidas entre domínios de negócio, equilibrando coesão arquitetural e simplicidade operacional. |
-| **Aplicação** | O backend divide-se em cinco apps Django de domínio (`usuarios`, `catalogo`, `pedidos`, `avaliacoes`, `painel`) e um núcleo de configuração (`config`), enquanto a interface é organizada em ES Modules desacoplados (`frontend/`). |
-| **Evidência** | Diretórios `config/`, `usuarios/`, `catalogo/`, `pedidos/`, `avaliacoes/`, `painel/` e `frontend/js/`. |
-| **Benefícios** | Alta coesão por domínio, fácil localização de código/testes e manutenção evolutiva simplificada. |
-
-| Módulo | Responsabilidade Principal |
-|---|---|
-| `config/` | Configurações (`settings.py`), roteamento raiz (`urls.py`), adapter PyMySQL (`__init__.py`), middleware CSP (`middleware.py`) e validação binária de uploads (`validators.py`). |
-| `usuarios/` | Modelo `Usuario`, perfis 1:1 (`PerfilProdutor`, `PerfilEntregador`), `Endereco`, autenticação JWT, recuperação de senha, LGPD, RBAC e `seed_demo`. |
-| `catalogo/` | `Categoria`, `Produto` (estoque, tipo de produção e moderação), vitrine de produtores aprovados, busca/filtros e estatísticas públicas. |
-| `pedidos/` | `Carrinho`, `ItemCarrinho`, `Pedido`, `ItemPedido` (snapshot), `HistoricoStatus`, `services.py`, `pix.py`, `notificacoes.py` e entregas. |
-| `avaliacoes/` | `Avaliacao` (produto e produtor), `AvaliacaoCliente` (avaliação recíproca do produtor ao cliente) e `Reclamacao`. |
-| `painel/` | Moderação administrativa, soft delete, indicadores gerenciais e trilha `LogAuditoria`. |
-| `frontend/` | HTML5, CSS3 (tokens + Light/Dark mode), 10 arquivos JS ES Modules (`main.js` + `js/*.js`) e ativos locais (`assets/`). |
+| **Benefícios** | Reduz acoplamento das telas ao protocolo HTTP e evita condições de corrida quando várias requisições recebem `401` simultaneamente. |
 
 ---
 
-## 3. Acompanhamento do Projeto
+## 6. Acompanhamento do Desenvolvimento
 
-O desenvolvimento da Feira Virtual foi conduzido de forma incremental e rastreável por meio do **Git**, com separação entre a branch `main` e a branch de desenvolvimento `dev` (24 commits registrados entre `06/11/2026` e `21/11/2026`).
+A evolução do projeto foi registrada de forma incremental no **Git**, utilizando as branches `main` e `dev` (com 25 commits rastreáveis na branch `dev` entre `06/11/2026` e `21/11/2026`).
 
-### 3.1. Evolução Cronológica Baseada no Histórico do Git (`dev`)
+### Evolução Real Identificada no Histórico Git (`dev`)
 
-1. **Base da API, modelagem inicial e regras de negócio (`cc3d5c0`, 06/11/2026):** criação dos cinco apps Django, modelos relacionais, migrações iniciais, serializers, permissões RBAC, camada `pedidos/services.py` e primeiros testes de fluxo.
-2. **Integração Front-End, suporte híbrido SQLite/MySQL e Docker (`bd7c0dc`, 13/11/2026):** interface servida diretamente pelo Django, upload de imagens, alternância SQLite/MySQL via `.env` e criação de `Dockerfile`, `docker-compose.yml` e `entrypoint.sh`.
-3. **Hardening de segurança, identidade visual, modularização JS e testes (`bb472bb`, 19/11/2026):** middleware CSP, throttles por escopo, validação Pillow, `seed_demo`, `LogAuditoria`, LGPD, `MockPixGateway`, `CentralNotificacoes`, paleta oficial, divisão do frontend em ES Modules (`frontend/js/`) e ampliação da suíte de testes.
-4. **Painéis dedicados, avaliações e refinamentos funcionais (`d1aa17a` a `e78839f`, 20/11/2026):** taxa de entrega definida exclusivamente no servidor, endurecimento do webhook Pix, proteção `ProtectedError` em categorias, resumo de endereço ao entregador antes do aceite, painéis próprios para Produtor Rural e Entregador, avaliações por compra (incluindo avaliação recíproca de clientes) e gestão administrativa com soft delete.
-5. **Correções de revisão técnica (`c2d2ecb`, 21/11/2026):** proteção contra *Path Traversal* em `frontend_assets_view`, separação do campo `oculto_moderacao`, normalização de `txid` no webhook Pix, transição obrigatória `PRONTO → EM_ENTREGA → CONCLUIDO`, compatibilização de `UniqueConstraint` com MySQL 8.4, ajustes de Docker, promoção do Admin para workspace de tela cheia, diferenciação da Home para cliente logado, sprite SVG local, paginação nas listagens e ampliação para 42 testes automatizados.
+1. **Planejamento, modelagem e base da API (`cc3d5c0`, 06/11/2026):** criação dos cinco aplicativos Django (`usuarios`, `catalogo`, `pedidos`, `avaliacoes`, `painel`), modelagem relacional, migrações iniciais, autenticação JWT, permissões RBAC, camada `pedidos/services.py` e testes iniciais de fluxo.
+2. **Front-End integrado, banco híbrido e containerização (`bd7c0dc`, 13/11/2026):** integração da interface web servida pelo próprio Django, upload de imagens para produtos e propriedades, suporte híbrido SQLite/MySQL e adição de `Dockerfile`, `docker-compose.yml` e `entrypoint.sh`.
+3. **Hardening de segurança, identidade visual e modularização (`bb472bb`, 19/11/2026):** introdução do middleware CSP, throttles por escopo, validação binária de uploads com Pillow, `seed_demo`, `LogAuditoria`, LGPD, `MockPixGateway`, `CentralNotificacoes`, divisão do frontend em ES Modules (`frontend/js/`) e expansão dos testes.
+4. **Regras de entrega, painéis dedicados e avaliações (`d1aa17a` a `e78839f`, 20/11/2026):** frete definido exclusivamente no servidor, endurecimento do webhook Pix, tratamento de `ProtectedError` em categorias, resumo de endereço ao entregador antes do aceite, painéis dedicados de Produtor Rural e Entregador, avaliações vinculadas à compra (incluindo avaliação recíproca de clientes) e soft delete administrativo.
+5. **Revisão técnica e consolidação (`c2d2ecb` e `c9df3ba`, 21/11/2026):** correção de *Path Traversal* em `/assets/`, campo independente `oculto_moderacao`, normalização de `txid` no webhook Pix, obrigatoriedade de `PRONTO → EM_ENTREGA → CONCLUIDO`, compatibilização de `UniqueConstraint` com MySQL 8.4, ajustes de Docker, promoção do Admin para workspace de tela cheia, diferenciação da Home para cliente logado, sprite SVG local, paginação completa nas listagens, 42 testes automatizados e reorganização documental.
 
-### 3.2. Tabela de Acompanhamento
+### Tabela de Acompanhamento
 
 | Etapa | Descrição | Situação Real (evidenciada no repositório) |
 |---|---|---|
-| **Planejamento e Modelagem** | Definição da proposta, perfis, entidades, constraints e migrações (`usuarios`, `catalogo`, `pedidos`, `avaliacoes`, `painel`) | **Concluída** — modelos e migrações íntegros (`makemigrations --check --dry-run` sem pendências). |
-| **Backend (API e Regras de Negócio)** | API REST em DRF, camada `pedidos/services.py`, estoque transacional, entregas, avaliações, LGPD, moderação e OpenAPI | **Concluída** — endpoints funcionais e schema OpenAPI validado. |
-| **Autenticação e Autorização** | JWT com SimpleJWT (`access`/`refresh`/`blacklist`), throttles, recuperação de senha e permissões RBAC | **Concluída** — validada por testes de login, logout, permissões e isolamento de dados. |
-| **Front-End** | Interface responsiva em HTML5, CSS3 e ES Modules com workspaces por perfil, Light/Dark mode e acessibilidade | **Concluída** — 10 módulos JS + sprite SVG local servidos sob CSP estrita. |
-| **Integração Front-End e API** | Comunicação HTTP/JSON via `frontend/js/api.js` com refresh automático de JWT e paginação | **Concluída** — fluxos completos dos 4 perfis integrados à API real. |
-| **Containerização** | `Dockerfile` não-root, `docker-compose.yml` (Django + MySQL 8.4) e `entrypoint.sh` | **Concluída (configurada)** — arquivos prontos e revisados para execução em ambiente com Docker. |
-| **Testes Automatizados** | 42 métodos de teste distribuídos nos 5 módulos (`*/tests.py`) | **Concluída e validada** — 42/42 aprovados via `python manage.py test`. |
-| **Integração Contínua (CI)** | Workflow automatizado em `.github/workflows/ci.yml` | **Pendente na branch `dev`** — constou em commits anteriores da `main` (`e5df5f2`, `e056968`), mas não existe atualmente na `dev`. |
+| **Planejamento e Modelagem** | Definição da proposta, perfis, entidades, constraints e migrações (`usuarios`, `catalogo`, `pedidos`, `avaliacoes`, `painel`) | **Concluída** — modelos e migrações consistentes (`makemigrations --check --dry-run` sem alterações pendentes). |
+| **Backend (API e Regras de Negócio)** | Desenvolvimento da API REST com DRF, `pedidos/services.py`, estoque transacional, entregas, avaliações, LGPD e OpenAPI | **Concluída** — API funcional e schema OpenAPI validado (`spectacular --validate`). |
+| **Autenticação e Autorização** | Login JWT (`SimpleJWT`), blacklist no logout, recuperação de senha, throttles e permissões RBAC por perfil | **Concluída** — validada por testes automatizados de autenticação, RBAC e isolamento de recursos. |
+| **Front-End** | Interfaces responsivas em HTML5/CSS3/ES Modules com workspaces dedicados, Light/Dark mode e acessibilidade | **Concluída** — `main.js` + 9 módulos em `frontend/js/` e sprite SVG local sob CSP estrita. |
+| **Integração** | Comunicação HTTP/JSON entre frontend e API via `frontend/js/api.js` com renovação automática de JWT | **Concluída** — todos os fluxos dos quatro perfis integrados aos endpoints reais. |
+| **Containerização** | Configuração de `Dockerfile`, `docker-compose.yml` (Django + MySQL 8.4) e `entrypoint.sh` | **Concluída (configurada)** — artefatos prontos e revisados para execução em ambiente com Docker. |
+| **Testes Automatizados** | Validação automatizada distribuída nos cinco aplicativos (`*/tests.py`) | **Concluída e validada** — 42/42 testes aprovados via `python manage.py test`. |
+| **Integração Contínua (CI)** | Workflow automatizado em `.github/workflows/ci.yml` | **Pendente na branch `dev`** — existiu em commits anteriores da `main` (`e5df5f2`, `e056968`), mas não está presente na `dev` atual. |
 
-O histórico semântico de commits (`feat:`, `fix:`, `security:`, `style:`, `docs:`) e o isolamento em branches permitiram auditar correções, acompanhar a evolução incremental das entregas e manter rastreabilidade técnica ao longo de toda a disciplina.
+### Importância do Git no Acompanhamento
 
-### 3.3. Arquitetura, Tecnologias e Funcionalidades por Perfil
+O controle de versão com **Git** — separando o trabalho em branch de desenvolvimento (`dev`) e adotando mensagens de commit descritivas (`feat:`, `fix:`, `security:`, `style:`, `docs:`) — permitiu rastrear cada requisito implementado, auditar correções de segurança, verificar a evolução das migrações de banco e documentar de forma transparente o histórico real do software.
+
+---
+
+## 7. Apresentação do Projeto e Requisitos de Avaliação
+
+A tabela abaixo resume onde localizar as evidências de atendimento a cada um dos **cinco critérios de avaliação** da disciplina, detalhados nas subseções seguintes:
+
+| Critério de Avaliação | Resumo das Evidências no Repositório |
+|---|---|
+| **Projeto Conteinerizado** | [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml) (Django + Gunicorn + MySQL 8.4, volumes e healthchecks) e [`entrypoint.sh`](entrypoint.sh) |
+| **API com os Principais Requisitos** | 5 apps DRF (`usuarios`, `catalogo`, `pedidos`, `avaliacoes`, `painel`), [`pedidos/services.py`](pedidos/services.py), OpenAPI/Swagger (`/api/docs/`) |
+| **Autenticação e Autorização** | `SimpleJWT` (`access`/`refresh`/`token_blacklist`), CSRF, throttles, [`usuarios/permissions.py`](usuarios/permissions.py) e isolamento por titular |
+| **CI e Testes** | 42 testes automatizados aprovados em `*/tests.py` + `check`, `makemigrations --check` e `spectacular --validate` *(CI pendente na branch `dev`)* |
+| **Front-End e Demonstração** | [`frontend/index.html`](frontend/index.html), [`frontend/style.css`](frontend/style.css), [`frontend/main.js`](frontend/main.js), `frontend/js/` (9 ES Modules) e roteiro prático |
+
+### 7.1. Projeto Conteinerizado
+
+A containerização padroniza o ambiente de execução, isola a camada web do banco de dados, aumenta a portabilidade entre máquinas e simplifica a implantação com reprodutibilidade.
+
+- **[`Dockerfile`](Dockerfile):** imagem `python:3.12-slim`, usuário sem privilégios administrativos `appuser` (com `HOME=/home/appuser` gravável), instalação limpa de `requirements.txt` sem `gcc` (via `PyMySQL`), cópia com `--chown=appuser:appgroup`, coleta de estáticos via WhiteNoise no build, `HEALTHCHECK` consultando `http://localhost:8000/api/health/` com Python stdlib e servidor WSGI **Gunicorn** (`3 workers`, `--timeout 60`).
+- **[`docker-compose.yml`](docker-compose.yml):** orquestra o container `db` (**MySQL 8.4**, volume persistente `mysql_data`, porta restrita a `127.0.0.1:3306:3306`, `healthcheck` com `MYSQL_PWD`) e o container `web` (Django, dependente de `db` com `condition: service_healthy`, comunicação interna via `DB_HOST: db`, volume persistente `media_data`, porta `8000:8000` e repasse das variáveis de ambiente).
+- **[`entrypoint.sh`](entrypoint.sh):** aguarda o MySQL aceitar conexões (até 30 tentativas), executa `python manage.py migrate --noinput` automaticamente e entrega o processo ao Gunicorn (`exec "$@"`).
+
+Comandos principais para subir e inspecionar a aplicação com Docker:
+
+```bash
+docker compose up --build -d
+docker compose ps
+docker compose logs -f web
+```
+
+*(Detalhes completos de variáveis e cenários Docker estão na [Seção 12](#12-inicialização-com-docker).)*
+
+### 7.2. API com os Principais Requisitos
+
+A API REST foi construída com **Django REST Framework**, adotando comunicação **HTTP/JSON** (e `multipart/form-data` para uploads de imagem validados com Pillow), paginação padrão (`PAGE_SIZE = 20`), busca (`SearchFilter`), filtros (`DjangoFilterBackend`) e ordenação (`OrderingFilter`).
+
+Funcionalidades atendidas por módulo:
+
+- **Usuários (`usuarios/`):** cadastro por perfil, gerenciamento de perfil geral/produtor/entregador, CRUD de endereços, autenticação JWT, recuperação de senha e direitos LGPD (exportação JSON e exclusão/anonimização exigindo senha atual).
+- **Catálogo (`catalogo/`):** gestão de categorias (com proteção `ProtectedError`), cadastro e consulta de produtos, vitrine de produtores aprovados, busca/filtros por categoria/tipo de produção/produtor e controle de estoque.
+- **Pedidos (`pedidos/`):** carrinho persistido, checkout com separação automática em um pedido por produtor, máquina de estados (`PENDENTE → ACEITO → EM_PREPARO → PRONTO → EM_ENTREGA/CONCLUIDO`), cancelamento com estorno de estoque e cobrança Pix **simulada** (`MockPixGateway`, retornando `"simulado": true`, sem transação financeira real).
+- **Entregas (`pedidos/`):** listagem de entregas disponíveis (com endereço resumido antes do aceite), aceite atômico, sequência obrigatória `EM_ENTREGA → CONCLUIDO`, resumo de ganhos e histórico.
+- **Avaliações (`avaliacoes/`):** avaliações de produtos e produtores vinculadas a pedidos concluídos, avaliação recíproca do produtor ao cliente (`AvaliacaoCliente`) e sistema de reclamações.
+- **Administração (`painel/`):** gerenciamento e soft delete de usuários, produtores e produtos, moderação independente (`oculto_moderacao`), consulta de pedidos, tratamento de reclamações, moderação de avaliações, indicadores globais e `LogAuditoria`.
+
+**Documentação interativa OpenAPI/Swagger (`drf-spectacular`):**
+- **Swagger UI:** `http://127.0.0.1:8000/api/docs/`
+- **Schema OpenAPI:** `http://127.0.0.1:8000/api/schema/`
+- Por segurança (`config/urls.py`), o acesso é restrito a administradores por padrão (`IsAdminUser`), podendo ser aberto em ambiente local com `ENABLE_SWAGGER=1`.
+
+*(A listagem detalhada de endpoints por método HTTP encontra-se na [Seção 13](#13-principais-endpoints-da-api).)*
+
+### 7.3. Autenticação e Autorização
+
+O sistema distingue explicitamente **autenticação** (validar a identidade do usuário) de **autorização** (determinar quais operações e registros esse perfil pode acessar ou alterar):
+
+- **Autenticação com DRF e SimpleJWT ([`config/settings.py`](config/settings.py) e [`usuarios/views.py`](usuarios/views.py)):**
+  - `JWTAuthentication` como esquema principal (`ACCESS_TOKEN_LIFETIME = 1 hora`, `REFRESH_TOKEN_LIFETIME = 7 dias`) aliado ao aplicativo `rest_framework_simplejwt.token_blacklist`.
+  - **Login, cadastro e recuperação de senha** protegidos por throttles dedicados (`login`: `10/minute`; `registro` e `recuperar_senha`: `5/minute`), resposta neutra na recuperação (evitando enumeração de contas) e validação de força de senha na redefinição.
+  - **Blacklist no logout (`LogoutView`):** verifica se o `user_id` do refresh token pertence ao `request.user` antes de revogá-lo (`403 Forbidden` para tokens de terceiros); na exclusão LGPD, todos os tokens pendentes do titular são enviados à blacklist.
+  - **Proteção CSRF e estado real de cookies `HttpOnly` / rotação de tokens:** a aplicação mantém `CsrfViewMiddleware`, `CSRF_TRUSTED_ORIGINS` e cookies `HttpOnly`/`Secure` nativos do Django para `SessionAuthentication` (Django Admin e sessões em produção com `SECURE_SSL_REDIRECT=1`). **Transparência sobre a implementação atual do JWT no frontend:** os tokens JWT em [`frontend/js/api.js`](frontend/js/api.js) são armazenados em `localStorage` (mitigados por CSP estrita `script-src 'self'` e sanitização `escapeHtml()`/`safeUrl()`), e `ROTATE_REFRESH_TOKENS` encontra-se definido como `False` em [`config/settings.py`](config/settings.py) — ficando a migração dos tokens JWT para cookies `HttpOnly` com rotação automática registrada como evolução futura de segurança.
+- **Autorização (RBAC + Isolamento de Recursos):**
+  - Política padrão *default-deny* (`IsAuthenticated` global no DRF); apenas rotas públicas específicas utilizam `AllowAny`.
+  - Permissões personalizadas em [`usuarios/permissions.py`](usuarios/permissions.py):
+
+    ```python
+    class _PorTipo(BasePermission):
+        tipo = None
+        def has_permission(self, request, view):
+            u = request.user
+            return bool(u and u.is_authenticated and u.tipo == self.tipo)
+
+    class EhCliente(_PorTipo):     tipo = "CLIENTE"
+    class EhProdutor(_PorTipo):    tipo = "PRODUTOR"
+    class EhEntregador(_PorTipo):  tipo = "ENTREGADOR"
+    class EhAdmin(_PorTipo):       tipo = "ADMIN"
+    ```
+
+    Somado ao RBAC, todos os ViewSets filtram `get_queryset()` pelo usuário autenticado (impedindo IDOR entre contas do mesmo perfil) e `pedidos/services.py` valida autoria/atribuição antes de cada mudança de status.
+
+| Perfil | Responsabilidades e Controle de Acesso |
+|---|---|
+| **Cliente** | Comprar produtos, gerenciar carrinho/endereços, acompanhar e cancelar próprios pedidos, avaliar compras concluídas e abrir reclamações (`EhCliente`). |
+| **Produtor Rural** | Gerenciar própria propriedade, catálogo de produtos, estoque, pedidos recebidos, vendas e avaliação recíproca de clientes (`EhProdutor`); não pode reverter `oculto_moderacao`. |
+| **Entregador** | Visualizar entregas disponíveis (endereço resumido), aceitar entregas, registrar `EM_ENTREGA → CONCLUIDO` e consultar histórico/veículo (`EhEntregador`). |
+| **Administrador** | Administrar usuários, aprovar/suspender produtores, moderar produtos/avaliações/reclamações, gerenciar categorias e consultar indicadores com `LogAuditoria` (`EhAdmin` / `AdminEscreveTodosLeem`). |
+
+### 7.4. CI e Testes
+
+A suíte automatizada soma **42 métodos de teste** distribuídos nos cinco módulos de domínio:
+
+| Arquivo | Quantidade | Principais Funcionalidades Validadas |
+|---|---|---|
+| [`usuarios/tests.py`](usuarios/tests.py) | **10** | Registro de cliente/produtor (`PENDENTE`), upload de foto da propriedade, edição de perfil, CRUD de endereços, exportação/exclusão LGPD (com exigência de senha e suspensão de produtor/produtos), bloqueio de logout com token alheio, bloqueio de *Path Traversal* em `/assets/`, `/api/config/` e link de redefinição de senha. |
+| [`catalogo/tests.py`](catalogo/tests.py) | **9** | Permissões de categoria, `ProtectedError` na exclusão de categoria com produtos, categorias ativas vs. inativas, exposição segura de `aceita_pix` sem vazar `chave_pix`, filtros/busca, isolamento entre produtores, estatísticas, CSP/healthcheck e bloqueio de upload inválido. |
+| [`pedidos/tests.py`](pedidos/tests.py) | **13** | Fluxo completo (carrinho → checkout → aceite → preparo → entrega → conclusão), cancelamento com devolução de estoque, logout/recuperação, múltiplos produtores gerando pedidos separados, Pix + webhook HMAC (e rejeição de segredo padrão em produção), taxa de entrega no servidor, recusa com motivo, validação de unidades no carrinho, endereço resumido antes do aceite, aceite duplicado/isolamento de entregas, resumo do produtor e bloqueio de categoria inativa. |
+| [`avaliacoes/tests.py`](avaliacoes/tests.py) | **4** | Restrição de avaliação apenas a pedidos concluídos, isolamento de reclamações, avaliação recíproca do produtor ao cliente e histórico/autoria por pedido. |
+| [`painel/tests.py`](painel/tests.py) | **6** | Restrição `EhAdmin`, bloqueio/reativação com `LogAuditoria`, aprovação/suspensão de produtor, moderação `oculto_moderacao` irreversível pelo produtor, moderação de reclamações com auditoria e soft delete administrativo preservando histórico. |
+| **Total** | **42** | **Validação integrada de regras de negócio, RBAC, concorrência, LGPD e regressões de segurança.** |
+
+**Resultados verificados localmente sobre a base atual:**
+- `python manage.py check` → `System check identified no issues (0 silenced).`
+- `python manage.py makemigrations --check --dry-run` → `No changes detected`
+- `python manage.py spectacular --validate` → validado sem erros de schema.
+- `python manage.py test` → **`Ran 42 tests — OK`** (42 aprovados, 0 falhas, 0 erros).
+
+**Integração Contínua (GitHub Actions):** ao auditar a branch `dev`, confirmou-se que **atualmente não existe arquivo de workflow em `.github/workflows/`** (houve um `.github/workflows/ci.yml` em commits anteriores da branch `main`, como `e5df5f2` e `e056968`, mas ele não está presente na `dev`). Portanto, a **Integração Contínua permanece pendente na branch `dev`** e registrada transparentemente como melhoria futura, sem criação de pipeline nesta tarefa documental.
+
+*(Comandos completos de validação estão listados na [Seção 14](#14-execução-dos-testes).)*
+
+### 7.5. Front-End e Demonstração
+
+O frontend é servido diretamente pelo Django sem etapas de build nem dependências de CDNs externas, atendendo integralmente à política CSP estrita (`script-src 'self'`):
+
+- **Tecnologias:** HTML5 semântico ([`frontend/index.html`](frontend/index.html)), CSS3 com tokens e Light/Dark Mode ([`frontend/style.css`](frontend/style.css)), JavaScript Vanilla em ES Modules ([`frontend/main.js`](frontend/main.js) e 9 módulos em `frontend/js/`: `api`, `auth`, `products`, `cart`, `orders`, `producer`, `delivery`, `admin`, `ui`), sprite SVG local ([`frontend/assets/icons.svg`](frontend/assets/icons.svg)) e integração via HTTP/JSON + JWT.
+- **Decisões de interface, responsividade e acessibilidade:** layout responsivo desktop/mobile, paleta 60-30-10 extraída da logo oficial (verde `#246F11`, verde-escuro `#1B4312`, verde-claro `#67AE25`, laranja CTA `#F7990C` e neutros `#FAFAF8` / `#141712`) com contraste WCAG 2.1 AA, áreas de toque mínimas de `44px`, *focus trap* e `Escape` em modais e drawer, toasts `aria-live`, alternância mostrar/ocultar senha e respeito a `prefers-reduced-motion`.
+- **Principais interfaces:** página inicial diferenciada (visitante vs. cliente autenticado), catálogo paginado com busca e filtros, modal de detalhes de produto, vitrine/modal de produtores parceiros, carrinho lateral (*drawer*), checkout agrupado por produtor, área do cliente (*Meus Pedidos* com timeline, Pix QR SVG, endereços com ViaCEP, avaliações, reclamações e exclusão LGPD), workspace do produtor rural, workspace do entregador (sem exibição do catálogo de compras) e workspace administrativo em tela cheia com dashboard e fila de pendências.
+
+#### Roteiro de Demonstração Prática
+
+Em ambiente local (`DJANGO_DEBUG=1`), execute `python manage.py seed_demo` (ou `--reset`) para criar dados iniciais e as quatro contas de demonstração (`cliente_demo`, `produtor_demo`, `entregador_demo` e `admin`); as senhas temporárias são exibidas diretamente na saída do terminal (e consultáveis em [`usuarios/management/commands/seed_demo.py`](usuarios/management/commands/seed_demo.py), sem exposição neste README).
+
+1. **Página inicial e proposta (Visitante):** abrir `http://127.0.0.1:8000/`, apresentar a ideia, alternar Light/Dark mode e demonstrar responsividade.
+2. **Catálogo e produtores:** pesquisar itens, aplicar filtros por categoria/tipo de produção, abrir detalhes de produto e consultar produtores parceiros.
+3. **Compra como Cliente (`cliente_demo`):** autenticar, cadastrar endereço (ViaCEP), adicionar itens ao carrinho, concluir o checkout (entrega/retirada + Pix simulado) e acompanhar o pedido em *Meus Pedidos*.
+4. **Gestão como Produtor Rural (`produtor_demo`):** abrir o workspace do produtor, cadastrar/editar produto com estoque, aceitar o pedido (evidenciando baixa de estoque) e avançar até `Pronto`.
+5. **Entregas (`entregador_demo`):** entrar no painel do entregador, mostrar o pedido disponível com endereço resumido, aceitar (liberando o endereço completo), marcar *Saiu para entrega* e *Confirmar entrega*.
+6. **Avaliações:** retornar ao cliente para avaliar o produto e o produtor do pedido concluído (e opcionalmente demonstrar a avaliação recíproca do cliente pelo produtor).
+7. **Administração (`admin`):** acessar o workspace administrativo, exibir indicadores globais, fila de pendências, moderação de produtos/produtores/usuários e gestão de categorias e reclamações.
+
+#### Evidências Visuais
+
+Ativo visual oficial atualmente versionado em `frontend/assets/`:
+
+<p align="center">
+  <img src="frontend/assets/og-image.png" alt="Cartão visual oficial da Feira Virtual" width="520" />
+</p>
+
+> **Pendência registrada:** o repositório possui os ativos oficiais da identidade visual (`logo-horizontal.png`/`.webp`, variantes dark mode, `og-image.png`, favicons PWA e `icons.svg`), porém ainda não possui capturas de tela das interfaces em execução versionadas (ex.: em `docs/screenshots/`).
+
+---
+
+## 8. Arquitetura e Tecnologias
+
+A Feira Virtual adota uma arquitetura **monolítica modular single-server**, na qual o Django entrega a API REST (`/api/`), a interface web (`/`) e os arquivos estáticos comprimidos com WhiteNoise.
 
 ```mermaid
 flowchart TB
@@ -294,106 +446,7 @@ flowchart TB
     DRF --> Media
 ```
 
-**Stack tecnológica (`requirements.txt`, `requirements-dev.txt` e `Dockerfile`):** Python 3.12 · Django (`>=5.2,<7`; `6.1.3`) · DRF (`3.18.3`) · SimpleJWT (com `token_blacklist`) · `django-filter` · `django-cors-headers` · `drf-spectacular` · `PyMySQL` · `cryptography` · `Pillow` · `WhiteNoise` · `Gunicorn` · MySQL 8.4 / SQLite · HTML5, CSS3 e JavaScript ES Modules.
-
-| Perfil | Principais Funcionalidades Implementadas |
-|---|---|
-| **Cliente** | Catálogo paginado com busca/filtros, vitrine de produtores, carrinho persistido, checkout multi-produtor (entrega/retirada; Pix simulado, cartão ou dinheiro), histórico e timeline de pedidos, cancelamento com estorno de estoque, CRUD de endereços (ViaCEP), avaliações de produtos/produtores, reclamações e direitos LGPD. |
-| **Produtor Rural** | Cadastro de propriedade (aprovação admin), workspace dedicado, CRUD de produtos com foto/estoque/cultivo, resumo e relatório de vendas, aceite/recusa e avanço de pedidos, avaliação recíproca de clientes e gestão de formas de pagamento aceitas. |
-| **Entregador** | Workspace dedicado sem catálogo de compras, lista de entregas disponíveis (endereço resumido antes do aceite), aceite atômico, sequência obrigatória `EM_ENTREGA → CONCLUIDO`, extrato de entregas e edição de dados do veículo. |
-| **Administrador** | Workspace dedicado abrindo no Dashboard de Indicadores e fila de pendências, aprovação/suspensão/soft delete de produtores e usuários, moderação independente de produtos (`oculto_moderacao`), gestão de categorias (`ProtectedError`), pedidos, reclamações, avaliações e `LogAuditoria`. |
-
----
-
-## 4. Conteinerizado
-
-A Feira Virtual foi preparada para execução reproduzível em containers, garantindo padronização do ambiente, isolamento entre aplicação e banco de dados, portabilidade e facilidade de implantação.
-
-### Componentes da Containerização
-
-- **[`Dockerfile`](Dockerfile):** baseado em `python:3.12-slim`, cria o usuário sem privilégios administrativos `appuser` (com `HOME=/home/appuser` gravável para o Gunicorn), instala `requirements.txt` sem compilador C (`PyMySQL`), copia o código com `--chown=appuser:appgroup`, coleta estáticos via WhiteNoise no build, define `HEALTHCHECK` sobre `/api/health/` usando Python stdlib (sem `curl`) e inicia com `gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60`.
-- **[`docker-compose.yml`](docker-compose.yml):** orquestra dois serviços conectados em rede interna:
-  - **`db` (`mysql:8.4`):** cria o banco `feira_virtual`, persiste dados no volume `mysql_data`, restringe a porta a `127.0.0.1:3306:3306` e usa `healthcheck` com `MYSQL_PWD` (sem expor senha na linha de comando).
-  - **`web`:** depende de `db` com `condition: service_healthy`, conecta-se via `DB_HOST: db`, persiste uploads no volume `media_data`, expõe a porta `8000:8000` e recebe todas as variáveis de segurança, CORS, CSRF, e-mail, taxa de entrega e Pix.
-- **[`entrypoint.sh`](entrypoint.sh):** aguarda ativamente o MySQL ficar disponível (até 30 tentativas), executa `python manage.py migrate --noinput` e inicia o servidor.
-
-### Comandos de Execução
-
-#### Execução com Docker Compose (Django + MySQL 8.4)
-
-```bash
-cp .env.example .env            # configure DJANGO_SECRET_KEY e senhas
-docker compose up --build -d    # sobe MySQL 8.4 + Django e aplica migrações
-docker compose ps               # verifica o status healthy dos serviços
-```
-
-*(Para subir apenas o banco MySQL em container e rodar o Django localmente: `docker compose up db -d`.)*
-
-#### Execução Local Rápida com SQLite (Desenvolvimento)
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt
-cp .env.example .env
-export DJANGO_DEBUG=1
-python manage.py migrate
-python manage.py seed_demo      # opcional: cria contas e dados de demonstração
-python manage.py runserver
-```
-
-URLs após iniciar: Interface (`http://127.0.0.1:8000/`), Swagger (`http://127.0.0.1:8000/api/docs/`), Schema OpenAPI (`http://127.0.0.1:8000/api/schema/`), Django Admin (`http://127.0.0.1:8000/admin/`) e Healthcheck (`http://127.0.0.1:8000/api/health/`).
-
-#### MySQL Local (sem Docker) e Acesso Externo
-
-- **MySQL local:** crie o banco `feira_virtual` (`utf8mb4_unicode_ci`) e o usuário dedicado, ajuste `DB_ENGINE=mysql`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST=127.0.0.1`, `DB_PORT=3306` no `.env` e execute `python manage.py migrate`.
-- **Acesso no celular:** com `runserver` ativo, execute `ngrok http 8000` ou `cloudflared tunnel --url http://localhost:8000` (`CSRF_TRUSTED_ORIGINS` já suporta esses domínios).
-
-### Variáveis de Ambiente e Checklist de Produção
-
-Modelo completo em [`.env.example`](.env.example) *(nunca versione `.env` nem chaves reais)*:
-
-| Variável | Padrão | Finalidade |
-|---|---|---|
-| `DJANGO_DEBUG` | `0` | `1` apenas em desenvolvimento local. |
-| `DJANGO_SECRET_KEY` | *(obrigatória com `DEBUG=0`)* | Chave criptográfica do Django (50+ caracteres aleatórios em produção). |
-| `DJANGO_ALLOWED_HOSTS` | vazio (`*` em dev) | Hosts permitidos separados por vírgula. |
-| `SECURE_SSL_REDIRECT` | `1` (`0` no compose local) | Ativa redirecionamento HTTPS, HSTS e cookies `Secure` atrás de TLS. |
-| `DB_ENGINE` | `sqlite` | `sqlite` ou `mysql` (+ `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`). |
-| `ENABLE_SWAGGER` / `SHOW_DEMO_SHORTCUTS` | `0` / `0` | Libera Swagger sem admin / exibe atalhos demo no login (somente uso local). |
-| `CORS_ALLOW_ALL_ORIGINS` / `CORS_ALLOWED_ORIGINS` | `0` (prod) / `1` (dev) | Controle de origens CORS. |
-| `CSRF_TRUSTED_ORIGINS` | `localhost` + túneis | Origens confiáveis para proteção CSRF. |
-| `EMAIL_BACKEND` / `EMAIL_*` | console (dev) / SMTP (prod) | Envio de e-mails de notificação e recuperação de senha. |
-| `THROTTLE_*` | ver `.env.example` | Limites de taxa (`anon`, `user`, `login`, `registro`, `recuperar_senha`). |
-| `PIX_WEBHOOK_SECRET` | vazio | Segredo HMAC-SHA256 do webhook Pix (obrigatório com `DEBUG=0`). |
-| `TAXA_ENTREGA_PADRAO` | `0.00` | Taxa padrão de entrega definida exclusivamente no servidor. |
-
-**Checklist de produção:** definir `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY` forte, `DB_ENGINE=mysql`, `PIX_WEBHOOK_SECRET`, SMTP em `EMAIL_*`, restringir `ALLOWED_HOSTS`/`CORS`/`CSRF`, ativar `SECURE_SSL_REDIRECT=1` atrás de proxy TLS e executar `collectstatic --no-input` + `check --deploy`.
-
----
-
-## 5. API com os Principais Requisitos
-
-A API REST utiliza **Django REST Framework** com troca de dados em **JSON** (e `multipart/form-data` para imagens validadas com Pillow), paginação (`PAGE_SIZE = 20`), busca (`SearchFilter`), filtros (`DjangoFilterBackend`), ordenação (`OrderingFilter`) e especificação OpenAPI 3 gerada pelo **`drf-spectacular`**.
-
-- **Swagger UI:** `GET /api/docs/` e **Schema OpenAPI:** `GET /api/schema/` *(restritos a administradores por padrão; liberados com `ENABLE_SWAGGER=1`)*.
-- **Comunicação Front-End ↔ Back-End:** todas as telas consomem `/api/...` na mesma origem com `Authorization: Bearer <access_token>`.
-
-### Principais Endpoints por Módulo
-
-| Módulo | Métodos e Endpoints | Responsabilidade |
-|---|---|---|
-| **Usuários** (`usuarios/urls.py`) | `POST /api/auth/registro/{cliente,produtor,entregador}/`<br>`POST /api/auth/{login,refresh,logout,recuperar-senha,redefinir-senha}/`<br>`GET/PATCH /api/perfil/` · `/perfil/{produtor,entregador}/`<br>`CRUD /api/enderecos/` · `GET /api/perfil/exportar-dados/` · `DELETE /api/perfil/excluir-conta/` | Cadastro multi-perfil, autenticação JWT, recuperação de senha, gestão de perfis, endereços e direitos LGPD (exclusão exige senha atual). |
-| **Catálogo** (`catalogo/urls.py`) | `CRUD /api/categorias/` · `GET /api/produtos/` (`?search=`, `?categoria=`, `?tipo_producao=`, `?produtor=`, `?ordering=`, `?page=`)<br>`GET /api/produtores/` · `GET /api/estatisticas/`<br>`CRUD /api/produtor/produtos/` | Categorias ativas (`ProtectedError` na exclusão), vitrine de produtos/produtores aprovados (sem expor `chave_pix`) e gestão do catálogo e estoque do produtor. |
-| **Pedidos e Pix** (`pedidos/urls.py`) | `GET/DELETE /api/carrinho/` · `POST/PATCH/DELETE /api/carrinho/itens/`<br>`POST/GET /api/pedidos/` · `POST /api/pedidos/{id}/cancelar/`<br>`GET /api/pedidos/{id}/pix/` · `POST /api/pedidos/pix/webhook/`<br>`GET/POST /api/produtor/pedidos/` (`/{id}/aceitar/`, `/recusar/`, `/status/`, `/vendas/`, `/resumo/`) | Carrinho, checkout multi-produtor, máquina de estados, controle transacional de estoque, cobrança Pix **simulada** (`MockPixGateway`) e webhook HMAC-SHA256. |
-| **Entregas** (`pedidos/urls.py`) | `GET /api/entregas/?escopo=disponiveis\|minhas\|historico`<br>`GET /api/entregas/resumo/`<br>`POST /api/entregas/{id}/{aceitar,saiu-para-entrega,confirmar}/` | Listagem com endereço resumido antes do aceite, aceite atômico, sequência obrigatória `EM_ENTREGA → CONCLUIDO` e histórico do entregador. |
-| **Avaliações** (`avaliacoes/urls.py`) | `GET/POST/PATCH/DELETE /api/avaliacoes/` · `GET /api/avaliacoes/minhas/`<br>`GET /api/produtor/avaliacoes/` · `GET/POST /api/produtor/avaliacoes-clientes/`<br>`GET/POST /api/reclamacoes/` | Avaliações de produtos e produtores vinculadas a pedidos concluídos, avaliação recíproca do produtor ao cliente e reclamações. |
-| **Administração e Sistema** (`painel/urls.py`, `config/urls.py`) | `GET /api/admin/indicadores/`<br>`/api/admin/{usuarios,produtores,produtos,pedidos,reclamacoes,avaliacoes,avaliacoes-clientes}/`<br>`GET /api/config/` · `GET /api/health/` | Moderação de usuários, produtores, produtos (`oculto_moderacao`), pedidos, reclamações e avaliações com `LogAuditoria`; config pública e healthcheck. |
-
-> **Serviços simulados:** `/api/pedidos/{id}/pix/` usa `MockPixGateway` (`"simulado": true`) e não realiza cobranças bancárias reais.
-
-### Regras de Negócio e Máquina de Estados do Pedido
-
-Controladas na camada de serviços [`pedidos/services.py`](pedidos/services.py):
+### Ciclo de Estados e Regras de Negócio de Pedidos (`pedidos/services.py`)
 
 ```mermaid
 stateDiagram-v2
@@ -412,167 +465,242 @@ stateDiagram-v2
     CONCLUIDO --> [*]
 ```
 
-1. **Separação por produtor:** um carrinho com itens de produtores diferentes gera um pedido independente por produtor.
-2. **Estoque transacional:** validado no carrinho, no checkout (`select_for_update()`) e baixado no aceite do produtor; recusa ou cancelamento devolvem o estoque.
-3. **Integridade de unidades e frete:** unidades inteiras (`UNIDADE`, `CAIXA`, `SACO`, `MACO`) rejeitam frações; a taxa de entrega é definida somente no servidor (`TAXA_ENTREGA_PADRAO`).
-4. **Moderação e disponibilidade:** produtores novos entram como `PENDENTE`; produtos com `oculto_moderacao=True` ou de categoria inativa ficam bloqueados no catálogo, carrinho e checkout.
-5. **Pagamento, avaliações e privacidade:** formas de pagamento são validadas contra o perfil do produtor; avaliações exigem pedido `CONCLUIDO` com `UniqueConstraint` compatível com SQLite e MySQL 8.4; `ItemPedido` preserva snapshot imutável de nome/preço/unidade; `chave_pix` não vaza na vitrine pública e o entregador vê apenas endereço resumido antes do aceite.
+Principais garantias de domínio no servidor: separação automática do carrinho por produtor; bloqueio de concorrência (`select_for_update()`) no checkout e estoque; rejeição de quantidades fracionárias em unidades inteiras (`UNIDADE`, `CAIXA`, `SACO`, `MACO`); frete definido somente pelo servidor (`TAXA_ENTREGA_PADRAO`); snapshot imutável em `ItemPedido`; bloqueio de produtos com `oculto_moderacao=True` ou categoria inativa; e `UniqueConstraint` em avaliações compatível com SQLite e MySQL 8.4.
+
+### Tecnologias Utilizadas
+
+| Camada | Tecnologias (conforme `requirements.txt`, `requirements-dev.txt` e `Dockerfile`) |
+|---|---|
+| **Backend** | Python 3.12 · Django (`>=5.2,<7`; validado em `6.1.3`) · Django REST Framework (`3.18.3`) · `django-filter` · `django-cors-headers` · `drf-spectacular` |
+| **Autenticação e Segurança** | `djangorestframework-simplejwt` (`token_blacklist`) · `cryptography` · `ContentSecurityPolicyMiddleware` · `Pillow` (validação binária de imagens, máx. 5 MB) |
+| **Banco e Infraestrutura** | MySQL 8.4 (`PyMySQL`) · SQLite (dev/testes) · Gunicorn · WhiteNoise · Docker & Docker Compose |
+| **Front-End** | HTML5 · CSS3 (Custom Properties, Light/Dark Mode) · JavaScript Vanilla ES Modules · Sprite SVG local (`icons.svg`) |
+| **Qualidade (dev)** | `django.test` · `pytest` · `pytest-django` · `coverage` · `ruff` |
 
 ---
 
-## 6. Autenticação e Autorização
-
-A aplicação separa **autenticação** (identificar quem acessa a API) de **autorização** (validar quais recursos e operações o perfil pode executar).
-
-### Mecanismo de Autenticação
-
-- **Django REST Framework + SimpleJWT (`config/settings.py`):** `JWTAuthentication` como padrão, `ACCESS_TOKEN_LIFETIME = 1 hora`, `REFRESH_TOKEN_LIFETIME = 7 dias` e `rest_framework_simplejwt.token_blacklist` ativo.
-- **Login, Logout e Recuperação de Senha (`usuarios/views.py`):**
-  - `CustomTokenObtainPairView` aplica `LoginRateThrottle` (`10/minute`); cadastros e recuperação aplicam `5/minute`.
-  - `LogoutView` valida se o `user_id` do refresh token pertence ao `request.user` antes de revogá-lo (`403 Forbidden` para tokens de terceiros).
-  - `RecuperarSenhaView` envia link de redefinição com resposta neutra (evitando enumeração de contas) e `RedefinirSenhaView` aplica os validadores de senha do Django.
-- **Política default-deny:** `DEFAULT_PERMISSION_CLASSES` exige `IsAuthenticated`; somente endpoints explicitamente liberados com `AllowAny` aceitam acesso anônimo.
-
-### Mecanismo de Autorização (RBAC + Isolamento por Titular)
-
-1. **Permissões personalizadas por papel ([`usuarios/permissions.py`](usuarios/permissions.py)):**
-
-   ```python
-   class _PorTipo(BasePermission):
-       tipo = None
-       def has_permission(self, request, view):
-           u = request.user
-           return bool(u and u.is_authenticated and u.tipo == self.tipo)
-
-   class EhCliente(_PorTipo):     tipo = "CLIENTE"
-   class EhProdutor(_PorTipo):    tipo = "PRODUTOR"
-   class EhEntregador(_PorTipo):  tipo = "ENTREGADOR"
-   class EhAdmin(_PorTipo):       tipo = "ADMIN"
-   ```
-
-   `AdminEscreveTodosLeem` protege categorias (leitura pública, escrita exclusiva de administradores).
-
-2. **Isolamento de recursos (anti-IDOR):** além da classe de permissão, os ViewSets filtram `get_queryset()` pelo titular autenticado (`cliente=request.user`, `produtor__usuario=request.user`, `usuario=request.user`) e `pedidos/services.py` valida autoria/atribuição antes de qualquer transição de status.
-
-| Perfil | Permissão DRF | Restrições Garantidas |
-|---|---|---|
-| **Cliente** | `EhCliente` | Acessa apenas carrinho, endereços, pedidos, avaliações e reclamações próprios; bloqueado em rotas de produtor, entregador e admin. |
-| **Produtor Rural** | `EhProdutor` | Gerencia apenas própria propriedade, produtos e pedidos; não pode desfazer `oculto_moderacao` aplicado pelo admin. |
-| **Entregador** | `EhEntregador` | Endereço resumido antes do aceite; só altera entregas atribuídas a si; impedido de pular `EM_ENTREGA`. |
-| **Administrador** | `EhAdmin` / `AdminEscreveTodosLeem` | Modera contas, produtores, produtos, categorias, pedidos, reclamações e avaliações com trilha em `LogAuditoria`. |
-
----
-
-## 7. CI e Testes
-
-### Suíte de Testes Automatizados (42 métodos)
-
-| Módulo | Testes | Cenários Validados |
-|---|---|---|
-| [`usuarios/tests.py`](usuarios/tests.py) | **10** | Cadastro de cliente/produtor (`PENDENTE`), upload de foto da propriedade, perfil, CRUD de endereços, exportação e exclusão LGPD (com exigência de senha e suspensão de produtor/produtos), bloqueio de logout com token alheio, bloqueio de *Path Traversal* em `/assets/`, `/api/config/` e link de recuperação de senha. |
-| [`catalogo/tests.py`](catalogo/tests.py) | **9** | Permissões de categorias, tratamento de `ProtectedError`, visibilidade de categorias ativas, exposição de `aceita_pix` sem vazar `chave_pix`, filtros/busca, isolamento entre produtores, estatísticas públicas, header CSP/healthcheck e bloqueio de upload inválido. |
-| [`pedidos/tests.py`](pedidos/tests.py) | **13** | Fluxo completo (carrinho → checkout → aceite → preparo → entrega → conclusão), cancelamento com devolução de estoque, logout/recuperação, múltiplos produtores gerando pedidos separados, Pix + webhook HMAC (e rejeição de segredo padrão em produção), taxa de entrega definida no servidor, recusa com motivo, validação de unidades no carrinho, endereço resumido antes do aceite, aceite duplicado/isolamento de entregas, resumo do produtor e bloqueio de categoria inativa. |
-| [`avaliacoes/tests.py`](avaliacoes/tests.py) | **4** | Avaliação restrita a pedidos concluídos, isolamento de reclamações, avaliação recíproca do produtor ao cliente e histórico/autoria por pedido. |
-| [`painel/tests.py`](painel/tests.py) | **6** | Restrição `EhAdmin`, bloqueio/reativação com `LogAuditoria`, aprovação/suspensão de produtor, moderação `oculto_moderacao` irreversível pelo produtor, moderação de reclamações e soft delete administrativo preservando histórico. |
-| **Total** | **42** | **Cobertura integrada de requisitos funcionais, RBAC, concorrência, LGPD e segurança.** |
-
-### Comandos Executados e Resultados Verificados
-
-```bash
-python manage.py check
-python manage.py makemigrations --check --dry-run
-python manage.py spectacular --validate --file /tmp/schema.yml
-python manage.py test
-```
-
-Resultados obtidos na execução local sobre o código atual:
-
-- `python manage.py check` → `System check identified no issues (0 silenced).`
-- `python manage.py makemigrations --check --dry-run` → `No changes detected`
-- `python manage.py spectacular --validate` → validado sem erros de schema.
-- `python manage.py test` → **`Ran 42 tests in 207.263s — OK`** (42 aprovados, 0 falhas, 0 erros).
-
-### Situação Real da Integração Contínua (CI)
-
-Ao inspecionar a branch `dev`, verificou-se que **atualmente não há workflow configurado em `.github/workflows/`** (existiu um `.github/workflows/ci.yml` em commits anteriores da branch `main`, como `e5df5f2` e `e056968`, mas não está presente na `dev` atual). Assim, a automação de CI no GitHub Actions encontra-se **pendente na branch `dev`** e registrada como melhoria prioritária, sem alterar o código ou o pipeline nesta tarefa de documentação.
-
----
-
-## 8. Front-End e Demonstração
-
-### Tecnologias e Organização
-
-O frontend é servido diretamente pelo Django sem etapas de build nem dependências externas (compatível com a CSP `script-src 'self'` de [`config/middleware.py`](config/middleware.py)):
-
-- **HTML5 semântico** ([`frontend/index.html`](frontend/index.html)) com modais acessíveis (`role="dialog"`, `aria-modal="true"`) e regiões `aria-live`.
-- **CSS3 com tokens** ([`frontend/style.css`](frontend/style.css)), layout responsivo, paleta extraída da logo oficial (regra 60-30-10, contraste WCAG 2.1 AA: verde `#246F11`, verde-escuro `#1B4312`, verde-claro `#67AE25`, laranja CTA `#F7990C` e fundos `#FAFAF8` / `#141712`), alternância **Light/Dark Mode** com troca automática da logo e suporte a `prefers-reduced-motion`.
-- **JavaScript Vanilla em ES Modules:** coordenador [`frontend/main.js`](frontend/main.js) e 9 módulos em `frontend/js/` (`api.js`, `auth.js`, `products.js`, `cart.js`, `orders.js`, `producer.js`, `delivery.js`, `admin.js`, `ui.js`), acompanhados por sprite SVG local estilo Lucide ([`frontend/assets/icons.svg`](frontend/assets/icons.svg)).
-
-### Principais Interfaces Implementadas
-
-1. **Página Inicial diferenciada:** *Hero* e *Como funciona* para visitantes; banner compacto de boas-vindas com atalhos rápidos para clientes autenticados.
-2. **Catálogo e Detalhes:** busca em tempo real, pills de categoria, filtro por tipo de produção, ordenação, paginação, modal de produto e vitrine/modal de produtores com avaliações paginadas.
-3. **Carrinho (Drawer) e Checkout:** badge com contagem de itens distintos, focus trap, passos de quantidade conforme unidade, escolha de modalidade/endereço e validação de pagamento por produtor.
-4. **Área do Cliente:** *Meus Pedidos* com timeline, modal Pix com QR Code SVG gerado localmente e copia-e-cola, CRUD de endereços (ViaCEP), avaliações, reclamações e modal acessível de exclusão de conta LGPD.
-5. **Workspace do Produtor Rural:** KPIs, CRUD de produtos com preview e upload de foto, pedidos recebidos, relatório de vendas e avaliações recebidas/feitas.
-6. **Workspace do Entregador:** acesso direto às entregas (sem catálogo de compras), entregas disponíveis, em andamento, histórico, ganhos e edição do veículo.
-7. **Workspace Administrativo:** tela cheia abrindo no Dashboard de Indicadores e na Fila de Pendências, com navegação dedicada e botão para alternar à vitrine pública.
-
-### Roteiro de Demonstração do Sistema
-
-Para preparar dados de exemplo localmente (`DJANGO_DEBUG=1`), execute `python manage.py seed_demo` (ou `--reset` para recriar). O comando cria os quatro perfis de demonstração (`cliente_demo`, `produtor_demo`, `entregador_demo` e `admin`) e imprime as senhas temporárias no terminal (consultáveis também em [`usuarios/management/commands/seed_demo.py`](usuarios/management/commands/seed_demo.py); por segurança, senhas não são expostas neste README e o comando é bloqueado com `DEBUG=0`).
-
-1. **Página inicial (Visitante):** abrir `http://127.0.0.1:8000/`, apresentar a proposta, alternar Light/Dark mode e mostrar a responsividade.
-2. **Catálogo e Produtores:** pesquisar produtos, filtrar por categoria/cultivo, abrir detalhes do produto e consultar a vitrine de produtores.
-3. **Operação como Cliente (`cliente_demo`):** entrar, cadastrar endereço com CEP, adicionar itens ao carrinho, concluir o checkout (entrega/retirada + Pix simulado) e acompanhar o pedido em *Meus Pedidos*.
-4. **Gestão como Produtor (`produtor_demo`):** abrir o workspace do produtor, criar/editar produto, aceitar o pedido (com baixa de estoque) e avançá-lo até `Pronto`.
-5. **Gestão de Entregas (`entregador_demo`):** acessar o painel do entregador, ver o pedido disponível com endereço resumido, aceitar (liberando o endereço completo), marcar *Saiu para entrega* e *Confirmar entrega*.
-6. **Avaliações pós-compra:** retornar ao cliente para avaliar o produto e o produtor do pedido concluído (e opcionalmente demonstrar a avaliação recíproca feita pelo produtor).
-7. **Administração (`admin`):** entrar no workspace administrativo, exibir o dashboard de indicadores, a fila de pendências, a moderação de produtos/produtores/usuários e o controle de categorias e reclamações.
-
-### Evidências Visuais
-
-Ativo gráfico oficial versionado em `frontend/assets/`:
-
-<p align="center">
-  <img src="frontend/assets/og-image.png" alt="Cartão visual oficial da Feira Virtual" width="520" />
-</p>
-
-> **Pendência registrada:** o repositório já versiona os ativos oficiais da identidade visual (logos PNG/WebP light/dark, `og-image.png`, favicons PWA e `icons.svg`), porém ainda não possui capturas de tela das interfaces em execução versionadas (ex.: em `docs/screenshots/`).
-
----
-
-## 9. Matriz Resumida dos Requisitos
-
-| Requisito / Critério | Evidências no Projeto | Seção |
-|---|---|---|
-| **Apresentação da ideia, motivação e ODS** | Proposta da agricultura familiar, motivação/objetivos e alinhamento aos ODS 2 (Meta 2.3), ODS 8 (Meta 8.3) e ODS 12 (Meta 12.3) com fontes oficiais da ONU Brasil | [Seção 1](#1-apresentação-da-ideia-motivação-ods-e-aplicação-de-padrões) |
-| **Padrões de projeto** | `Service Layer` (`pedidos/services.py`), `Strategy` (`pedidos/pix.py`, `pedidos/notificacoes.py`), `Adapter` (`config/__init__.py`), `Template Method` (`usuarios/permissions.py`), `Facade` (`frontend/js/api.js`) e Monólito Modular | [Seção 2](#2-padrões-de-projeto-aplicados) |
-| **Acompanhamento do projeto** | Histórico real de 24 commits na branch `dev` (06/11/2026 a 21/11/2026), branches `main`/`dev`, tabela de etapas reais e diagrama de arquitetura | [Seção 3](#3-acompanhamento-do-projeto) |
-| **Conteinerizado** | [`Dockerfile`](Dockerfile) (não-root, WhiteNoise, Gunicorn, `HEALTHCHECK`), [`docker-compose.yml`](docker-compose.yml) (Django + MySQL 8.4, volumes e rede interna) e [`entrypoint.sh`](entrypoint.sh) | [Seção 4](#4-conteinerizado) |
-| **API com os principais requisitos** | API REST DRF cobrindo Usuários, Catálogo, Pedidos/Estoque, Entregas, Avaliações e Administração, com OpenAPI/Swagger (`drf-spectacular`) e regras de negócio no servidor | [Seção 5](#5-api-com-os-principais-requisitos) |
-| **Autenticação e Autorização** | SimpleJWT (`access`/`refresh`/`blacklist`), throttles dedicados, recuperação de senha, RBAC em [`usuarios/permissions.py`](usuarios/permissions.py) e isolamento contra IDOR | [Seção 6](#6-autenticação-e-autorização) |
-| **CI e Testes** | **42 testes automatizados aprovados** nos 5 apps + `check`, `makemigrations --check` e `spectacular --validate`; pendência transparente de `.github/workflows/ci.yml` na `dev` | [Seção 7](#7-ci-e-testes) |
-| **Front-End e Demonstração** | Interface responsiva em HTML5/CSS3/ES Modules (`frontend/main.js` + `frontend/js/`), workspaces por perfil, Light/Dark mode, CSP estrita e roteiro prático de apresentação | [Seção 8](#8-front-end-e-demonstração) |
-
----
-
-## 10. Estrutura dos Módulos e Considerações Finais
+## 9. Organização dos Diretórios
 
 ```text
 feira_virtual/
-├── config/                    # settings.py, urls.py, __init__.py (Adapter PyMySQL), middleware.py (CSP), validators.py
-├── usuarios/                  # Perfis (Cliente/Produtor/Entregador/Admin), Endereco, JWT, permissions.py, LGPD e seed_demo
+├── config/                    # Configurações Django, URLs raiz, adapter PyMySQL, CSP e validadores de mídia
+│   ├── __init__.py            # Adapter pymysql.install_as_MySQLdb()
+│   ├── middleware.py          # ContentSecurityPolicyMiddleware (CSP estrita)
+│   ├── settings.py            # Banco híbrido SQLite/MySQL, JWT, DRF, throttles, WhiteNoise e logging
+│   ├── urls.py                # Rotas da API, Swagger, health, config pública e entrega segura de mídia/assets
+│   └── validators.py          # Validação binária de uploads de imagem com Pillow
+├── usuarios/                  # Usuários (4 perfis), Endereco, JWT, RBAC, LGPD e comando seed_demo
+│   ├── management/commands/
+│   │   └── seed_demo.py       # População controlada de demonstração (somente DEBUG=1)
+│   ├── models.py              # Usuario, PerfilProdutor, PerfilEntregador, Endereco
+│   ├── permissions.py         # _PorTipo, EhCliente, EhProdutor, EhEntregador, EhAdmin, AdminEscreveTodosLeem
+│   └── serializers.py · views.py · urls.py · tests.py
 ├── catalogo/                  # Categoria, Produto, vitrine de produtores aprovados, filtros e estatísticas
-├── pedidos/                   # Carrinho, Pedido, ItemPedido, services.py, pix.py (Mock), notificacoes.py e entregas
+│   └── models.py · serializers.py · views.py · urls.py · tests.py
+├── pedidos/                   # Carrinho, Checkout, máquina de estados, entregas, Pix simulado e notificações
+│   ├── models.py              # Carrinho, ItemCarrinho, Pedido, ItemPedido, HistoricoStatus
+│   ├── services.py            # Service Layer transacional (finalizar_carrinho, mudar_status, estoque)
+│   ├── pix.py                 # Strategy GatewayPixBase / MockPixGateway (simulado)
+│   ├── notificacoes.py        # Strategy NotificadorBase / Email / WhatsApp (simulado) / CentralNotificacoes
+│   └── serializers.py · views.py · urls.py · tests.py
 ├── avaliacoes/                # Avaliacao (produto/produtor), AvaliacaoCliente (recíproca) e Reclamacao
+│   └── models.py · serializers.py · views.py · urls.py · tests.py
 ├── painel/                    # Moderação administrativa, indicadores gerenciais e LogAuditoria
-├── frontend/                  # index.html, style.css, main.js, js/ (9 ES Modules) e assets/ (logos, icons.svg, PWA)
-└── Dockerfile · docker-compose.yml · entrypoint.sh · requirements.txt · requirements-dev.txt · .env.example
+│   └── models.py · views.py · urls.py · tests.py
+├── frontend/                  # Interface web servida pelo Django (sem build step e sem CDNs externas)
+│   ├── index.html · style.css · main.js
+│   ├── js/                    # 9 ES Modules: api, auth, products, cart, orders, producer, delivery, admin, ui
+│   └── assets/                # Logos PNG/WebP (light/dark), icons.svg, favicons PWA e og-image.png
+├── Dockerfile                 # Imagem Python 3.12-slim não-root com Gunicorn, WhiteNoise e HEALTHCHECK
+├── docker-compose.yml         # Orquestração web (Django) + db (MySQL 8.4)
+├── entrypoint.sh              # Espera ativa pelo banco e execução automática de migrações
+├── requirements.txt           # Dependências de produção/execução
+├── requirements-dev.txt       # Dependências de desenvolvimento e testes
+└── .env.example               # Modelo documentado de variáveis de ambiente
 ```
 
-### Considerações Finais e Pendências Conhecidas
+---
 
-A Feira Virtual consolida, em uma única aplicação verificável, modelagem relacional, arquitetura modular, padrões de projeto evidenciados no código, segurança da informação, controle de acesso por perfil, containerização e 42 testes automatizados voltados à comercialização direta da agricultura familiar.
+## 10. Pré-requisitos
 
-Como pontos de evolução futura registrados de forma transparente, permanecem: (1) reintrodução do workflow `.github/workflows/ci.yml` na branch `dev`; (2) versionamento de capturas de tela reais das interfaces em execução; (3) substituição das estratégias simuladas de Pix (`MockPixGateway`) e WhatsApp (`NotificadorWhatsApp`) por provedores homologados em ambiente de produção; e (4) inclusão de arquivo `LICENSE` formal e testes automatizados E2E de interface.
+- **Para execução local sem Docker:** Python 3.12+ (compatível com Django `>=5.2,<7`), `pip` e `venv` (SQLite já vem nativo no Python; MySQL 8.x é opcional caso deseje usar `DB_ENGINE=mysql` localmente).
+- **Para execução com Docker:** Docker Engine e Docker Compose (`docker compose` v2).
+
+---
+
+## 11. Configuração Local sem Docker
+
+### 11.1. Instalação, Variáveis, Migrações e Inicialização
+
+```bash
+# 1. Crie e ative o ambiente virtual
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 2. Instale as dependências
+pip install -r requirements.txt -r requirements-dev.txt
+
+# 3. Crie o arquivo de variáveis de ambiente a partir do modelo
+cp .env.example .env
+
+# 4. Aplique as migrações e (opcionalmente) carregue dados de demonstração
+export DJANGO_DEBUG=1
+python manage.py migrate
+python manage.py seed_demo
+
+# 5. Inicie o servidor de desenvolvimento
+python manage.py runserver
+```
+
+URLs após iniciar o servidor:
+- **Interface da Feira Virtual:** `http://127.0.0.1:8000/`
+- **Swagger UI (OpenAPI):** `http://127.0.0.1:8000/api/docs/` *(exige admin ou `ENABLE_SWAGGER=1`)*
+- **Django Admin:** `http://127.0.0.1:8000/admin/`
+- **Healthcheck:** `http://127.0.0.1:8000/api/health/`
+
+### 11.2. Variáveis de Ambiente (`.env.example`)
+
+Consulte todas as opções em [`.env.example`](.env.example). Nunca versione `.env` nem chaves reais.
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `DJANGO_DEBUG` | `0` | `1` apenas em desenvolvimento local. |
+| `DJANGO_SECRET_KEY` | *(obrigatória com `DEBUG=0`)* | Chave secreta do Django (50+ caracteres aleatórios em produção). |
+| `DJANGO_ALLOWED_HOSTS` | vazio (`*` em dev) | Hosts permitidos separados por vírgula. |
+| `SECURE_SSL_REDIRECT` | `1` (`0` no compose local) | Ativa redirecionamento HTTPS, HSTS e cookies `Secure` atrás de TLS. |
+| `DB_ENGINE` | `sqlite` | `sqlite` ou `mysql` (`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`). |
+| `ENABLE_SWAGGER` | `0` | `1` libera `/api/docs/` e `/api/schema/` sem login de administrador. |
+| `SHOW_DEMO_SHORTCUTS` | `0` | `1` exibe atalhos de preenchimento demo no modal de login (somente uso local). |
+| `CORS_ALLOW_ALL_ORIGINS` / `CORS_ALLOWED_ORIGINS` | `0` (prod) / `1` (dev) | Controle de origens autorizadas para CORS. |
+| `CSRF_TRUSTED_ORIGINS` | `localhost` + túneis | Origens confiáveis para proteção CSRF. |
+| `EMAIL_BACKEND` / `EMAIL_*` | console (dev) / SMTP (prod) | Envio de e-mails de notificação e recuperação de senha. |
+| `THROTTLE_*` | ver `.env.example` | Limites de requisições (`anon`, `user`, `login`, `registro`, `recuperar_senha`). |
+| `PIX_WEBHOOK_SECRET` | vazio | Segredo HMAC-SHA256 do webhook Pix (obrigatório com `DEBUG=0`). |
+| `TAXA_ENTREGA_PADRAO` | `0.00` | Taxa padrão de entrega definida exclusivamente no servidor. |
+
+### 11.3. Banco MySQL Local (Opcional) e Acesso Externo
+
+- **MySQL local:** crie o banco `feira_virtual` (`utf8mb4_unicode_ci`) e um usuário dedicado, configure `DB_ENGINE=mysql` e as credenciais no `.env`, e execute `python manage.py migrate`.
+- **Acesso no celular:** com `runserver` ativo, execute `ngrok http 8000` ou `cloudflared tunnel --url http://localhost:8000` (`CSRF_TRUSTED_ORIGINS` já aceita `*.ngrok-free.app` e `*.trycloudflare.com`).
+- **Checklist de produção:** definir `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY` forte, `DB_ENGINE=mysql`, `PIX_WEBHOOK_SECRET`, SMTP real em `EMAIL_*`, restringir `ALLOWED_HOSTS`/`CORS`/`CSRF`, ativar `SECURE_SSL_REDIRECT=1` atrás de proxy TLS e executar `collectstatic --no-input` e `check --deploy`.
+
+---
+
+## 12. Inicialização com Docker
+
+### Stack Completa (`web` Django + `db` MySQL 8.4)
+
+```bash
+# 1. Configure o arquivo .env (defina DJANGO_SECRET_KEY e senhas do MySQL)
+cp .env.example .env
+
+# 2. Construa a imagem e suba os serviços em segundo plano
+#    O entrypoint.sh aguarda o MySQL ficar pronto e aplica as migrações automaticamente
+docker compose up --build -d
+
+# 3. Verifique o estado de saúde dos containers
+docker compose ps
+
+# 4. Acompanhe os logs da aplicação web
+docker compose logs -f web
+```
+
+### Somente o Banco MySQL em Container (Django local)
+
+```bash
+docker compose up db -d
+```
+
+Para encerrar os containers mantendo os volumes (`mysql_data` e `media_data`):
+
+```bash
+docker compose down
+```
+
+---
+
+## 13. Principais Endpoints da API
+
+### Autenticação, Perfis, Endereços e LGPD (`usuarios/urls.py`)
+
+| Método | Endpoint | Responsabilidade |
+|---|---|---|
+| `POST` | `/api/auth/registro/cliente/` · `/produtor/` · `/entregador/` | Cadastro multi-perfil (produtores iniciam com status `PENDENTE`). |
+| `POST` | `/api/auth/login/` | Emite tokens JWT (`access` e `refresh`) com throttle dedicado. |
+| `POST` | `/api/auth/refresh/` · `/api/auth/logout/` | Renova o access token / revoga o refresh token do próprio usuário na blacklist. |
+| `POST` | `/api/auth/recuperar-senha/` · `/api/auth/redefinir-senha/` | Solicitação de link de recuperação e redefinição segura de senha. |
+| `GET` / `PATCH` | `/api/perfil/` · `/api/perfil/produtor/` · `/api/perfil/entregador/` | Consulta e edição dos dados da conta e dos perfis profissionais. |
+| `CRUD` | `/api/enderecos/` · `/api/enderecos/{id}/` | Gerenciamento de endereços de entrega do usuário autenticado. |
+| `GET` / `DELETE` | `/api/perfil/exportar-dados/` · `/api/perfil/excluir-conta/` | Exportação JSON e anonimização/exclusão de conta (LGPD, exigindo senha atual). |
+
+### Catálogo e Produtores (`catalogo/urls.py`)
+
+| Método | Endpoint | Responsabilidade |
+|---|---|---|
+| `CRUD` | `/api/categorias/` | Leitura pública de categorias ativas; criação/edição/exclusão pelo administrador (`ProtectedError`). |
+| `GET` | `/api/produtos/` | Catálogo público paginado (`?search=`, `?categoria=`, `?tipo_producao=`, `?produtor=`, `?ordering=`, `?page=`). |
+| `GET` | `/api/produtores/` | Vitrine de produtores aprovados (expõe `aceita_pix`, sem expor `chave_pix`). |
+| `GET` | `/api/estatisticas/` | Indicadores públicos da plataforma (famílias atendidas na semana, produtores e produtos). |
+| `CRUD` | `/api/produtor/produtos/` | Gerenciamento de produtos, estoque e fotos pelo próprio produtor. |
+
+### Carrinho, Pedidos, Pix e Entregas (`pedidos/urls.py`)
+
+| Método | Endpoint | Responsabilidade |
+|---|---|---|
+| `GET` / `DELETE` | `/api/carrinho/` | Consulta e esvaziamento do carrinho do cliente. |
+| `POST` / `PATCH` / `DELETE` | `/api/carrinho/itens/` · `/api/carrinho/itens/{id}/` | Inclusão, atualização de quantidade (validando unidade e estoque) e remoção de itens. |
+| `POST` / `GET` | `/api/pedidos/` | Finalização do carrinho (um pedido por produtor) e histórico do cliente. |
+| `POST` | `/api/pedidos/{id}/cancelar/` | Cancelamento pelo cliente com estorno transacional de estoque. |
+| `GET` / `POST` | `/api/pedidos/{id}/pix/` · `/api/pedidos/pix/webhook/` | Cobrança Pix **simulada** (`MockPixGateway`) e confirmação via webhook assinado (HMAC-SHA256). |
+| `GET` / `POST` | `/api/produtor/pedidos/` · `/{id}/aceitar/` · `/recusar/` · `/status/` · `/vendas/` · `/resumo/` | Aceite/recusa, atualização de status, relatório de vendas e resumo do produtor. |
+| `GET` / `POST` | `/api/entregas/?escopo=disponiveis\|minhas\|historico` · `/resumo/` · `/{id}/aceitar/` · `/saiu-para-entrega/` · `/confirmar/` | Gestão completa das entregas pelo entregador. |
+
+### Avaliações, Administração e Sistema (`avaliacoes/urls.py`, `painel/urls.py`, `config/urls.py`)
+
+| Método | Endpoint | Responsabilidade |
+|---|---|---|
+| `CRUD` | `/api/avaliacoes/` · `GET /api/avaliacoes/minhas/` | Avaliações públicas e gestão das avaliações do cliente (vinculadas a pedido concluído). |
+| `GET` / `POST` | `/api/produtor/avaliacoes/` · `/api/produtor/avaliacoes-clientes/` | Avaliações recebidas pelo produtor e avaliação recíproca de clientes. |
+| `GET` / `POST` | `/api/reclamacoes/` | Registro e acompanhamento de reclamações pelo cliente. |
+| `GET` / `PATCH` / `POST` / `DELETE` | `/api/admin/indicadores/` e `/api/admin/{usuarios,produtores,produtos,pedidos,reclamacoes,avaliacoes,avaliacoes-clientes}/` | Dashboard administrativo, moderação, soft delete e trilha em `LogAuditoria`. |
+| `GET` | `/api/config/` · `/api/health/` · `/api/schema/` · `/api/docs/` | Configurações públicas leves, healthcheck da aplicação/banco e documentação OpenAPI/Swagger. |
+
+---
+
+## 14. Execução dos Testes
+
+Com o ambiente virtual ativo, execute os comandos de verificação e a suíte completa de **42 testes automatizados**:
+
+```bash
+# 1. Verificação geral de configuração do Django
+python manage.py check
+
+# 2. Verificação de consistência das migrações
+python manage.py makemigrations --check --dry-run
+
+# 3. Execução da suíte completa de testes com saída detalhada
+python manage.py test -v 2
+
+# 4. Validação formal do schema OpenAPI (drf-spectacular)
+python manage.py spectacular --validate --file /tmp/schema.yml
+```
+
+Para validar também os parâmetros de segurança de produção (com `DJANGO_DEBUG=0` e uma chave forte temporária):
+
+```bash
+DJANGO_DEBUG=0 DJANGO_SECRET_KEY='<chave-aleatoria-com-50-ou-mais-caracteres>' DJANGO_ALLOWED_HOSTS=localhost SECURE_SSL_REDIRECT=1 python manage.py check --deploy
+```
+
+---
+
+## 15. Considerações Finais
+
+A **Feira Virtual** consolida, em uma única aplicação web funcional, os fundamentos da disciplina **Engenharia de Software (DCA3603)**: aplicação prática de princípios de projeto, padrões de projeto verificáveis no código-fonte, controle de acesso baseado em perfis, modelagem relacional compatível com SQLite e MySQL 8.4, containerização, interface responsiva acessível e 42 testes automatizados voltados ao apoio à agricultura familiar e aos ODS 2, 8 e 12.
+
+### Pendências e Oportunidades de Evolução Registradas
+
+- **Integração Contínua (CI):** reintroduzir o workflow `.github/workflows/ci.yml` na branch `dev` para automatizar `check`, `makemigrations --check --dry-run`, `spectacular --validate` e `test` a cada alteração.
+- **Evidências visuais versionadas:** adicionar capturas de tela reais das principais telas em execução (ex.: em `docs/screenshots/`).
+- **Evolução de segurança da sessão JWT:** estudar a migração dos tokens JWT do cliente para cookies `HttpOnly` e ativar `ROTATE_REFRESH_TOKENS = True` em `config/settings.py`.
+- **Integrações externas em produção:** substituir `MockPixGateway` e `NotificadorWhatsApp` por provedores homologados, aproveitando a arquitetura baseada no padrão *Strategy* já implementada.
+- **Licenciamento e testes E2E:** adicionar arquivo `LICENSE` formal e complementar a suíte atual com testes automatizados de interface ponta a ponta.

@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Testes-42%20aprovados-246F11?style=flat" alt="42 testes aprovados" />
 </p>
 
-**Sumário:** [1. Princípios](#1-princípios-de-projeto-e-engenharia-de-software) · [2. Proposta, Motivação e ODS](#2-apresentação-motivação-e-ods) · [3. Padrões de Projeto](#3-padrões-de-projeto-aplicados) · [4. Critérios de Avaliação](#4-critérios-de-avaliação-e-evidências) ([4.1 Docker](#41-projeto-conteinerizado) · [4.2 API](#42-api-com-os-principais-requisitos) · [4.3 Auth](#43-autenticação-e-autorização) · [4.4 Testes/CI](#44-ci-e-testes) · [4.5 Front-End](#45-front-end-e-demonstração)) · [5. Arquitetura e Diretórios](#5-arquitetura-e-diretórios) · [6. Execução Local e Variáveis](#6-execução-local-sem-docker-e-variáveis) · [7. Considerações Finais](#7-considerações-finais)
+**Sumário:** [1. Princípios](#1-princípios-de-projeto-e-engenharia-de-software) · [2. Proposta, Motivação e ODS](#2-apresentação-motivação-e-ods) · [3. Padrões de Projeto](#3-padrões-de-projeto-aplicados) · [4. Critérios de Avaliação](#4-critérios-de-avaliação-e-evidências) ([4.1 Docker](#41-projeto-conteinerizado) · [4.2 API](#42-api-com-os-principais-requisitos) · [4.3 Auth](#43-autenticação-e-autorização) · [4.4 Testes/CI](#44-ci-e-testes) · [4.5 Front-End](#45-front-end-e-demonstração)) · [5. Arquitetura, Tecnologias e Diretórios](#5-arquitetura-tecnologias-e-diretórios) · [6. Execução Local e Variáveis](#6-execução-local-sem-docker-e-variáveis) · [7. Considerações Finais](#7-considerações-finais)
 
 ---
 
@@ -127,18 +127,9 @@ DJANGO_DEBUG=0 DJANGO_SECRET_KEY='<chave-50+-caracteres>' DJANGO_ALLOWED_HOSTS=l
 
 ---
 
-## 5. Arquitetura e Diretórios
+## 5. Arquitetura, Tecnologias e Diretórios
 
-```mermaid
-flowchart LR
-    Browser["Navegador (HTML5 + CSS3 + ES Modules)"] -->|"HTTP / JSON + JWT"| App
-    Browser -.->|"CEP (opcional)"| ViaCEP["ViaCEP API"]
-    subgraph App["Django (Gunicorn / runserver)"]
-        CSP["CSP + WhiteNoise"] --> DRF["DRF + SimpleJWT + Throttling"] --> Perms["RBAC"] --> Services["Service Layer (services.py)"] --> Gateways["MockPix + Notificações"]
-    end
-    Services --> DB[("MySQL 8.4 (PyMySQL) / SQLite")]
-    DRF --> Media[("Mídia /media/ (Pillow)")]
-```
+A **Feira Virtual** segue uma arquitetura **monolítica modular *single-server***: o backend em **Python 3.12**, **Django 6.1** e **Django REST Framework 3.18** (com **SimpleJWT**, `django-filter`, `django-cors-headers` e `drf-spectacular`) expõe a API REST em `/api/` e serve na mesma origem (`/`) a interface web em **HTML5**, **CSS3** e **JavaScript ES Modules**, utilizando **WhiteNoise** para estáticos, **Gunicorn** em **Docker Compose**, **Pillow** na validação de uploads e persistência configurável em **SQLite** ou **MySQL 8.4** (via **PyMySQL**), além de `coverage`, `pytest-django` e `ruff` em desenvolvimento.
 
 ```text
 feira_virtual/
@@ -151,8 +142,6 @@ feira_virtual/
 ├── frontend/     # index.html, style.css, main.js, js/ (9 ES Modules) e assets/ (logos, icons.svg, og-image.png)
 └── Dockerfile · docker-compose.yml · entrypoint.sh · requirements.txt · requirements-dev.txt · .env.example
 ```
-
-**Stack:** Python 3.12 · Django 6.1 · DRF 3.18 · SimpleJWT · `django-filter` · `django-cors-headers` · `drf-spectacular` · PyMySQL / MySQL 8.4 / SQLite · Pillow · WhiteNoise · Gunicorn · Docker Compose · `coverage` / `pytest-django` / `ruff`.
 
 ---
 

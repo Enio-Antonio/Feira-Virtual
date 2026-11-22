@@ -135,6 +135,37 @@ DJANGO_DEBUG=0 DJANGO_SECRET_KEY='<chave-50+-caracteres>' DJANGO_ALLOWED_HOSTS=l
   4. **Entregador (`entregador_demo`):** painel direto (sem catálogo), endereço resumido → aceitar entrega → *Saiu para entrega* → *Confirmar entrega*.
   5. **Avaliações e Admin (`admin`):** avaliar pedido concluído como cliente e demonstrar KPIs, fila de pendências e moderação no workspace Admin.
 
+<details>
+  <summary><strong>Capturas de tela das principais interfaces (clique para expandir)</strong></summary>
+
+  <br />
+
+  <details>
+    <summary>1. Vitrine Pública (Visitante)</summary>
+    <p align="center"><img src="docs/screenshots/01-vitrine-publica.png" alt="Vitrine Pública da Feira Virtual" width="900" /></p>
+  </details>
+
+  <details>
+    <summary>2. Home Autenticada do Cliente e Catálogo de Produtos</summary>
+    <p align="center"><img src="docs/screenshots/02-cliente-catalogo.png" alt="Home do Cliente e Catálogo de Produtos" width="900" /></p>
+  </details>
+
+  <details>
+    <summary>3. Workspace do Produtor Rural</summary>
+    <p align="center"><img src="docs/screenshots/03-painel-produtor.png" alt="Painel do Produtor Rural" width="900" /></p>
+  </details>
+
+  <details>
+    <summary>4. Workspace do Entregador Parceiro</summary>
+    <p align="center"><img src="docs/screenshots/04-painel-entregador.png" alt="Painel de Entregas" width="900" /></p>
+  </details>
+
+  <details>
+    <summary>5. Dashboard de Moderação Administrativa</summary>
+    <p align="center"><img src="docs/screenshots/05-painel-admin.png" alt="Painel Administrativo" width="900" /></p>
+  </details>
+</details>
+
 ---
 
 ## 5. Arquitetura, Tecnologias e Diretórios
@@ -150,7 +181,8 @@ feira_virtual/
 ├── avaliacoes/   # Avaliacao (produto/produtor), AvaliacaoCliente (recíproca) e Reclamacao
 ├── painel/       # Moderação admin, indicadores e LogAuditoria
 ├── frontend/     # index.html, style.css, main.js, js/ (9 ES Modules) e assets/ (logos, icons.svg, og-image.png)
-├── .github/      # workflows/ci.yml (GitHub Actions: checks, schema, testes + cobertura e build Docker)
+├── docs/         # screenshots/ (capturas de tela das interfaces por perfil)
+├── .github/      # workflows/ci.yml (GitHub Actions: checks, schema, testes + cobertura, ESLint/Prettier e build Docker)
 └── Dockerfile · docker-compose.yml · entrypoint.sh · requirements.txt · requirements-dev.txt · .env.example
 ```
 
@@ -177,4 +209,4 @@ python manage.py migrate && python manage.py seed_demo && python manage.py runse
 
 A **Feira Virtual** consolida modelagem relacional, arquitetura modular, padrões de projeto verificáveis no código, RBAC + LGPD, compatibilidade SQLite/MySQL 8.4, containerização e 42 testes automatizados para a disciplina **Engenharia de Software (DCA3603)** em alinhamento aos ODS 2, 8 e 12.
 
-**Pendências registradas:** (1) versionar capturas de tela em `docs/screenshots/`; (2) migrar JWT para cookies `HttpOnly` com `ROTATE_REFRESH_TOKENS = True`; (3) integrar Pix e WhatsApp reais em produção; e (4) adicionar testes E2E.
+**Trabalhos futuros (evoluções além do escopo da disciplina):** (1) migração de JWT para cookies `HttpOnly` com `ROTATE_REFRESH_TOKENS = True`; (2) integração com gateways reais de Pix e WhatsApp em produção; e (3) testes E2E automatizados de navegador (Playwright/Cypress).

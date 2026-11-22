@@ -177,4 +177,4 @@ python manage.py migrate && python manage.py seed_demo && python manage.py runse
 
 A **Feira Virtual** consolida modelagem relacional, arquitetura modular, padrões de projeto verificáveis no código, RBAC + LGPD, compatibilidade SQLite/MySQL 8.4, containerização e 42 testes automatizados para a disciplina **Engenharia de Software (DCA3603)** em alinhamento aos ODS 2, 8 e 12.
 
-**Pendências registradas:** (1) versionar capturas de tela em `docs/screenshots/`; (2) migrar JWT para cookies `HttpOnly` com `ROTATE_REFRESH_TOKENS = True`; (3) integrar Pix e WhatsApp reais em produção; e (4) adicionar `LICENSE` e testes E2E.
+**Pendências registradas:** (1) versionar capturas de tela em `docs/screenshots/`; (2) migrar JWT para cookies `HttpOnly` com `ROTATE_REFRESH_TOKENS = True`; (3) integrar Pix e WhatsApp reais em produção; e (4) adicionar testes E2E.

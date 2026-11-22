@@ -43,17 +43,8 @@
 A **Feira Virtual** conecta **produtores da agricultura familiar**, **consumidores**, **entregadores parceiros** e **administradores** em um único ambiente web para venda direta — integrando catálogo, carrinho com separação automática por produtor, controle transacional de estoque, entregas, avaliações pós-compra e moderação.
 
 - **Motivação:** enfrentar baixa visibilidade comercial de pequenos produtores, dependência de intermediários, distanciamento campo–cidade e desorganização manual de pedidos, estoques e entregas.
-- **Objetivos:** viabilizar comercialização direta e transparente (preço, estoque, cultivo orgânico/agroecológico/convencional, formas de pagamento), organizar pedidos/entregas e oferecer workspaces específicos por perfil. *(Contribuições potenciais esperadas em escopo acadêmico, sem resultados empíricos comprovados.)*
-
-### Relação com os ODS ([ONU Brasil — Agenda 2030](https://brasil.un.org/pt-br/sdgs))
-
-| Ícone | ODS e Meta de Referência | Vínculo com as Funcionalidades Reais |
-|---|---|---|
-| <a href="https://brasil.un.org/pt-br/sdgs/2"><img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/Objetivo_Desenvolvimento_Sustent%C3%A1vel_2_PT.webp" alt="ODS 2" width="64" /></a> | **[ODS 2 — Fome Zero e Agricultura Sustentável](https://brasil.un.org/pt-br/sdgs/2)**<br />*Meta 2.3:* acesso a mercados e valorização de pequenos produtores. | Vitrine de produtores aprovados (`/api/produtores/`), `PerfilProdutor` e catálogo direto (`/api/produtos/`). |
-| <a href="https://brasil.un.org/pt-br/sdgs/8"><img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Objetivo_Desenvolvimento_Sustent%C3%A1vel_8_PT.webp" alt="ODS 8" width="64" /></a> | **[ODS 8 — Trabalho Decente e Crescimento Econômico](https://brasil.un.org/pt-br/sdgs/8)**<br />*Meta 8.3:* apoio a atividades produtivas e empreendedorismo local. | Painéis operacionais de Produtor Rural (`/api/produtor/pedidos/`) e Entregador (`/api/entregas/` e extrato). |
-| <a href="https://brasil.un.org/pt-br/sdgs/12"><img src="https://upload.wikimedia.org/wikipedia/commons/2/21/Objetivo_Desenvolvimento_Sustent%C3%A1vel_12_PT.jpg" alt="ODS 12" width="64" /></a> | **[ODS 12 — Consumo e Produção Responsáveis](https://brasil.un.org/pt-br/sdgs/12)**<br />*Meta 12.3:* redução do desperdício e perdas na cadeia alimentar. | Transparência de cultivo e estoque/pedidos sob demanda (`services.py`). *Limitação: não mede redução de desperdício.* |
-
-> *Ícones utilizados apenas com finalidade acadêmica conforme diretrizes da [ONU Brasil](https://brasil.un.org/pt-br/node/110468), sem vínculo institucional com a ONU.*
+- **Objetivos:** viabilizar comercialização direta e transparente (preço, estoque, cultivo orgânico/agroecológico/convencional, formas de pagamento), organizar pedidos/entregas e oferecer workspaces específicos por perfil.
+- **Alinhamento aos ODS ([Agenda 2030 — ONU Brasil](https://brasil.un.org/pt-br/sdgs)):** o software foi pensado considerando os Objetivos de Desenvolvimento Sustentável — em especial o **[ODS 2](https://brasil.un.org/pt-br/sdgs/2)** (*Fome Zero e Agricultura Sustentável*), o **[ODS 8](https://brasil.un.org/pt-br/sdgs/8)** (*Trabalho Decente e Crescimento Econômico*) e o **[ODS 12](https://brasil.un.org/pt-br/sdgs/12)** (*Consumo e Produção Responsáveis*), ao buscar ampliar o acesso de agricultores familiares ao mercado, apoiar o trabalho local e organizar pedidos e estoques. *(Contribuições potenciais esperadas em escopo acadêmico, sem resultados empíricos ou medição direta de desperdício.)*
 
 ---
 
